@@ -61,6 +61,14 @@
     <ClInclude Include="src\application.h" />
     <ClInclude Include="src\application_old.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Font Include="external\imgui-docking\fonts\Cousine-Regular.ttf" />
+    <Font Include="external\imgui-docking\fonts\DroidSans.ttf" />
+    <Font Include="external\imgui-docking\fonts\Karla-Regular.ttf" />
+    <Font Include="external\imgui-docking\fonts\ProggyClean.ttf" />
+    <Font Include="external\imgui-docking\fonts\ProggyTiny.ttf" />
+    <Font Include="external\imgui-docking\fonts\Roboto-Medium.ttf" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{90638171-EF99-44F8-A2E3-28D93A30A9C8}</ProjectGuid>
     <RootNamespace>Chroma</RootNamespace>

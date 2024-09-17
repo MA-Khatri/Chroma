@@ -27,7 +27,4 @@ private:
 
 private:
 	GLFWwindow* m_WindowHandle;
-	ImGui_ImplVulkanH_Window* m_VulkanWindow;
-	ImGuiIO m_ImGuiIO;
-
 };

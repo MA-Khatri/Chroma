@@ -469,19 +469,19 @@ void Application::Init()
 	/* Create Framebuffers */
 	int w, h;
 	glfwGetFramebufferSize(m_WindowHandle, &w, &h);
-	m_VulkanWindow = &g_MainWindowData;
-	SetupVulkanWindow(m_VulkanWindow, surface, w, h);
+	ImGui_ImplVulkanH_Window* wd = &g_MainWindowData;
+	SetupVulkanWindow(wd, surface, w, h);
 
 	/* Setup Dear ImGui context */
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	m_ImGuiIO = ImGui::GetIO();
-	m_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     /* Enable Keyboard Controls */
-	m_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      /* Enable Gamepad Controls */
-	m_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         /* Enable Docking */
-	m_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       /* Enable Multi - Viewport / Platform Windows */
-	//m_ImGuiIO.ConfigViewportsNoAutoMerge = true;
-	//m_ImGuiIO.ConfigViewportsNoTaskBarIcon = true;
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       /* Enable Keyboard Controls */ 
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      /* Enable Gamepad Controls */
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           /* Enable Docking */
+	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         /* Enable Multi - Viewport / Platform Windows */
+	//io.ConfigViewportsNoAutoMerge = true;
+	//io.ConfigViewportsNoTaskBarIcon = true;
 
 	/* Setup Dear ImGui style */
 	ImGui::StyleColorsDark();
@@ -489,7 +489,7 @@ void Application::Init()
 
 	/* When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones. */
 	ImGuiStyle& style = ImGui::GetStyle();
-	if (m_ImGuiIO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 	{
 		style.WindowRounding = 0.0f;
 		style.Colors[ImGuiCol_WindowBg].w = 1.0f;
@@ -505,20 +505,28 @@ void Application::Init()
 	init_info.Queue = g_Queue;
 	init_info.PipelineCache = g_PipelineCache;
 	init_info.DescriptorPool = g_DescriptorPool;
-	init_info.RenderPass = m_VulkanWindow->RenderPass;
+	init_info.RenderPass = wd->RenderPass;
 	init_info.Subpass = 0;
 	init_info.MinImageCount = g_MinImageCount;
-	init_info.ImageCount = m_VulkanWindow->ImageCount;
+	init_info.ImageCount = wd->ImageCount;
 	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 	init_info.Allocator = g_Allocator;
 	init_info.CheckVkResultFn = check_vk_result;
 	ImGui_ImplVulkan_Init(&init_info);
+
+	/* Change default font */
+	int font_size = 16;
+	ImFont* robotoFont = io.Fonts->AddFontFromFileTTF(".\\external\\imgui-docking\\fonts\\Roboto-Medium.ttf", font_size);
+	//ImFont* droidSans = io.Fonts->AddFontFromFileTTF(".\\external\\imgui-docking\\fonts\\DroidSans.ttf", font_size);
+	//ImFont* karlaFont = io.Fonts->AddFontFromFileTTF(".\\external\\imgui-docking\\fonts\\Karla-Regular.ttf", font_size);
 }
 
 
 void Application::RenderFrame()
 {
+	ImGui_ImplVulkanH_Window* wd = &g_MainWindowData;
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+	ImGuiIO& io = ImGui::GetIO();
 
 	/* Poll and handle events (inputs, window resize, etc.) */
 	glfwPollEvents();
@@ -577,17 +585,17 @@ void Application::RenderFrame()
 	ImGui::Render();
 	ImDrawData* main_draw_data = ImGui::GetDrawData();
 	const bool main_is_minimized = (main_draw_data->DisplaySize.x <= 0.0f || main_draw_data->DisplaySize.y <= 0.0f);
-	m_VulkanWindow->ClearValue.color.float32[0] = clear_color.x * clear_color.w;
-	m_VulkanWindow->ClearValue.color.float32[1] = clear_color.y * clear_color.w;
-	m_VulkanWindow->ClearValue.color.float32[2] = clear_color.z * clear_color.w;
-	m_VulkanWindow->ClearValue.color.float32[3] = clear_color.w;
+	wd->ClearValue.color.float32[0] = clear_color.x * clear_color.w;
+	wd->ClearValue.color.float32[1] = clear_color.y * clear_color.w;
+	wd->ClearValue.color.float32[2] = clear_color.z * clear_color.w;
+	wd->ClearValue.color.float32[3] = clear_color.w;
 	if (!main_is_minimized)
 	{
-		FrameRender(m_VulkanWindow, main_draw_data);
+		FrameRender(wd, main_draw_data);
 	}
 
 	/* Update and render additional platform windows */
-	if (m_ImGuiIO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 	{
 		ImGui::UpdatePlatformWindows();
 		ImGui::RenderPlatformWindowsDefault();
@@ -596,7 +604,7 @@ void Application::RenderFrame()
 	/* Present main platform window */
 	if (!main_is_minimized)
 	{
-		FramePresent(m_VulkanWindow);
+		FramePresent(wd);
 	}
 }
 
