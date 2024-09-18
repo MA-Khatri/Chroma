@@ -1,8 +1,24 @@
 #pragma once
 
 #include "layer.h"
+#include "image.h"
 
 class RasterView : public Layer {
+
+	virtual void OnAttach()
+	{
+		m_Image = std::make_shared<Image>("./res/textures/teapot_normal.png");
+	}
+
+	virtual void OnDetach()
+	{
+		// TODO ?
+	}
+
+	virtual void OnUpdate(float time_step)
+	{
+		// TODO ?
+	}
 
 	virtual void OnUIRender() 
 	{
@@ -13,17 +29,7 @@ class RasterView : public Layer {
 			{
 				ImGui::BeginChild("Rasterized");
 				{
-					// TODO
-				}
-				ImGui::EndChild();
-			}
-			ImGui::End();
-
-			ImGui::Begin("Ray Traced Viewport");
-			{
-				ImGui::BeginChild("Ray Traced");
-				{
-					// TODO
+					ImGui::Image(m_Image->GetDescriptorSet(), { (float)m_Image->GetWidth(), (float)m_Image->GetHeight()});
 				}
 				ImGui::EndChild();
 			}
@@ -48,4 +54,6 @@ class RasterView : public Layer {
 		ImGui::End();
 	}
 
+private:
+	std::shared_ptr<Image> m_Image;
 };

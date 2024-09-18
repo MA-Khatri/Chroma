@@ -1,15 +1,5 @@
 #include "application.h"
 
-#include <stdlib.h> // abort
-#include <iostream>
-
-
-//#define APP_USE_UNLIMITED_FRAME_RATE
-#ifdef _DEBUG
-#define APP_USE_VULKAN_DEBUG_REPORT
-#endif
-
-
 /* ====================== */
 /* === Vulkan Globals === */
 /* ====================== */
@@ -29,55 +19,19 @@ static int                      g_MinImageCount = 2;
 static bool                     g_SwapChainRebuild = false;
 
 
+/* Per-frame-in-flight */
+static std::vector<std::vector<VkCommandBuffer>> s_AllocatedCommandBuffers;
+static std::vector<std::vector<std::function<void()>>> s_ResourceFreeQueue;
+
+/* 
+Unlike g_MainWindowData.FrameIndex, this is not the the swapchain image index
+and is always guaranteed to increase (eg. 0, 1, 2, 0, 1, 2)
+*/
+static uint32_t s_CurrentFrameIndex = 0;
+
+
 /* Store a pointer to the application instance */
 static Application* s_Instance = nullptr;
-
-
-/* ================================ */
-/* === Error and Debug handlers === */
-/* ================================ */
-
-static void glfw_error_callback(int error, const char* description)
-{
-	std::cerr << "GLFW Error " << error << " : " << description << std::endl;
-}
-
-
-static void check_vk_result(VkResult err)
-{
-	if (err == 0)
-	{
-		return;
-	}
-
-	std::cerr << "[Vulkan] Error: VkResult = " << err << std::endl;
-
-	if (err < 0)
-	{
-		abort();
-	}
-}
-
-
-#ifdef APP_USE_VULKAN_DEBUG_REPORT
-static VKAPI_ATTR VkBool32 VKAPI_CALL debug_report(
-	VkDebugReportFlagsEXT flags,
-	VkDebugReportObjectTypeEXT objectType,
-	uint64_t object,
-	size_t location,
-	int32_t messageCode,
-	const char* pLayerPrefix,
-	const char* pMessage,
-	void* pUserData
-) {
-	(void)flags; (void)object; (void)location; (void)messageCode; (void)pUserData; (void)pLayerPrefix; /* Unused arguments */
-
-	std::cerr << "[Vulkan] Debug report from ObjectType: " << objectType << " Message: " << pMessage << std::endl << std::endl;
-
-	return VK_FALSE;
-}
-#endif /* APP_USE_VULKAN_DEBUG_REPORT */
-
 
 
 /* ==================== */
@@ -247,16 +201,26 @@ static void SetupVulkan(ImVector<const char*> instance_extensions)
 	}
 
 	/* Create a descriptor pool */
-	/* NOTE: for now, we only have a single descriptor set. We will need to add more later if we want to load additional textures and will need to alter pool sizes... */
+	/* NOTE: for now, we're just making a bunch so we don't need to think about it. Maybe better to make this dynamic in the future. */
 	{
 		VkDescriptorPoolSize pool_sizes[] =
 		{
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
+			{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+			{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
 		};
 		VkDescriptorPoolCreateInfo pool_info = {};
 		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-		pool_info.maxSets = 1;
+		pool_info.maxSets = 1000 * IM_ARRAYSIZE(pool_sizes);
 		pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
 		pool_info.pPoolSizes = pool_sizes;
 		err = vkCreateDescriptorPool(g_Device, &pool_info, g_Allocator, &g_DescriptorPool);
@@ -339,6 +303,8 @@ static void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
 	}
 	check_vk_result(err);
 
+	s_CurrentFrameIndex = (s_CurrentFrameIndex + 1) % g_MainWindowData.ImageCount;
+
 	ImGui_ImplVulkanH_Frame* fd = &wd->Frames[wd->FrameIndex];
 	{
 		err = vkWaitForFences(g_Device, 1, &fd->Fence, VK_TRUE, UINT64_MAX); /* wait indefinitely instead of periodically checking */
@@ -348,6 +314,23 @@ static void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
 		check_vk_result(err);
 	}
 	{
+		/* Free resources in queue */
+		for (auto& func : s_ResourceFreeQueue[s_CurrentFrameIndex])
+		{
+			func();
+		}
+		s_ResourceFreeQueue[s_CurrentFrameIndex].clear();
+	}
+	{
+		/* Free command buffers allocated by Application::GetCommandBuffer */
+		/* These use g_MainWindowData.FrameIndex and not s_CurrentFrameIndex because they're tied to the swapchain image index */
+		auto& allocatedCommandBuffers = s_AllocatedCommandBuffers[wd->FrameIndex];
+		if (allocatedCommandBuffers.size() > 0)
+		{
+			vkFreeCommandBuffers(g_Device, fd->CommandPool, (uint32_t)allocatedCommandBuffers.size(), allocatedCommandBuffers.data());
+			allocatedCommandBuffers.clear();
+		}
+
 		err = vkResetCommandPool(g_Device, fd->CommandPool, 0);
 		check_vk_result(err);
 		VkCommandBufferBeginInfo info = {};
@@ -455,6 +438,10 @@ VkDevice Application::GetDevice()
 	return g_Device;
 }
 
+float Application::GetTime()
+{
+	return (float)glfwGetTime();
+}
 
 void Application::Init()
 {
@@ -494,6 +481,10 @@ void Application::Init()
 	glfwGetFramebufferSize(m_WindowHandle, &w, &h);
 	ImGui_ImplVulkanH_Window* wd = &g_MainWindowData;
 	SetupVulkanWindow(wd, surface, w, h);
+
+
+	s_AllocatedCommandBuffers.resize(wd->ImageCount);
+	s_ResourceFreeQueue.resize(wd->ImageCount);
 
 	/* Setup Dear ImGui context */
 	IMGUI_CHECKVERSION();
@@ -539,10 +530,16 @@ void Application::Init()
 	ImGui_ImplVulkan_Init(&init_info);
 
 	/* Change default font */
-	int font_size = 16;
-	ImFont* robotoFont = io.Fonts->AddFontFromFileTTF(".\\external\\imgui-docking\\fonts\\Roboto-Medium.ttf", font_size);
-	//ImFont* droidSans = io.Fonts->AddFontFromFileTTF(".\\external\\imgui-docking\\fonts\\DroidSans.ttf", font_size);
-	//ImFont* karlaFont = io.Fonts->AddFontFromFileTTF(".\\external\\imgui-docking\\fonts\\Karla-Regular.ttf", font_size);
+	ImFontConfig fontConfig;
+	fontConfig.FontDataOwnedByAtlas = false;
+	float font_size = 16;
+	ImFont* default_font = io.Fonts->AddFontFromFileTTF("./external/imgui-docking/fonts/Roboto-Medium.ttf", font_size, &fontConfig);
+	//ImFont* default_font = io.Fonts->AddFontFromFileTTF("./external/imgui-docking/fonts/DroidSans.ttf", font_size, &fontConfig);
+	//ImFont* default_font = io.Fonts->AddFontFromFileTTF("./external/imgui-docking/fonts/Karla-Regular.ttf", font_size, &fontConfig);
+	io.FontDefault = default_font;
+
+	ImGui_ImplVulkan_NewFrame();
+
 }
 
 void Application::Run()
@@ -551,7 +548,7 @@ void Application::Run()
 
 	while (!glfwWindowShouldClose(m_WindowHandle) && m_Running)
 	{
-		RenderFrame();
+		NextFrame();
 	}
 }
 
@@ -560,7 +557,7 @@ void Application::Close()
 	m_Running = false;
 }
 
-void Application::RenderFrame()
+void Application::NextFrame()
 {
 	ImGui_ImplVulkanH_Window* wd = &g_MainWindowData;
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -576,19 +573,22 @@ void Application::RenderFrame()
 	}
 
 	/* Resize swapchain? */
-	int fb_width, fb_height;
-	glfwGetFramebufferSize(m_WindowHandle, &fb_width, &fb_height);
-	if (fb_width > 0 && fb_height > 0 && (g_SwapChainRebuild || g_MainWindowData.Width != fb_width || g_MainWindowData.Height != fb_height))
+	if (g_SwapChainRebuild)
 	{
-		ImGui_ImplVulkan_SetMinImageCount(g_MinImageCount);
-		ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_MainWindowData, g_GraphicsQueueFamily, g_Allocator, fb_width, fb_height, g_MinImageCount);
-		g_MainWindowData.FrameIndex = 0;
-		g_SwapChainRebuild = false;
-	}
-	if (glfwGetWindowAttrib(m_WindowHandle, GLFW_ICONIFIED) != 0)
-	{
-		ImGui_ImplGlfw_Sleep(10);
-		return;
+		int width, height;
+		glfwGetFramebufferSize(m_WindowHandle, &width, &height);
+		if (width > 0 && height > 0)
+		{
+			ImGui_ImplVulkan_SetMinImageCount(g_MinImageCount);
+			ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_MainWindowData, g_GraphicsQueueFamily, g_Allocator, width, height, g_MinImageCount);
+			g_MainWindowData.FrameIndex = 0;
+
+			// Clear allocated command buffers from here since entire pool is destroyed
+			s_AllocatedCommandBuffers.clear();
+			s_AllocatedCommandBuffers.resize(g_MainWindowData.ImageCount);
+
+			g_SwapChainRebuild = false;
+		}
 	}
 
 	/* Start the Dear ImGui frame */
@@ -693,6 +693,11 @@ void Application::RenderFrame()
 	{
 		FramePresent(wd);
 	}
+
+	float time = GetTime();
+	m_FrameTime = time - m_LastFrameTime;
+	m_TimeStep = glm::min<float>(m_FrameTime, 0.0333f);
+	m_LastFrameTime = time;
 }
 
 
@@ -717,4 +722,65 @@ void Application::Shutdown()
 
 	glfwDestroyWindow(m_WindowHandle);
 	glfwTerminate();
+}
+
+
+VkCommandBuffer Application::GetCommandBuffer(bool begin)
+{
+	ImGui_ImplVulkanH_Window* wd = &g_MainWindowData;
+
+	// Use any command queue
+	VkCommandPool command_pool = wd->Frames[wd->FrameIndex].CommandPool;
+
+	VkCommandBufferAllocateInfo cmdBufAllocateInfo = {};
+	cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	cmdBufAllocateInfo.commandPool = command_pool;
+	cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	cmdBufAllocateInfo.commandBufferCount = 1;
+
+	VkCommandBuffer& command_buffer = s_AllocatedCommandBuffers[wd->FrameIndex].emplace_back();
+	auto err = vkAllocateCommandBuffers(g_Device, &cmdBufAllocateInfo, &command_buffer);
+
+	VkCommandBufferBeginInfo begin_info = {};
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	err = vkBeginCommandBuffer(command_buffer, &begin_info);
+	check_vk_result(err);
+
+	return command_buffer;
+}
+
+
+void Application::FlushCommandBuffer(VkCommandBuffer commandBuffer)
+{
+	const uint64_t DEFAULT_FENCE_TIMEOUT = 100000000000;
+
+	VkSubmitInfo end_info = {};
+	end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	end_info.commandBufferCount = 1;
+	end_info.pCommandBuffers = &commandBuffer;
+	auto err = vkEndCommandBuffer(commandBuffer);
+	check_vk_result(err);
+
+	// Create fence to ensure that the command buffer has finished executing
+	VkFenceCreateInfo fenceCreateInfo = {};
+	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceCreateInfo.flags = 0;
+	VkFence fence;
+	err = vkCreateFence(g_Device, &fenceCreateInfo, nullptr, &fence);
+	check_vk_result(err);
+
+	err = vkQueueSubmit(g_GraphicsQueue, 1, &end_info, fence);
+	check_vk_result(err);
+
+	err = vkWaitForFences(g_Device, 1, &fence, VK_TRUE, DEFAULT_FENCE_TIMEOUT);
+	check_vk_result(err);
+
+	vkDestroyFence(g_Device, fence, nullptr);
+}
+
+
+void Application::SubmitResourceFree(std::function<void()>&& func)
+{
+	s_ResourceFreeQueue[s_CurrentFrameIndex].emplace_back(func);
 }

@@ -1,5 +1,6 @@
 #include "application.h"
 #include "raster_view.h"
+#include "raytrace_view.h"
 
 
 int main()
@@ -7,6 +8,7 @@ int main()
 	Application* app = new Application();
 
 	app->PushLayer(std::make_shared<RasterView>());
+	app->PushLayer(std::make_shared<RayTraceView>());
 
 	app->SetMenubarCallback([app]()
 		{

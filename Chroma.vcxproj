@@ -21,7 +21,9 @@
     <ClCompile Include="external\imgui-docking\imgui_widgets.cpp" />
     <ClCompile Include="external\imgui-docking\implot.cpp" />
     <ClCompile Include="external\imgui-docking\implot_items.cpp" />
+    <ClCompile Include="external\stb_image\stb_image.cpp" />
     <ClCompile Include="src\application.cpp" />
+    <ClCompile Include="src\image.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -62,10 +64,13 @@
     <ClInclude Include="external\imgui-docking\imstb_textedit.h" />
     <ClInclude Include="external\imgui-docking\imstb_truetype.h" />
     <ClInclude Include="external\OBJ-Loader.h" />
+    <ClInclude Include="external\stb_image\stb_image.h" />
     <ClInclude Include="src\application.h" />
     <ClInclude Include="src\framebuffer.h" />
+    <ClInclude Include="src\image.h" />
     <ClInclude Include="src\layer.h" />
     <ClInclude Include="src\raster_view.h" />
+    <ClInclude Include="src\raytrace_view.h" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="external\imgui-docking\fonts\Cousine-Regular.ttf" />
@@ -74,6 +79,9 @@
     <Font Include="external\imgui-docking\fonts\ProggyClean.ttf" />
     <Font Include="external\imgui-docking\fonts\ProggyTiny.ttf" />
     <Font Include="external\imgui-docking\fonts\Roboto-Medium.ttf" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\textures\teapot_normal.png" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{90638171-EF99-44F8-A2E3-28D93A30A9C8}</ProjectGuid>
@@ -113,7 +121,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\GLFW\include;$(SolutionDir)external\imgui-docking;$(SolutionDir)external\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\GLFW\include;$(SolutionDir)external\imgui-docking;$(SolutionDir)external\glm;$(SolutionDir)external\stb_image;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -133,7 +141,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\GLFW\include;$(SolutionDir)external\imgui-docking;$(SolutionDir)external\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\GLFW\include;$(SolutionDir)external\imgui-docking;$(SolutionDir)external\glm;$(SolutionDir)external\stb_image;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
