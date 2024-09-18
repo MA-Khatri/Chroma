@@ -19,6 +19,8 @@
     <ClCompile Include="external\imgui-docking\imgui_impl_vulkan.cpp" />
     <ClCompile Include="external\imgui-docking\imgui_tables.cpp" />
     <ClCompile Include="external\imgui-docking\imgui_widgets.cpp" />
+    <ClCompile Include="external\imgui-docking\implot.cpp" />
+    <ClCompile Include="external\imgui-docking\implot_items.cpp" />
     <ClCompile Include="src\application.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
@@ -54,12 +56,16 @@
     <ClInclude Include="external\imgui-docking\imgui_impl_glfw.h" />
     <ClInclude Include="external\imgui-docking\imgui_impl_vulkan.h" />
     <ClInclude Include="external\imgui-docking\imgui_internal.h" />
+    <ClInclude Include="external\imgui-docking\implot.h" />
+    <ClInclude Include="external\imgui-docking\implot_internal.h" />
     <ClInclude Include="external\imgui-docking\imstb_rectpack.h" />
     <ClInclude Include="external\imgui-docking\imstb_textedit.h" />
     <ClInclude Include="external\imgui-docking\imstb_truetype.h" />
     <ClInclude Include="external\OBJ-Loader.h" />
     <ClInclude Include="src\application.h" />
-    <ClInclude Include="src\application_old.h" />
+    <ClInclude Include="src\framebuffer.h" />
+    <ClInclude Include="src\layer.h" />
+    <ClInclude Include="src\raster_view.h" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="external\imgui-docking\fonts\Cousine-Regular.ttf" />

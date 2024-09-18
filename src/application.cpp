@@ -18,8 +18,8 @@ static VkAllocationCallbacks*   g_Allocator = nullptr;
 static VkInstance               g_Instance = VK_NULL_HANDLE;
 static VkPhysicalDevice         g_PhysicalDevice = VK_NULL_HANDLE;
 static VkDevice                 g_Device = VK_NULL_HANDLE;
-static uint32_t                 g_QueueFamily = (uint32_t)-1;
-static VkQueue                  g_Queue = VK_NULL_HANDLE;
+static uint32_t                 g_GraphicsQueueFamily = (uint32_t)-1;
+static VkQueue                  g_GraphicsQueue = VK_NULL_HANDLE;
 static VkDebugReportCallbackEXT g_DebugReport = VK_NULL_HANDLE;
 static VkPipelineCache          g_PipelineCache = VK_NULL_HANDLE;
 static VkDescriptorPool         g_DescriptorPool = VK_NULL_HANDLE;
@@ -27,6 +27,10 @@ static VkDescriptorPool         g_DescriptorPool = VK_NULL_HANDLE;
 static ImGui_ImplVulkanH_Window g_MainWindowData;
 static int                      g_MinImageCount = 2;
 static bool                     g_SwapChainRebuild = false;
+
+
+/* Store a pointer to the application instance */
+static Application* s_Instance = nullptr;
 
 
 /* ================================ */
@@ -129,6 +133,7 @@ static VkPhysicalDevice SetupVulkan_SelectPhysicalDevice()
 	}
 
 	/* If we get here, no GPUs were found */
+	std::cerr << "Failed to find GPU with Vulkan support!" << std::endl;
 	return VK_NULL_HANDLE;
 }
 
@@ -203,18 +208,19 @@ static void SetupVulkan(ImVector<const char*> instance_extensions)
 		{
 			if (queues[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
 			{
-				g_QueueFamily = i;
+				g_GraphicsQueueFamily = i;
 				break;
 			}
+			/* We can set the other queue families we want here later on... (make sure to remove break above) */
 		}
 		free(queues);
-		IM_ASSERT(g_QueueFamily != (uint32_t)-1);
+		IM_ASSERT(g_GraphicsQueueFamily != (uint32_t)-1);
 	}
 
 	/* Create Logical Device (with 1 queue) */
 	{
 		ImVector<const char*> device_extensions;
-		device_extensions.push_back("VK_KHR_swapchain");
+		device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
 		/* Enumerate physical device extension */
 		uint32_t properties_count;
@@ -224,9 +230,9 @@ static void SetupVulkan(ImVector<const char*> instance_extensions)
 		vkEnumerateDeviceExtensionProperties(g_PhysicalDevice, nullptr, &properties_count, properties.Data);
 
 		const float queue_priority[] = { 1.0f };
-		VkDeviceQueueCreateInfo queue_info[1] = {};
+		VkDeviceQueueCreateInfo queue_info[1] = {}; /* We can add more queues here later */
 		queue_info[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queue_info[0].queueFamilyIndex = g_QueueFamily;
+		queue_info[0].queueFamilyIndex = g_GraphicsQueueFamily;
 		queue_info[0].queueCount = 1;
 		queue_info[0].pQueuePriorities = queue_priority;
 		VkDeviceCreateInfo create_info = {};
@@ -237,7 +243,7 @@ static void SetupVulkan(ImVector<const char*> instance_extensions)
 		create_info.ppEnabledExtensionNames = device_extensions.Data;
 		err = vkCreateDevice(g_PhysicalDevice, &create_info, g_Allocator, &g_Device);
 		check_vk_result(err);
-		vkGetDeviceQueue(g_Device, g_QueueFamily, 0, &g_Queue);
+		vkGetDeviceQueue(g_Device, g_GraphicsQueueFamily, 0, &g_GraphicsQueue);
 	}
 
 	/* Create a descriptor pool */
@@ -270,10 +276,10 @@ static void SetupVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface
 
 	/* Check for WSI support */
 	VkBool32 res;
-	vkGetPhysicalDeviceSurfaceSupportKHR(g_PhysicalDevice, g_QueueFamily, wd->Surface, &res);
+	vkGetPhysicalDeviceSurfaceSupportKHR(g_PhysicalDevice, g_GraphicsQueueFamily, wd->Surface, &res);
 	if (res != VK_TRUE)
 	{
-		std::cerr << "Error no WSI support on physical device 0" << std::endl;
+		std::cerr << "Error no WSI support on selected physical device" << std::endl;
 		exit(-1);
 	}
 
@@ -292,7 +298,7 @@ static void SetupVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface
 
 	/* Create SwapChain, RenderPass, Framebuffer, etc. */
 	IM_ASSERT(g_MinImageCount >= 2);
-	ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, wd, g_QueueFamily, g_Allocator, width, height, g_MinImageCount);
+	ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, wd, g_GraphicsQueueFamily, g_Allocator, width, height, g_MinImageCount);
 }
 
 /* Destroys descriptor pool, debug report callback, (logical) device, and Vulkan instance */
@@ -381,7 +387,7 @@ static void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
 
 		err = vkEndCommandBuffer(fd->CommandBuffer);
 		check_vk_result(err);
-		err = vkQueueSubmit(g_Queue, 1, &info, fd->Fence);
+		err = vkQueueSubmit(g_GraphicsQueue, 1, &info, fd->Fence);
 		check_vk_result(err);
 	}
 }
@@ -403,7 +409,7 @@ static void FramePresent(ImGui_ImplVulkanH_Window* wd)
 	info.swapchainCount = 1;
 	info.pSwapchains = &wd->Swapchain;
 	info.pImageIndices = &wd->FrameIndex;
-	VkResult err = vkQueuePresentKHR(g_Queue, &info);
+	VkResult err = vkQueuePresentKHR(g_GraphicsQueue, &info);
 	if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
 	{
 		g_SwapChainRebuild = true;
@@ -429,6 +435,26 @@ Application::~Application()
 	Shutdown();
 }
 
+Application& Application::Get()
+{
+	return *s_Instance;
+}
+
+VkInstance Application::GetInstance()
+{
+	return g_Instance;
+}
+
+VkPhysicalDevice Application::GetPhysicalDevice()
+{
+	return g_PhysicalDevice;
+}
+
+VkDevice Application::GetDevice()
+{
+	return g_Device;
+}
+
 
 void Application::Init()
 {
@@ -447,9 +473,6 @@ void Application::Init()
 		std::cerr << "GLFW: Vulkan Not Supported" << std::endl;
 		abort();
 	}
-
-	/* Window settings */
-	glfwSwapInterval(1); /* Enable Vsync */
 
 	/* Determine required Vulkan extensions for GLFW and set up Vulkan w/ said extensions */
 	ImVector<const char*> extensions;
@@ -475,6 +498,7 @@ void Application::Init()
 	/* Setup Dear ImGui context */
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
+	ImPlot::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       /* Enable Keyboard Controls */ 
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      /* Enable Gamepad Controls */
@@ -501,8 +525,8 @@ void Application::Init()
 	init_info.Instance = g_Instance;
 	init_info.PhysicalDevice = g_PhysicalDevice;
 	init_info.Device = g_Device;
-	init_info.QueueFamily = g_QueueFamily;
-	init_info.Queue = g_Queue;
+	init_info.QueueFamily = g_GraphicsQueueFamily;
+	init_info.Queue = g_GraphicsQueue;
 	init_info.PipelineCache = g_PipelineCache;
 	init_info.DescriptorPool = g_DescriptorPool;
 	init_info.RenderPass = wd->RenderPass;
@@ -521,6 +545,20 @@ void Application::Init()
 	//ImFont* karlaFont = io.Fonts->AddFontFromFileTTF(".\\external\\imgui-docking\\fonts\\Karla-Regular.ttf", font_size);
 }
 
+void Application::Run()
+{
+	m_Running = true;
+
+	while (!glfwWindowShouldClose(m_WindowHandle) && m_Running)
+	{
+		RenderFrame();
+	}
+}
+
+void Application::Close()
+{
+	m_Running = false;
+}
 
 void Application::RenderFrame()
 {
@@ -531,13 +569,19 @@ void Application::RenderFrame()
 	/* Poll and handle events (inputs, window resize, etc.) */
 	glfwPollEvents();
 
+	/* Call the update functions for each layer */
+	for (auto& layer : m_LayerStack)
+	{
+		layer->OnUpdate(m_TimeStep);
+	}
+
 	/* Resize swapchain? */
 	int fb_width, fb_height;
 	glfwGetFramebufferSize(m_WindowHandle, &fb_width, &fb_height);
 	if (fb_width > 0 && fb_height > 0 && (g_SwapChainRebuild || g_MainWindowData.Width != fb_width || g_MainWindowData.Height != fb_height))
 	{
 		ImGui_ImplVulkan_SetMinImageCount(g_MinImageCount);
-		ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_MainWindowData, g_QueueFamily, g_Allocator, fb_width, fb_height, g_MinImageCount);
+		ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_MainWindowData, g_GraphicsQueueFamily, g_Allocator, fb_width, fb_height, g_MinImageCount);
 		g_MainWindowData.FrameIndex = 0;
 		g_SwapChainRebuild = false;
 	}
@@ -552,34 +596,77 @@ void Application::RenderFrame()
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-	/* Create dock space */
-	ImGui::DockSpaceOverViewport();
-
 	/* Window contents */
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f)); /* No padding on viewports */
-	ImGui::Begin("Rasterized Viewport");
+	/* Adopted from the Cherno: https://github.com/StudioCherno/Walnut/blob/master/Walnut/src/Walnut/Application.cpp */
 	{
-		ImGui::BeginChild("Rasterized");
-		{
-			// TODO
-		}
-		ImGui::EndChild();
-	}
-	ImGui::End();
+		static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
 
-	ImGui::Begin("Ray Traced Viewport");
-	{
-		ImGui::BeginChild("Ray Traced");
+		/* 
+		We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
+		because it would be confusing to have two docking targets within each others.
+		*/
+		ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
+		if (m_MenubarCallback)
 		{
-			// TODO
+			window_flags |= ImGuiWindowFlags_MenuBar;
 		}
-		ImGui::EndChild();
-	}
-	ImGui::End();
 
-	/* Add back in padding for non-viewport ImGui */
-	ImGui::PopStyleVar();
-	ImGui::ShowDemoWindow();
+		const ImGuiViewport* viewport = ImGui::GetMainViewport();
+		ImGui::SetNextWindowPos(viewport->WorkPos);
+		ImGui::SetNextWindowSize(viewport->WorkSize);
+		ImGui::SetNextWindowViewport(viewport->ID);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+		window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+		window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+		/*
+		When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background
+		and handle the pass-thru hole, so we ask Begin() to not render a background.
+		*/
+		if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
+		{
+			window_flags |= ImGuiWindowFlags_NoBackground;
+		}
+
+		/*
+		Important: note that we proceed even if Begin() returns false (aka window is collapsed).
+		This is because we want to keep our DockSpace() active. If a DockSpace() is inactive,
+		all active windows docked into it will lose their parent and become undocked.
+		We cannot preserve the docking relationship between an active window and an inactive docking, otherwise
+		any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
+		*/
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::Begin("DockSpace Demo", nullptr, window_flags);
+		ImGui::PopStyleVar();
+
+		ImGui::PopStyleVar(2);
+
+		/* Submit the DockSpace */
+		if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
+		{
+			ImGuiID dockspace_id = ImGui::GetID("VulkanAppDockspace");
+			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+		}
+
+		if (m_MenubarCallback)
+		{
+			if (ImGui::BeginMenuBar())
+			{
+				m_MenubarCallback();
+				ImGui::EndMenuBar();
+			}
+		}
+
+		/* Call OnUIRender for each layer */
+		for (auto& layer : m_LayerStack)
+		{
+			layer->OnUIRender();
+		}
+
+		ImGui::End();
+	}
+
 
 	/* Rendering */
 	ImGui::Render();
@@ -611,12 +698,18 @@ void Application::RenderFrame()
 
 void Application::Shutdown()
 {
+	for (auto& layer : m_LayerStack)
+	{
+		layer->OnDetach();
+	}
+
 	VkResult err;
 
 	err = vkDeviceWaitIdle(g_Device);
 	check_vk_result(err);
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
+	ImPlot::DestroyContext();
 	ImGui::DestroyContext();
 
 	CleanupVulkanWindow();
