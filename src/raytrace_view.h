@@ -15,13 +15,15 @@ class RayTraceView : public Layer
 		// TODO ?
 	}
 
-	virtual void OnUpdate(float time_step)
+	virtual void OnUpdate()
 	{
 		// TODO ?
 	}
 
 	virtual void OnUIRender()
 	{
+		ImVec2 viewport_size;
+
 		/* No padding on viewports */
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 		{
@@ -29,6 +31,8 @@ class RayTraceView : public Layer
 			{
 				ImGui::BeginChild("Ray Traced");
 				{
+					viewport_size = ImGui::GetWindowSize();
+					
 					// TODO
 				}
 				ImGui::EndChild();
@@ -37,5 +41,20 @@ class RayTraceView : public Layer
 		}
 		/* Add back in padding for non-viewport ImGui */
 		ImGui::PopStyleVar();
+
+		ImGui::Begin("Ray Trace Debug Panel");
+		{
+			CommonDebug(viewport_size);
+
+			if (ImPlot::BeginPlot("My Plot"))
+			{
+				float x_data[] = { 0.0f, 1.0f, 2.0f, 3.0f };
+				float y_data[] = { 1.0f, 2.0f, 0.5f, 1.5f };
+
+				ImPlot::PlotLine("My Line", x_data, y_data, 4);
+				ImPlot::EndPlot();
+			}
+		}
+		ImGui::End();
 	}
 };

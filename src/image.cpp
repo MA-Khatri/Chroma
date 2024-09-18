@@ -81,8 +81,6 @@ Image::Image(std::string_view path)
 	m_Width = width;
 	m_Height = height;
 
-	//std::cout << "Image Size: " << m_Width << "x" << m_Height << std::endl;
-
 	AllocateMemory(m_Width * m_Height * Utils::BytesPerPixel(m_Format));
 	SetData(data);
 	stbi_image_free(data);

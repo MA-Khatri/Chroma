@@ -88,6 +88,7 @@ public:
 	void Close();
 
 	void SetMenubarCallback(const std::function<void()>& menubarCallback) { m_MenubarCallback = menubarCallback; }
+	std::function<void()> GetMenubarCallback() { return m_MenubarCallback; }
 	void PushLayer(const std::shared_ptr<Layer>& layer) { m_LayerStack.emplace_back(layer); layer->OnAttach(); }
 
 	GLFWwindow* GetWindowHandle() const { return m_WindowHandle; }

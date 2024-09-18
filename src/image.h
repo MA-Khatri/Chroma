@@ -1,8 +1,8 @@
-#pragma once
-
-/* 
+/*
 From https://github.com/StudioCherno/Walnut/blob/master/Walnut/src/Walnut/Image.h
 */
+
+#pragma once
 
 #include <string>
 #include "vulkan/vulkan.h"

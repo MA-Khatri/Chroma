@@ -569,7 +569,7 @@ void Application::NextFrame()
 	/* Call the update functions for each layer */
 	for (auto& layer : m_LayerStack)
 	{
-		layer->OnUpdate(m_TimeStep);
+		layer->OnUpdate();
 	}
 
 	/* Resize swapchain? */

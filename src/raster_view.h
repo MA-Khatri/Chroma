@@ -15,13 +15,15 @@ class RasterView : public Layer {
 		// TODO ?
 	}
 
-	virtual void OnUpdate(float time_step)
+	virtual void OnUpdate()
 	{
 		// TODO ?
 	}
 
 	virtual void OnUIRender() 
 	{
+		ImVec2 viewport_size;
+
 		/* No padding on viewports */
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 		{
@@ -29,6 +31,8 @@ class RasterView : public Layer {
 			{
 				ImGui::BeginChild("Rasterized");
 				{
+					viewport_size = ImGui::GetWindowSize();
+
 					ImGui::Image(m_Image->GetDescriptorSet(), { (float)m_Image->GetWidth(), (float)m_Image->GetHeight()});
 				}
 				ImGui::EndChild();
@@ -40,16 +44,18 @@ class RasterView : public Layer {
 
 		ImGui::ShowDemoWindow();
 
-		ImGui::Begin("Debug Panel");
+		ImGui::Begin("Raster Debug Panel");
 		{
-			if (ImPlot::BeginPlot("My Plot"))
-			{
-				float x_data[] = { 0.0f, 1.0f, 2.0f, 3.0f };
-				float y_data[] = { 1.0f, 2.0f, 0.5f, 1.5f };
+			CommonDebug(viewport_size);
 
-				ImPlot::PlotLine("My Line", x_data, y_data, 4);
-				ImPlot::EndPlot();
-			}
+			//if (ImPlot::BeginPlot("My Plot"))
+			//{
+			//	float x_data[] = { 0.0f, 1.0f, 2.0f, 3.0f };
+			//	float y_data[] = { 1.0f, 2.0f, 0.5f, 1.5f };
+
+			//	ImPlot::PlotLine("My Line", x_data, y_data, 4);
+			//	ImPlot::EndPlot();
+			//}
 		}
 		ImGui::End();
 	}
