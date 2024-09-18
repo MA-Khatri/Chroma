@@ -1,6 +1,7 @@
 #pragma once
 
 #include "application.h"
+#include "camera.h"
 
 #include <deque>
 
@@ -66,14 +67,14 @@ class Layer
 public:
 	virtual ~Layer() = default;
 
-	virtual void OnAttach() {}
+	virtual void OnAttach(GLFWwindow* window) {}
 	virtual void OnDetach() {}
 
 	virtual void OnUpdate() {}
 	virtual void OnUIRender() {}
 
 protected:
-	void CommonDebug(ImVec2 viewport_size)
+	void CommonDebug(ImVec2 viewport_size, Camera* camera = nullptr)
 	{
 		ImGuiIO io = ImGui::GetIO();
 
@@ -98,10 +99,19 @@ protected:
 		}
 
 		ImGui::Text("Viewport Size :  %.1i x %.1i ", (int)viewport_size.x, (int)viewport_size.y);
+
+		if (camera)
+		{
+			ImGui::Text("Camera Settings");
+			ImGui::Text("\tVertical Field of View: %.1f deg", camera->vfov);
+			ImGui::Text("\tCamera Position: X=%.3f, Y=%.3f, Z=%.3f", camera->position.x, camera->position.y, camera->position.z);
+			ImGui::Text("\tCamera Orientation: X=%.3f, Y=%.3f, Z=%.3f", camera->orientation.x, camera->orientation.y, camera->orientation.z);
+		}
+
 	}
 
 	int frame_storage_count = 1001;
 	SlidingBuffer<float> frame_times = SlidingBuffer<float>(frame_storage_count);
 	SlidingBuffer<float> frame_rates = SlidingBuffer<float>(frame_storage_count);
-	std::vector<float> x_axis = arange<float>(0, frame_storage_count, 1);
+	std::vector<float> x_axis = arange<float>(0, (float)frame_storage_count, 1);
 };

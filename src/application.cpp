@@ -538,8 +538,7 @@ void Application::Init()
 	//ImFont* default_font = io.Fonts->AddFontFromFileTTF("./external/imgui-docking/fonts/Karla-Regular.ttf", font_size, &fontConfig);
 	io.FontDefault = default_font;
 
-	ImGui_ImplVulkan_NewFrame();
-
+	//ImGui_ImplVulkan_NewFrame();
 }
 
 void Application::Run()

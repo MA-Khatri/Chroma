@@ -5,9 +5,10 @@
 
 class RayTraceView : public Layer 
 {
-	virtual void OnAttach()
+	virtual void OnAttach(GLFWwindow* window)
 	{
-		// TODO ?
+		m_Window = window;
+		m_Camera = new Camera(100, 100, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), 45.0f);
 	}
 
 	virtual void OnDetach()
@@ -17,7 +18,10 @@ class RayTraceView : public Layer
 
 	virtual void OnUpdate()
 	{
-		// TODO ?
+		if (m_ViewportFocused)
+		{
+			m_Camera->Inputs(m_Window);
+		}
 	}
 
 	virtual void OnUIRender()
@@ -31,6 +35,7 @@ class RayTraceView : public Layer
 			{
 				ImGui::BeginChild("Ray Traced");
 				{
+					m_ViewportFocused = ImGui::IsWindowFocused();
 					viewport_size = ImGui::GetWindowSize();
 					
 					// TODO
@@ -44,8 +49,13 @@ class RayTraceView : public Layer
 
 		ImGui::Begin("Ray Trace Debug Panel");
 		{
-			CommonDebug(viewport_size);
+			CommonDebug(viewport_size, m_Camera);
 		}
 		ImGui::End();
 	}
+
+private:
+	GLFWwindow* m_Window;
+	Camera* m_Camera;
+	bool m_ViewportFocused = false;
 };

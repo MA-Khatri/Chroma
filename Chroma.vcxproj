@@ -11,7 +11,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="external\glm\glm.cppm" />
     <ClCompile Include="external\imgui-docking\imgui.cpp" />
     <ClCompile Include="external\imgui-docking\imgui_demo.cpp" />
     <ClCompile Include="external\imgui-docking\imgui_draw.cpp" />
@@ -23,6 +22,7 @@
     <ClCompile Include="external\imgui-docking\implot_items.cpp" />
     <ClCompile Include="external\stb_image\stb_image.cpp" />
     <ClCompile Include="src\application.cpp" />
+    <ClCompile Include="src\camera.cpp" />
     <ClCompile Include="src\image.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
@@ -30,29 +30,6 @@
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="external\glm\common.hpp" />
-    <ClInclude Include="external\glm\exponential.hpp" />
-    <ClInclude Include="external\glm\ext.hpp" />
-    <ClInclude Include="external\glm\fwd.hpp" />
-    <ClInclude Include="external\glm\geometric.hpp" />
-    <ClInclude Include="external\glm\glm.hpp" />
-    <ClInclude Include="external\glm\integer.hpp" />
-    <ClInclude Include="external\glm\mat2x2.hpp" />
-    <ClInclude Include="external\glm\mat2x3.hpp" />
-    <ClInclude Include="external\glm\mat2x4.hpp" />
-    <ClInclude Include="external\glm\mat3x2.hpp" />
-    <ClInclude Include="external\glm\mat3x3.hpp" />
-    <ClInclude Include="external\glm\mat3x4.hpp" />
-    <ClInclude Include="external\glm\mat4x2.hpp" />
-    <ClInclude Include="external\glm\mat4x3.hpp" />
-    <ClInclude Include="external\glm\mat4x4.hpp" />
-    <ClInclude Include="external\glm\matrix.hpp" />
-    <ClInclude Include="external\glm\packing.hpp" />
-    <ClInclude Include="external\glm\trigonometric.hpp" />
-    <ClInclude Include="external\glm\vec2.hpp" />
-    <ClInclude Include="external\glm\vec3.hpp" />
-    <ClInclude Include="external\glm\vec4.hpp" />
-    <ClInclude Include="external\glm\vector_relational.hpp" />
     <ClInclude Include="external\imgui-docking\imconfig.h" />
     <ClInclude Include="external\imgui-docking\imgui.h" />
     <ClInclude Include="external\imgui-docking\imgui_impl_glfw.h" />
@@ -66,6 +43,7 @@
     <ClInclude Include="external\OBJ-Loader.h" />
     <ClInclude Include="external\stb_image\stb_image.h" />
     <ClInclude Include="src\application.h" />
+    <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\framebuffer.h" />
     <ClInclude Include="src\image.h" />
     <ClInclude Include="src\layer.h" />

@@ -3,10 +3,15 @@
 #include "layer.h"
 #include "image.h"
 
+#include "camera.h"
+
 class RasterView : public Layer {
 
-	virtual void OnAttach()
+	virtual void OnAttach(GLFWwindow* window)
 	{
+		m_Window = window;
+		m_Camera = new Camera(100, 100, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), 45.0f);
+
 		m_Image = std::make_shared<Image>("./res/textures/teapot_normal.png");
 	}
 
@@ -17,7 +22,10 @@ class RasterView : public Layer {
 
 	virtual void OnUpdate()
 	{
-		// TODO ?
+		if (m_ViewportFocused)
+		{
+			m_Camera->Inputs(m_Window);
+		}
 	}
 
 	virtual void OnUIRender() 
@@ -31,6 +39,7 @@ class RasterView : public Layer {
 			{
 				ImGui::BeginChild("Rasterized");
 				{
+					m_ViewportFocused = ImGui::IsWindowFocused();
 					viewport_size = ImGui::GetWindowSize();
 
 					ImGui::Image(m_Image->GetDescriptorSet(), { (float)m_Image->GetWidth(), (float)m_Image->GetHeight()});
@@ -46,20 +55,15 @@ class RasterView : public Layer {
 
 		ImGui::Begin("Raster Debug Panel");
 		{
-			CommonDebug(viewport_size);
-
-			//if (ImPlot::BeginPlot("My Plot"))
-			//{
-			//	float x_data[] = { 0.0f, 1.0f, 2.0f, 3.0f };
-			//	float y_data[] = { 1.0f, 2.0f, 0.5f, 1.5f };
-
-			//	ImPlot::PlotLine("My Line", x_data, y_data, 4);
-			//	ImPlot::EndPlot();
-			//}
+			CommonDebug(viewport_size, m_Camera);
 		}
 		ImGui::End();
 	}
 
 private:
+	GLFWwindow* m_Window;
+	Camera* m_Camera;
+	bool m_ViewportFocused = false;
+
 	std::shared_ptr<Image> m_Image;
 };
