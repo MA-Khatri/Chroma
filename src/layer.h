@@ -1,9 +1,13 @@
 #pragma once
 
+#include <deque>
+#include <memory>
+
 #include "application.h"
 #include "camera.h"
 
-#include <deque>
+/* Forward decleration */
+class Application;
 
 
 template <typename T> 
@@ -67,7 +71,7 @@ class Layer
 public:
 	virtual ~Layer() = default;
 
-	virtual void OnAttach(GLFWwindow* window) {}
+	virtual void OnAttach(Application* app) {}
 	virtual void OnDetach() {}
 
 	virtual void OnUpdate() {}

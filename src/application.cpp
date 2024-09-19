@@ -418,6 +418,12 @@ Application::~Application()
 	Shutdown();
 }
 
+void Application::PushLayer(const std::shared_ptr<Layer>& layer)
+{
+	m_LayerStack.emplace_back(layer); 
+	layer->OnAttach(this);
+}
+
 Application& Application::Get()
 {
 	return *s_Instance;

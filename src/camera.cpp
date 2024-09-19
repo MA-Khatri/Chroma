@@ -75,6 +75,10 @@ void Camera::Inputs(GLFWwindow* window)
 	/* Mouse drag for orientation */
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
 	{
+		/* 
+		Later TODO: Make mouse wrap around viewport if dragged past the viewport bounds?
+		*/
+
 		/* Check if left mouse button is pressed */
 		if (!m_LMB)
 		{

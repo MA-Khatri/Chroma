@@ -25,6 +25,10 @@
 #endif
 
 
+/* === Forward Declerations === */
+class Layer;
+
+
 /* ================================ */
 /* === Error and Debug handlers === */
 /* ================================ */
@@ -88,7 +92,7 @@ public:
 
 	void SetMenubarCallback(const std::function<void()>& menubarCallback) { m_MenubarCallback = menubarCallback; }
 	std::function<void()> GetMenubarCallback() { return m_MenubarCallback; }
-	void PushLayer(const std::shared_ptr<Layer>& layer) { m_LayerStack.emplace_back(layer); layer->OnAttach(GetWindowHandle()); }
+	void PushLayer(const std::shared_ptr<Layer>& layer);
 
 	GLFWwindow* GetWindowHandle() const { return m_WindowHandle; }
 	static VkInstance GetInstance(); /* Get Vulkan instance */
