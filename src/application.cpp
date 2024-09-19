@@ -15,7 +15,7 @@ static VkPipelineCache          g_PipelineCache = VK_NULL_HANDLE;
 static VkDescriptorPool         g_DescriptorPool = VK_NULL_HANDLE;
 
 static ImGui_ImplVulkanH_Window g_MainWindowData;
-static int                      g_MinImageCount = 2;
+static uint32_t                 g_MinImageCount = 2;
 static bool                     g_SwapChainRebuild = false;
 
 
@@ -444,6 +444,11 @@ VkDevice Application::GetDevice()
 	return g_Device;
 }
 
+uint32_t Application::GetMinImageCount()
+{
+	return g_MinImageCount;
+}
+
 float Application::GetTime()
 {
 	return (float)glfwGetTime();
@@ -730,7 +735,7 @@ void Application::Shutdown()
 }
 
 
-VkCommandBuffer Application::GetCommandBuffer(bool begin)
+VkCommandBuffer Application::GetCommandBuffer()
 {
 	ImGui_ImplVulkanH_Window* wd = &g_MainWindowData;
 

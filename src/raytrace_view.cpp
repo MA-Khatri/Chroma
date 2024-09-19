@@ -25,8 +25,6 @@ void RayTraceView::OnUpdate()
 
 void RayTraceView::OnUIRender()
 {
-	ImVec2 viewport_size;
-
 	/* No padding on viewports */
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 	{
@@ -35,7 +33,7 @@ void RayTraceView::OnUIRender()
 			ImGui::BeginChild("Ray Traced");
 			{
 				m_ViewportFocused = ImGui::IsWindowFocused();
-				viewport_size = ImGui::GetWindowSize();
+				m_ViewportSize = ImGui::GetWindowSize();
 
 				// TODO
 			}
@@ -48,7 +46,7 @@ void RayTraceView::OnUIRender()
 
 	ImGui::Begin("Ray Trace Debug Panel");
 	{
-		CommonDebug(viewport_size, m_Camera);
+		CommonDebug(m_ViewportSize, m_Camera);
 	}
 	ImGui::End();
 }

@@ -98,9 +98,10 @@ public:
 	static VkInstance GetInstance(); /* Get Vulkan instance */
 	static VkPhysicalDevice GetPhysicalDevice();
 	static VkDevice GetDevice();
+	static uint32_t GetMinImageCount();
 	float GetTime();
 
-	static VkCommandBuffer GetCommandBuffer(bool begin);
+	static VkCommandBuffer GetCommandBuffer();
 	static void FlushCommandBuffer(VkCommandBuffer commandBuffer);
 
 	static void SubmitResourceFree(std::function<void()>&& func);

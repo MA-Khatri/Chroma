@@ -2,6 +2,7 @@
 
 #include "layer.h"
 #include "image.h"
+#include "camera.h"
 
 class RayTraceView : public Layer 
 {
@@ -18,4 +19,5 @@ private:
 	GLFWwindow* m_WindowHandle;
 	Camera* m_Camera;
 	bool m_ViewportFocused = false;
+	ImVec2 m_ViewportSize = ImVec2(10.0f, 10.0f);
 };

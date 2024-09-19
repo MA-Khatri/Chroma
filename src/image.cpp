@@ -41,7 +41,7 @@ namespace Utils {
 		return 0;
 	}
 
-	static VkFormat WalnutFormatToVulkanFormat(ImageFormat format)
+	static VkFormat ToVulkanFormat(ImageFormat format)
 	{
 		switch (format)
 		{
@@ -110,7 +110,7 @@ void Image::AllocateMemory(uint64_t size)
 
 	VkResult err;
 
-	VkFormat vulkanFormat = Utils::WalnutFormatToVulkanFormat(m_Format);
+	VkFormat vulkanFormat = Utils::ToVulkanFormat(m_Format);
 
 	/* Create the Image */
 	{
@@ -252,7 +252,7 @@ void Image::SetData(const void* data)
 
 	/* Copy to Image */
 	{
-		VkCommandBuffer command_buffer = Application::GetCommandBuffer(true);
+		VkCommandBuffer command_buffer = Application::GetCommandBuffer();
 
 		VkImageMemoryBarrier copy_barrier = {};
 		copy_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
