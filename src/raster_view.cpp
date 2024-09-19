@@ -1,5 +1,13 @@
 #include "raster_view.h"
 
+#include <stdlib.h>
+#include <fstream>
+
+
+/* ========================= */
+/* === Utility functions === */
+/* ========================= */
+
 static uint32_t GetVulkanMemoryType(VkMemoryPropertyFlags properties, uint32_t type_bits)
 {
 	VkPhysicalDeviceMemoryProperties prop;
@@ -16,6 +24,33 @@ static uint32_t GetVulkanMemoryType(VkMemoryPropertyFlags properties, uint32_t t
 }
 
 
+static std::vector<char> ReadFile(const std::string& filename)
+{
+	std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+	if (!file.is_open())
+	{
+		std::cerr << "Failed to open file: " << filename << std::endl;
+		abort();
+	}
+
+	size_t fileSize = (size_t)file.tellg();
+	std::vector<char> buffer(fileSize);
+
+	file.seekg(0);
+	file.read(buffer.data(), fileSize);
+
+	file.close();
+	return buffer;
+}
+
+
+/* ================================ */
+/* === RasterView Class Methods === */
+/* ================================ */
+
+/* === Standard layer methods === */
+
 void RasterView::OnAttach(Application* app)
 {
 	m_AppHandle = app;
@@ -27,6 +62,7 @@ void RasterView::OnAttach(Application* app)
 
 	CreateViewportImages();
 	CreateViewportImageViews();
+	CreateGraphicsPipeline();
 
 	m_Camera = new Camera(100, 100, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), 45.0f);
 
@@ -92,6 +128,8 @@ void RasterView::OnUIRender()
 }
 
 
+/* === RasterView specific methods === */
+
 void RasterView::OnResize(ImVec2 newSize)
 {
 	m_ViewportSize = newSize;
@@ -109,7 +147,7 @@ void RasterView::CreateViewportImages()
 
 	for (uint32_t i = 0; i < m_MinImageCount; i++)
 	{
-		VkImageCreateInfo imageCreateInfo = {};
+		VkImageCreateInfo imageCreateInfo{};
 		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
 		imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -128,14 +166,14 @@ void RasterView::CreateViewportImages()
 		VkMemoryRequirements memRequirements;
 		vkGetImageMemoryRequirements(m_Device, m_ViewportImages[i], &memRequirements);
 
-		VkMemoryAllocateInfo memAllocInfo = {};
+		VkMemoryAllocateInfo memAllocInfo{};
 		memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		memAllocInfo.allocationSize = memRequirements.size;
 		memAllocInfo.memoryTypeIndex = GetVulkanMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memRequirements.memoryTypeBits);
-		err = vkAllocateMemory(m_Device, &memAllocInfo, nullptr, &m_Memory);
+		err = vkAllocateMemory(m_Device, &memAllocInfo, nullptr, &m_ImageDeviceMemory[i]);
 		check_vk_result(err);
 
-		err = vkBindImageMemory(m_Device, m_ViewportImages[i], m_Memory, 0);
+		err = vkBindImageMemory(m_Device, m_ViewportImages[i], m_ImageDeviceMemory[i], 0);
 		check_vk_result(err);
 	}
 }
@@ -149,7 +187,7 @@ void RasterView::CreateViewportImageViews()
 
 	for (uint32_t i = 0; i < m_MinImageCount; i++)
 	{
-		VkImageViewCreateInfo imageViewCreateInfo = {};
+		VkImageViewCreateInfo imageViewCreateInfo{};
 		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		imageViewCreateInfo.image = m_ViewportImages[i];
 		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -160,4 +198,48 @@ void RasterView::CreateViewportImageViews()
 		err = vkCreateImageView(m_Device, &imageViewCreateInfo, nullptr, &m_ViewportImageViews[i]);
 		check_vk_result(err);
 	}
+}
+
+
+VkShaderModule RasterView::CreateShaderModule(const std::vector<char>& code)
+{
+	VkResult err;
+
+	VkShaderModuleCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	createInfo.codeSize = code.size();
+	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+	VkShaderModule shaderModule;
+	err = vkCreateShaderModule(m_Device, &createInfo, nullptr, &shaderModule);
+	check_vk_result(err);
+
+	return shaderModule;
+}
+
+
+void RasterView::CreateGraphicsPipeline()
+{
+	auto vertShaderCode = ReadFile("res/shaders/spv/HelloTriangle.vert.spv");
+	auto fragShaderCode = ReadFile("res/shaders/spv/HelloTriangle.frag.spv");
+
+	VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode);
+	VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode);
+
+	VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	vertShaderStageInfo.module = vertShaderModule;
+	vertShaderStageInfo.pName = "main"; /* i.e., entry point */
+
+	VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+	fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	fragShaderStageInfo.module = fragShaderModule;
+	fragShaderStageInfo.pName = "main";
+
+	VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+
+	vkDestroyShaderModule(m_Device, vertShaderModule, nullptr);
+	vkDestroyShaderModule(m_Device, fragShaderModule, nullptr);
 }

@@ -9,16 +9,18 @@
 
 class RasterView : public Layer {
 
-	/* Standard layer functions */
+	/* Standard layer methods */
 	virtual void OnAttach(Application* app);
 	virtual void OnDetach();
 	virtual void OnUpdate();
 	virtual void OnUIRender();
 
-	/* RasterView specific */
+	/* RasterView specific methods */
 	void OnResize(ImVec2 newSize);
 	void CreateViewportImages();
 	void CreateViewportImageViews();
+	void CreateGraphicsPipeline();
+	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
 private:
 	Application* m_AppHandle;
@@ -30,7 +32,6 @@ private:
 	uint32_t m_MinImageCount;
 	VkPhysicalDevice m_PhysicalDevice;
 	VkDevice m_Device;
-	VkDeviceMemory m_Memory;
 	std::vector<VkImage> m_ViewportImages;
 	std::vector<VkDeviceMemory> m_ImageDeviceMemory;
 	std::vector<VkImageView> m_ViewportImageViews;

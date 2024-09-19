@@ -544,9 +544,9 @@ void Application::Init()
 	ImFontConfig fontConfig;
 	fontConfig.FontDataOwnedByAtlas = false;
 	float font_size = 16;
-	ImFont* default_font = io.Fonts->AddFontFromFileTTF("./external/imgui-docking/fonts/Roboto-Medium.ttf", font_size, &fontConfig);
-	//ImFont* default_font = io.Fonts->AddFontFromFileTTF("./external/imgui-docking/fonts/DroidSans.ttf", font_size, &fontConfig);
-	//ImFont* default_font = io.Fonts->AddFontFromFileTTF("./external/imgui-docking/fonts/Karla-Regular.ttf", font_size, &fontConfig);
+	ImFont* default_font = io.Fonts->AddFontFromFileTTF("external/imgui-docking/fonts/Roboto-Medium.ttf", font_size, &fontConfig);
+	//ImFont* default_font = io.Fonts->AddFontFromFileTTF("external/imgui-docking/fonts/DroidSans.ttf", font_size, &fontConfig);
+	//ImFont* default_font = io.Fonts->AddFontFromFileTTF("external/imgui-docking/fonts/Karla-Regular.ttf", font_size, &fontConfig);
 	io.FontDefault = default_font;
 
 	//ImGui_ImplVulkan_NewFrame();
