@@ -16,63 +16,14 @@
 
 #include <glm/glm.hpp>
 
+
+#include "vulkan_utils.h"
 #include "layer.h"
 
-
-//#define APP_USE_UNLIMITED_FRAME_RATE
-#ifdef _DEBUG
-#define APP_USE_VULKAN_DEBUG_REPORT
-#endif
 
 
 /* === Forward Declerations === */
 class Layer;
-
-
-/* ================================ */
-/* === Error and Debug handlers === */
-/* ================================ */
-
-static void glfw_error_callback(int error, const char* description)
-{
-	std::cerr << "GLFW Error " << error << " : " << description << std::endl;
-}
-
-
-static void check_vk_result(VkResult err)
-{
-	if (err == 0)
-	{
-		return;
-	}
-
-	std::cerr << "[Vulkan] Error: VkResult = " << err << std::endl;
-
-	if (err < 0)
-	{
-		abort();
-	}
-}
-
-
-#ifdef APP_USE_VULKAN_DEBUG_REPORT
-static VKAPI_ATTR VkBool32 VKAPI_CALL debug_report(
-	VkDebugReportFlagsEXT flags,
-	VkDebugReportObjectTypeEXT objectType,
-	uint64_t object,
-	size_t location,
-	int32_t messageCode,
-	const char* pLayerPrefix,
-	const char* pMessage,
-	void* pUserData
-) {
-	(void)flags; (void)object; (void)location; (void)messageCode; (void)pUserData; (void)pLayerPrefix; /* Unused arguments */
-
-	std::cerr << "[Vulkan] Debug report from ObjectType: " << objectType << " Message: " << pMessage << std::endl << std::endl;
-
-	return VK_FALSE;
-}
-#endif /* APP_USE_VULKAN_DEBUG_REPORT */
 
 
 /* ========================= */

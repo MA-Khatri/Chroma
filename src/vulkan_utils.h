@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <optional>
 #include <functional>
 
@@ -50,11 +51,13 @@ namespace VK
 
 
 	/* === Error Handling Utilities === */
-	static void glfw_error_callback(int error, const char* description);
-	static void check_vk_result(VkResult err);
+	void glfw_error_callback(int error, const char* description);
+
+
+	void check_vk_result(VkResult err);
 
 #ifdef APP_USE_VULKAN_DEBUG_REPORT
-	static VKAPI_ATTR VkBool32 VKAPI_CALL debug_report(
+	VKAPI_ATTR VkBool32 VKAPI_CALL debug_report(
 		VkDebugReportFlagsEXT flags,
 		VkDebugReportObjectTypeEXT objectType,
 		uint64_t object,
@@ -68,7 +71,7 @@ namespace VK
 
 
 	/* === Vulkan Utility Functions === */
-	static bool IsExtensionAvailable(const ImVector<VkExtensionProperties>& properties, const char* extension);
+	bool IsExtensionAvailable(const ImVector<VkExtensionProperties>& properties, const char* extension);
 
 	VkCommandBuffer GetGraphicsCommandBuffer();
 	void FlushGraphicsCommandBuffer(VkCommandBuffer commandBuffer);
@@ -87,5 +90,10 @@ namespace VK
 	void CleanupVulkan();
 	void CleanupVulkanWindow();
 
+	/* === ImGui Utility Functions === */
+	void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data);
+	void FramePresent(ImGui_ImplVulkanH_Window* wd);
+
 	/* === Layer Utility Functions === */
+	// TODO
 }

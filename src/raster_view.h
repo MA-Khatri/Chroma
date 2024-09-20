@@ -4,6 +4,7 @@
 #include <optional>
 #include "vulkan/vulkan.h"
 
+#include "vulkan_utils.h"
 #include "layer.h"
 #include "image.h"
 #include "camera.h"

@@ -204,7 +204,7 @@ void RasterView::CreateSampler()
 	info.maxLod = 1000;
 	info.maxAnisotropy = 1.0f;
 	VkResult err = vkCreateSampler(m_Device, &info, nullptr, &m_Sampler);
-	check_vk_result(err);
+	VK::check_vk_result(err);
 }
 
 
@@ -265,7 +265,7 @@ void RasterView::CreateViewportImages()
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL; /* Setting to LINEAR causes an error? */
 		imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 		err = vkCreateImage(m_Device, &imageCreateInfo, nullptr, &m_ViewportImages[i]);
-		check_vk_result(err);
+		VK::check_vk_result(err);
 
 		VkMemoryRequirements memRequirements;
 		vkGetImageMemoryRequirements(m_Device, m_ViewportImages[i], &memRequirements);
@@ -275,10 +275,10 @@ void RasterView::CreateViewportImages()
 		memAllocInfo.allocationSize = memRequirements.size;
 		memAllocInfo.memoryTypeIndex = GetVulkanMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memRequirements.memoryTypeBits);
 		err = vkAllocateMemory(m_Device, &memAllocInfo, nullptr, &m_ImageDeviceMemory[i]);
-		check_vk_result(err);
+		VK::check_vk_result(err);
 
 		err = vkBindImageMemory(m_Device, m_ViewportImages[i], m_ImageDeviceMemory[i], 0);
-		check_vk_result(err);
+		VK::check_vk_result(err);
 	}
 }
 
@@ -300,7 +300,7 @@ void RasterView::CreateViewportImageViews()
 		imageViewCreateInfo.subresourceRange.levelCount = 1;
 		imageViewCreateInfo.subresourceRange.layerCount = 1;
 		err = vkCreateImageView(m_Device, &imageViewCreateInfo, nullptr, &m_ViewportImageViews[i]);
-		check_vk_result(err);
+		VK::check_vk_result(err);
 	}
 }
 
@@ -335,7 +335,7 @@ void RasterView::CreateRenderPass()
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
 	err = vkCreateRenderPass(m_Device, &renderPassInfo, nullptr, &m_ViewportRenderPass);
-	check_vk_result(err);
+	VK::check_vk_result(err);
 }
 
 
@@ -350,7 +350,7 @@ VkShaderModule RasterView::CreateShaderModule(const std::vector<char>& code)
 
 	VkShaderModule shaderModule;
 	err = vkCreateShaderModule(m_Device, &createInfo, nullptr, &shaderModule);
-	check_vk_result(err);
+	VK::check_vk_result(err);
 
 	return shaderModule;
 }
@@ -495,7 +495,7 @@ void RasterView::CreateGraphicsPipeline()
 	pipelineLayoutInfo.pushConstantRangeCount = 0; /* optional */
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; /* optional */
 	err = vkCreatePipelineLayout(m_Device, &pipelineLayoutInfo, nullptr, &m_ViewportPipelineLayout);
-	check_vk_result(err);
+	VK::check_vk_result(err);
 
 
 	/* ====== Pipeline creation ====== */
@@ -517,7 +517,7 @@ void RasterView::CreateGraphicsPipeline()
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; /* optional -- used if you are creating derivative pipelines */
 	pipelineInfo.basePipelineIndex = -1; /* optional */
 	err = vkCreateGraphicsPipelines(m_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_ViewportGraphicsPipeline);
-	check_vk_result(err);
+	VK::check_vk_result(err);
 
 	/* === Cleanup === */
 	vkDestroyShaderModule(m_Device, vertShaderModule, nullptr);
@@ -546,7 +546,7 @@ void RasterView::CreateFrameBuffers()
 		framebufferInfo.height = (uint32_t)m_ViewportSize.y;
 		framebufferInfo.layers = 1;
 		err = vkCreateFramebuffer(m_Device, &framebufferInfo, nullptr, &m_ViewportFramebuffers[i]);
-		check_vk_result(err);
+		VK::check_vk_result(err);
 	}
 }
 
@@ -580,8 +580,6 @@ void RasterView::CreateFrameBuffers()
 
 void RasterView::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
-	VkResult err;
-
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = m_ViewportRenderPass;
