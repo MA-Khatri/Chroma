@@ -18,41 +18,40 @@
 namespace VK
 {
 	/* === Namespace Globals === */
-	static VkInstance Instance = VK_NULL_HANDLE;
-	static VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
-	static VkDevice Device = VK_NULL_HANDLE;
-	static VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
-	static VkPipelineCache PipelineCache = VK_NULL_HANDLE;
+	extern VkInstance Instance;
+	extern VkPhysicalDevice PhysicalDevice;
+	extern VkDevice Device;
+	extern VkDescriptorPool DescriptorPool;
+	extern VkPipelineCache PipelineCache;
 
-	static ImGui_ImplVulkanH_Window MainWindowData;
-	static uint32_t MinImageCount = 2;
-	static bool SwapChainRebuild = false;
+	extern ImGui_ImplVulkanH_Window MainWindowData;
+	extern uint32_t MinImageCount;
+	extern bool SwapChainRebuild;
 
-	static uint32_t GraphicsQueueFamily = (uint32_t)-1;
-	static uint32_t ComputeQueueFamily = (uint32_t)-1;
-	static uint32_t TransferQueueFamily = (uint32_t)-1;
+	extern uint32_t GraphicsQueueFamily;
+	extern uint32_t ComputeQueueFamily;
+	extern uint32_t TransferQueueFamily;
 
-	static VkQueue GraphicsQueue = VK_NULL_HANDLE;
-	static VkQueue ComputeQueue = VK_NULL_HANDLE;
-	static VkQueue TransferQueue = VK_NULL_HANDLE;
+	extern VkQueue GraphicsQueue;
+	extern VkQueue ComputeQueue;
+	extern VkQueue TransferQueue;
 
-	static VkDebugReportCallbackEXT DebugReport = VK_NULL_HANDLE;
-	static VkAllocationCallbacks* Allocator = nullptr;
+	extern VkDebugReportCallbackEXT DebugReport;
+	extern VkAllocationCallbacks* Allocator;
 
 	/* Per-frame-in-flight */
-	static std::vector<std::vector<VkCommandBuffer>> AllocatedGraphicsCommandBuffers;
-	static std::vector<std::vector<std::function<void()>>> ResourceFreeQueue;
+	extern std::vector<std::vector<VkCommandBuffer>> AllocatedGraphicsCommandBuffers;
+	extern std::vector<std::vector<std::function<void()>>> ResourceFreeQueue;
 
 	/*
 	Unlike g_MainWindowData.FrameIndex, this is not the the swapchain image index
 	and is always guaranteed to increase (eg. 0, 1, 2, 0, 1, 2)
 	*/
-	static uint32_t CurrentFrameIndex = 0;
+	extern uint32_t CurrentFrameIndex;
 
 
 	/* === Error Handling Utilities === */
 	void glfw_error_callback(int error, const char* description);
-
 
 	void check_vk_result(VkResult err);
 

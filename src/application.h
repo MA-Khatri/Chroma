@@ -46,11 +46,6 @@ public:
 	void PushLayer(const std::shared_ptr<Layer>& layer);
 
 	GLFWwindow* GetWindowHandle() const { return m_WindowHandle; }
-	ImGui_ImplVulkanH_Window* GetMainWindowData();
-	static VkInstance GetInstance(); /* Get Vulkan instance */
-	static VkPhysicalDevice GetPhysicalDevice();
-	static VkDevice GetDevice();
-	static uint32_t GetMinImageCount();
 	float GetTime();
 
 	static VkCommandBuffer GetCommandBuffer();

@@ -29,31 +29,6 @@ Application& Application::Get()
 	return *s_Instance;
 }
 
-ImGui_ImplVulkanH_Window* Application::GetMainWindowData()
-{
-	return &VK::MainWindowData;
-}
-
-VkInstance Application::GetInstance()
-{
-	return VK::Instance;
-}
-
-VkPhysicalDevice Application::GetPhysicalDevice()
-{
-	return VK::PhysicalDevice;
-}
-
-VkDevice Application::GetDevice()
-{
-	return VK::Device;
-}
-
-uint32_t Application::GetMinImageCount()
-{
-	return VK::MinImageCount;
-}
-
 float Application::GetTime()
 {
 	return (float)glfwGetTime();
@@ -87,7 +62,6 @@ void Application::Init()
 	}
 	VK::SetupVulkan(extensions);
 
-	std::cout << VK::Instance << std::endl;
 
 	/* Create Window Surface */
 	VkSurfaceKHR surface;

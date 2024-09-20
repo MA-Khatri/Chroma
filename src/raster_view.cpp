@@ -11,7 +11,7 @@
 static uint32_t GetVulkanMemoryType(VkMemoryPropertyFlags properties, uint32_t type_bits)
 {
 	VkPhysicalDeviceMemoryProperties prop;
-	vkGetPhysicalDeviceMemoryProperties(Application::GetPhysicalDevice(), &prop);
+	vkGetPhysicalDeviceMemoryProperties(VK::PhysicalDevice, &prop);
 	for (uint32_t i = 0; i < prop.memoryTypeCount; i++)
 	{
 		if ((prop.memoryTypes[i].propertyFlags & properties) == properties && type_bits & (1 << i))
@@ -56,8 +56,8 @@ void RasterView::OnAttach(Application* app)
 	m_AppHandle = app;
 	m_WindowHandle = app->GetWindowHandle();
 
-	m_PhysicalDevice = app->GetPhysicalDevice();
-	m_Device = app->GetDevice();
+	m_PhysicalDevice = VK::PhysicalDevice;
+	m_Device = VK::Device;
 	//m_MinImageCount = app->GetMinImageCount();
 	m_MinImageCount = 1; /* We are only rendering to texture so we don't need the whole swapchain setup */
 
@@ -225,7 +225,7 @@ RasterView::QueueFamilyIndices RasterView::FindQueueFamilies(VkPhysicalDevice de
 		}
 
 		VkBool32 presentSupport = false;
-		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_AppHandle->GetMainWindowData()->Surface, &presentSupport);
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, VK::MainWindowData.Surface, &presentSupport);
 
 		if (presentSupport) {
 			indices.presentFamily = i;
@@ -254,7 +254,7 @@ void RasterView::CreateViewportImages()
 		VkImageCreateInfo imageCreateInfo{};
 		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageCreateInfo.format = m_AppHandle->GetMainWindowData()->SurfaceFormat.format;
+		imageCreateInfo.format = VK::MainWindowData.SurfaceFormat.format;
 		imageCreateInfo.extent.width = (uint32_t)m_ViewportSize.x;
 		imageCreateInfo.extent.height = (uint32_t)m_ViewportSize.y;
 		imageCreateInfo.extent.depth = 1;
@@ -295,7 +295,7 @@ void RasterView::CreateViewportImageViews()
 		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		imageViewCreateInfo.image = m_ViewportImages[i];
 		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageViewCreateInfo.format = m_AppHandle->GetMainWindowData()->SurfaceFormat.format;
+		imageViewCreateInfo.format = VK::MainWindowData.SurfaceFormat.format;
 		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		imageViewCreateInfo.subresourceRange.levelCount = 1;
 		imageViewCreateInfo.subresourceRange.layerCount = 1;
@@ -310,7 +310,7 @@ void RasterView::CreateRenderPass()
 	VkResult err;
 
 	VkAttachmentDescription colorAttachment{};
-	colorAttachment.format = m_AppHandle->GetMainWindowData()->SurfaceFormat.format;
+	colorAttachment.format = VK::MainWindowData.SurfaceFormat.format;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; /* we clear the color attachment with constants */
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;

@@ -6,6 +6,39 @@
 
 namespace VK
 {
+	/* === Namespace Globals === */
+	extern VkInstance Instance = VK_NULL_HANDLE;
+	extern VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
+	extern VkDevice Device = VK_NULL_HANDLE;
+	extern VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
+	extern VkPipelineCache PipelineCache = VK_NULL_HANDLE;
+
+	extern ImGui_ImplVulkanH_Window MainWindowData{};
+	extern uint32_t MinImageCount = 2;
+	extern bool SwapChainRebuild = false;
+
+	extern uint32_t GraphicsQueueFamily = (uint32_t)-1;
+	extern uint32_t ComputeQueueFamily = (uint32_t)-1;
+	extern uint32_t TransferQueueFamily = (uint32_t)-1;
+
+	extern VkQueue GraphicsQueue = VK_NULL_HANDLE;
+	extern VkQueue ComputeQueue = VK_NULL_HANDLE;
+	extern VkQueue TransferQueue = VK_NULL_HANDLE;
+
+	extern VkDebugReportCallbackEXT DebugReport = VK_NULL_HANDLE;
+	extern VkAllocationCallbacks* Allocator = nullptr;
+
+	/* Per-frame-in-flight */
+	extern std::vector<std::vector<VkCommandBuffer>> AllocatedGraphicsCommandBuffers{};
+	extern std::vector<std::vector<std::function<void()>>> ResourceFreeQueue{};
+
+	/*
+	Unlike g_MainWindowData.FrameIndex, this is not the the swapchain image index
+	and is always guaranteed to increase (eg. 0, 1, 2, 0, 1, 2)
+	*/
+	extern uint32_t CurrentFrameIndex = 0;
+
+
 	/* ================================ */
 	/* === Error Handling Utilities === */
 	/* ================================ */
@@ -203,7 +236,6 @@ namespace VK
 		err = vkCreateInstance(&create_info, Allocator, &Instance);
 		check_vk_result(err);
 
-		std::cout << Instance << std::endl;
 
 		/* Setup the debug report callback */
 #ifdef APP_USE_VULKAN_DEBUG_REPORT
