@@ -24,7 +24,7 @@ static uint32_t GetVulkanMemoryType(VkMemoryPropertyFlags properties, uint32_t t
 }
 
 
-static std::vector<char> ReadFile(const std::string& filename)
+static std::vector<char> ReadFile(const std::string& filename) /* change to "ReadShaderFile" ? */
 {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
@@ -99,7 +99,7 @@ void RasterView::OnUIRender()
 			ImGui::BeginChild("Rasterized");
 			{
 				m_ViewportFocused = ImGui::IsWindowFocused();
-				ImVec2 tempSize = ImGui::GetWindowSize();
+				ImVec2 tempSize = ImGui::GetContentRegionAvail();
 				if (m_ViewportSize.x != tempSize.x || m_ViewportSize.y != tempSize.y)
 				{
 					OnResize(tempSize);
@@ -171,8 +171,22 @@ void RasterView::OnResize(ImVec2 newSize)
 {
 	m_ViewportSize = newSize;
 
-	//CleanupVulkan();
-	InitVulkan();
+	vkDeviceWaitIdle(m_Device);
+	//for (auto framebuffer : m_ViewportFramebuffers)
+	//{
+	//	vkDestroyFramebuffer(m_Device, framebuffer, nullptr);
+	//}
+	//for (auto imageView : m_ViewportImageViews)
+	//{
+	//	vkDestroyImageView(m_Device, imageView, nullptr);
+	//}
+	//for (auto image : m_ViewportImages)
+	//{
+	//	vkDestroyImage(m_Device, image, nullptr);
+	//}
+	CreateViewportImages();
+	CreateViewportImageViews();
+	CreateFrameBuffers();
 }
 
 
@@ -450,7 +464,7 @@ void RasterView::CreateGraphicsPipeline()
 
 	VkPipelineColorBlendStateCreateInfo colorBlending{};
 	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	colorBlending.logicOpEnable = VK_TRUE;
+	colorBlending.logicOpEnable = VK_FALSE;
 	colorBlending.logicOp = VK_LOGIC_OP_AND;
 	colorBlending.attachmentCount = 1;
 	colorBlending.pAttachments = &colorBlendAttachment;
@@ -574,7 +588,7 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t ima
 	renderPassInfo.framebuffer = m_ViewportFramebuffers[imageIndex]; /* Might need to change m_ViewportFramebuffers to a single m_ViewportFramebuffer */
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = { (uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y };
-	VkClearValue clearColor = { {{1.0f, 0.0f, 0.0f, 1.0f}} }; /* WARNING!!! */
+	VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
 	renderPassInfo.clearValueCount = 1;
 	renderPassInfo.pClearValues = &clearColor;
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
