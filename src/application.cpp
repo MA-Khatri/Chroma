@@ -603,7 +603,7 @@ void Application::NextFrame()
 			ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_MainWindowData, g_GraphicsQueueFamily, g_Allocator, width, height, g_MinImageCount);
 			g_MainWindowData.FrameIndex = 0;
 
-			// Clear allocated command buffers from here since entire pool is destroyed
+			/* Clear allocated command buffers from here since entire pool is destroyed */
 			s_AllocatedCommandBuffers.clear();
 			s_AllocatedCommandBuffers.resize(g_MainWindowData.ImageCount);
 
@@ -749,7 +749,7 @@ VkCommandBuffer Application::GetCommandBuffer()
 {
 	ImGui_ImplVulkanH_Window* wd = &g_MainWindowData;
 
-	// Use any command queue
+	/* Use any command queue */
 	VkCommandPool command_pool = wd->Frames[wd->FrameIndex].CommandPool;
 
 	VkCommandBufferAllocateInfo cmdBufAllocateInfo = {};
@@ -782,7 +782,7 @@ void Application::FlushCommandBuffer(VkCommandBuffer commandBuffer)
 	auto err = vkEndCommandBuffer(commandBuffer);
 	check_vk_result(err);
 
-	// Create fence to ensure that the command buffer has finished executing
+	/* Create fence to ensure that the command buffer has finished executing */
 	VkFenceCreateInfo fenceCreateInfo = {};
 	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fenceCreateInfo.flags = 0;

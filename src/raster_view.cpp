@@ -58,12 +58,10 @@ void RasterView::OnAttach(Application* app)
 
 	m_PhysicalDevice = app->GetPhysicalDevice();
 	m_Device = app->GetDevice();
-	m_MinImageCount = app->GetMinImageCount();
+	//m_MinImageCount = app->GetMinImageCount();
+	m_MinImageCount = 1; /* We are only rendering to texture so we don't need the whole swapchain setup */
 
-	CreateViewportImages();
-	CreateViewportImageViews();
-	CreateRenderPass();
-	CreateGraphicsPipeline();
+	InitVulkan();
 
 	m_Camera = new Camera(100, 100, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), 45.0f);
 
@@ -73,19 +71,7 @@ void RasterView::OnAttach(Application* app)
 
 void RasterView::OnDetach()
 {
-	vkDestroyPipeline(m_Device, m_ViewportGraphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(m_Device, m_ViewportPipelineLayout, nullptr);
-	vkDestroyRenderPass(m_Device, m_ViewportRenderPass, nullptr);
-
-	for (auto imageView : m_ViewportImageViews)
-	{
-		vkDestroyImageView(m_Device, imageView, nullptr);
-	}
-
-	for (auto image : m_ViewportImages)
-	{
-		vkDestroyImage(m_Device, image, nullptr);
-	}
+	CleanupVulkan();
 }
 
 
@@ -95,6 +81,11 @@ void RasterView::OnUpdate()
 	{
 		m_Camera->Inputs(m_WindowHandle);
 	}
+
+	VkCommandBuffer commandBuffer = m_AppHandle->GetCommandBuffer();
+	RecordCommandBuffer(commandBuffer, 0);
+	m_AppHandle->FlushCommandBuffer(commandBuffer);
+	m_DescriptorSet = (VkDescriptorSet)ImGui_ImplVulkan_AddTexture(m_Sampler, m_ViewportImageViews[0], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 
@@ -114,7 +105,8 @@ void RasterView::OnUIRender()
 					OnResize(tempSize);
 				}
 
-				ImGui::Image(m_Image->GetDescriptorSet(), { (float)m_Image->GetWidth(), (float)m_Image->GetHeight() });
+				//ImGui::Image(m_Image->GetDescriptorSet(), { (float)m_Image->GetWidth(), (float)m_Image->GetHeight() });
+				ImGui::Image(m_DescriptorSet, m_ViewportSize);
 			}
 			ImGui::EndChild();
 		}
@@ -135,11 +127,104 @@ void RasterView::OnUIRender()
 
 /* === RasterView specific methods === */
 
+void RasterView::InitVulkan()
+{
+	CreateViewportImages();
+	CreateViewportImageViews();
+	CreateRenderPass();
+	CreateGraphicsPipeline();
+	CreateFrameBuffers();
+	CreateSampler();
+	//CreateCommandPool();
+	//CreateCommandBuffer();
+}
+
+
+void RasterView::CleanupVulkan()
+{
+	vkDestroySampler(m_Device, m_Sampler, nullptr);
+
+	//vkDestroyCommandPool(m_Device, m_ViewportCommandPool, nullptr);
+
+	for (auto framebuffer : m_ViewportFramebuffers)
+	{
+		vkDestroyFramebuffer(m_Device, framebuffer, nullptr);
+	}
+
+	vkDestroyPipeline(m_Device, m_ViewportGraphicsPipeline, nullptr);
+	vkDestroyPipelineLayout(m_Device, m_ViewportPipelineLayout, nullptr);
+	vkDestroyRenderPass(m_Device, m_ViewportRenderPass, nullptr);
+
+	for (auto imageView : m_ViewportImageViews)
+	{
+		vkDestroyImageView(m_Device, imageView, nullptr);
+	}
+
+	for (auto image : m_ViewportImages)
+	{
+		vkDestroyImage(m_Device, image, nullptr);
+	}
+}
+
+
 void RasterView::OnResize(ImVec2 newSize)
 {
 	m_ViewportSize = newSize;
 
-	/* TODO: Vulkan stuff... */
+	//CleanupVulkan();
+	InitVulkan();
+}
+
+
+void RasterView::CreateSampler()
+{
+	VkSamplerCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	info.magFilter = VK_FILTER_LINEAR;
+	info.minFilter = VK_FILTER_LINEAR;
+	info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	info.minLod = -1000;
+	info.maxLod = 1000;
+	info.maxAnisotropy = 1.0f;
+	VkResult err = vkCreateSampler(m_Device, &info, nullptr, &m_Sampler);
+	check_vk_result(err);
+}
+
+
+RasterView::QueueFamilyIndices RasterView::FindQueueFamilies(VkPhysicalDevice device)
+{
+	RasterView::QueueFamilyIndices indices;
+
+	uint32_t queueFamilyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+	int i = 0;
+	for (const auto& queueFamily : queueFamilies) {
+		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+			indices.graphicsFamily = i;
+		}
+
+		VkBool32 presentSupport = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_AppHandle->GetMainWindowData()->Surface, &presentSupport);
+
+		if (presentSupport) {
+			indices.presentFamily = i;
+		}
+
+		if (indices.isComplete()) {
+			break;
+		}
+
+		i++;
+	}
+
+	return indices;
 }
 
 
@@ -155,7 +240,7 @@ void RasterView::CreateViewportImages()
 		VkImageCreateInfo imageCreateInfo{};
 		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+		imageCreateInfo.format = m_AppHandle->GetMainWindowData()->SurfaceFormat.format;
 		imageCreateInfo.extent.width = (uint32_t)m_ViewportSize.x;
 		imageCreateInfo.extent.height = (uint32_t)m_ViewportSize.y;
 		imageCreateInfo.extent.depth = 1;
@@ -196,7 +281,7 @@ void RasterView::CreateViewportImageViews()
 		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		imageViewCreateInfo.image = m_ViewportImages[i];
 		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageViewCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+		imageViewCreateInfo.format = m_AppHandle->GetMainWindowData()->SurfaceFormat.format;
 		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		imageViewCreateInfo.subresourceRange.levelCount = 1;
 		imageViewCreateInfo.subresourceRange.layerCount = 1;
@@ -218,7 +303,7 @@ void RasterView::CreateRenderPass()
 	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; /* Should this be VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL in our case? */
+	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	VkAttachmentReference colorAttachmentRef{};
 	colorAttachmentRef.attachment = 0; /* index to attachment, e.g. "layout(location = 0) out vec4 outColor;" in frag shader code */
@@ -423,4 +508,95 @@ void RasterView::CreateGraphicsPipeline()
 	/* === Cleanup === */
 	vkDestroyShaderModule(m_Device, vertShaderModule, nullptr);
 	vkDestroyShaderModule(m_Device, fragShaderModule, nullptr);
+}
+
+
+void RasterView::CreateFrameBuffers()
+{
+	VkResult err;
+
+	m_ViewportFramebuffers.resize(m_ViewportImageViews.size());
+
+	for (size_t i = 0; i < m_ViewportImageViews.size(); i++)
+	{
+		VkImageView attachments[] = {
+			m_ViewportImageViews[i]
+		};
+
+		VkFramebufferCreateInfo framebufferInfo{};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = m_ViewportRenderPass;
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.width = (uint32_t)m_ViewportSize.x;
+		framebufferInfo.height = (uint32_t)m_ViewportSize.y;
+		framebufferInfo.layers = 1;
+		err = vkCreateFramebuffer(m_Device, &framebufferInfo, nullptr, &m_ViewportFramebuffers[i]);
+		check_vk_result(err);
+	}
+}
+
+
+//void RasterView::CreateCommandPool()
+//{
+//	VkResult err;
+//
+//	QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_PhysicalDevice);
+//
+//	VkCommandPoolCreateInfo poolInfo{};
+//	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+//	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+//	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+//	err = vkCreateCommandPool(m_Device, &poolInfo, nullptr, &m_ViewportCommandPool);
+//}
+//
+//
+//void RasterView::CreateCommandBuffer()
+//{
+//	VkResult err;
+//
+//	VkCommandBufferAllocateInfo allocInfo{};
+//	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+//	allocInfo.commandPool = m_ViewportCommandPool;
+//	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+//	allocInfo.commandBufferCount = 1;
+//	err = vkAllocateCommandBuffers(m_Device, &allocInfo, &m_ViewportCommandBuffer);
+//}
+
+
+void RasterView::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+{
+	VkResult err;
+
+	VkRenderPassBeginInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass = m_ViewportRenderPass;
+	renderPassInfo.framebuffer = m_ViewportFramebuffers[imageIndex]; /* Might need to change m_ViewportFramebuffers to a single m_ViewportFramebuffer */
+	renderPassInfo.renderArea.offset = { 0, 0 };
+	renderPassInfo.renderArea.extent = { (uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y };
+	VkClearValue clearColor = { {{1.0f, 0.0f, 0.0f, 1.0f}} }; /* WARNING!!! */
+	renderPassInfo.clearValueCount = 1;
+	renderPassInfo.pClearValues = &clearColor;
+	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_ViewportGraphicsPipeline);
+
+	/* We need to set the viewport and scissor since we said they are dynamic */
+	VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = m_ViewportSize.x;
+	viewport.height = m_ViewportSize.y;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+	VkRect2D scissor{};
+	scissor.offset = { 0, 0 };
+	scissor.extent = { (uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y };
+	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+	vkCmdEndRenderPass(commandBuffer);
 }

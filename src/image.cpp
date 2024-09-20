@@ -130,14 +130,17 @@ void Image::AllocateMemory(uint64_t size)
 		info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		err = vkCreateImage(device, &info, nullptr, &m_Image);
 		check_vk_result(err);
+		
 		VkMemoryRequirements req;
 		vkGetImageMemoryRequirements(device, m_Image, &req);
+		
 		VkMemoryAllocateInfo alloc_info = {};
 		alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		alloc_info.allocationSize = req.size;
 		alloc_info.memoryTypeIndex = Utils::GetVulkanMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
 		err = vkAllocateMemory(device, &alloc_info, nullptr, &m_Memory);
 		check_vk_result(err);
+		
 		err = vkBindImageMemory(device, m_Image, m_Memory, 0);
 		check_vk_result(err);
 	}
