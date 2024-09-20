@@ -14,26 +14,26 @@ template <typename T>
 class SlidingBuffer
 {
 public:
-	SlidingBuffer(int maxCount) : m_maxCount(maxCount), m_deque(std::deque<T>()) {}
+	SlidingBuffer(int maxCount) : m_MaxCount(maxCount), m_Deque(std::deque<T>()) {}
 
 	void Add(T item)
 	{
-		if (m_deque.size() == m_maxCount)
+		if (m_Deque.size() == m_MaxCount)
 		{
-			m_deque.pop_front();
+			m_Deque.pop_front();
 		}
-		m_deque.push_back(item);
+		m_Deque.push_back(item);
 	}
 
-	/* Return vector of size m_maxCount with empty leading elements = 0 */
+	/* Return vector of size m_MaxCount with empty leading elements = 0 */
 	std::vector<T> GetItems()
 	{
-		std::vector<T> output(m_maxCount);
+		std::vector<T> output(m_MaxCount);
 
-		int cur_size = (int)m_deque.size();
-		int start = m_maxCount - cur_size;
+		int cur_size = (int)m_Deque.size();
+		int start = m_MaxCount - cur_size;
 
-		for (int i = 0; i < m_maxCount; ++i)
+		for (int i = 0; i < m_MaxCount; ++i)
 		{
 			if (i < start)
 			{
@@ -41,7 +41,7 @@ public:
 			}
 			else
 			{
-				output[i] = m_deque[i - start];
+				output[i] = m_Deque[i - start];
 			}
 		}
 
@@ -49,8 +49,8 @@ public:
 	}
 
 private:
-	int m_maxCount;
-	std::deque<T> m_deque;
+	int m_MaxCount;
+	std::deque<T> m_Deque;
 };
 
 
@@ -99,6 +99,7 @@ protected:
 			//ImPlot::SetupAxes("", "FPS");
 			//ImPlot::SetupAxisTicks(ImAxis_X1, 0, 1000, 11);
 			ImPlot::PlotLine("##FrameRate", x_axis.data(), frame_rates.GetItems().data(), frame_storage_count);
+
 			ImPlot::EndPlot();
 		}
 

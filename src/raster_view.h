@@ -19,7 +19,9 @@ class RasterView : public Layer {
 	void OnResize(ImVec2 newSize);
 	void CreateViewportImages();
 	void CreateViewportImageViews();
+	void CreateRenderPass();
 	void CreateGraphicsPipeline();
+
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
 private:
@@ -36,7 +38,8 @@ private:
 	std::vector<VkDeviceMemory> m_ImageDeviceMemory;
 	std::vector<VkImageView> m_ViewportImageViews;
 	VkRenderPass m_ViewportRenderPass;
-	VkPipeline m_ViewportPipeline;
+	VkPipelineLayout m_ViewportPipelineLayout;
+	VkPipeline m_ViewportGraphicsPipeline;
 	VkCommandPool m_ViewportCommandPool;
 	std::vector<VkFramebuffer> m_ViewportFramebuffers;
 	std::vector<VkCommandBuffer> m_ViewportCommandBuffers;

@@ -189,12 +189,17 @@ static void SetupVulkan(ImVector<const char*> instance_extensions)
 		queue_info[0].queueFamilyIndex = g_GraphicsQueueFamily;
 		queue_info[0].queueCount = 1;
 		queue_info[0].pQueuePriorities = queue_priority;
+		
+		VkPhysicalDeviceFeatures deviceFeatures{};
+		vkGetPhysicalDeviceFeatures(g_PhysicalDevice, &deviceFeatures);
+
 		VkDeviceCreateInfo create_info = {};
 		create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		create_info.queueCreateInfoCount = sizeof(queue_info) / sizeof(queue_info[0]);
 		create_info.pQueueCreateInfos = queue_info;
 		create_info.enabledExtensionCount = (uint32_t)device_extensions.Size;
 		create_info.ppEnabledExtensionNames = device_extensions.Data;
+		create_info.pEnabledFeatures = &deviceFeatures; /* I.e., enable all device features */
 		err = vkCreateDevice(g_PhysicalDevice, &create_info, g_Allocator, &g_Device);
 		check_vk_result(err);
 		vkGetDeviceQueue(g_Device, g_GraphicsQueueFamily, 0, &g_GraphicsQueue);
@@ -427,6 +432,11 @@ void Application::PushLayer(const std::shared_ptr<Layer>& layer)
 Application& Application::Get()
 {
 	return *s_Instance;
+}
+
+ImGui_ImplVulkanH_Window* Application::GetMainWindowData()
+{
+	return &g_MainWindowData;
 }
 
 VkInstance Application::GetInstance()
