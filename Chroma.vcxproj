@@ -27,6 +27,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\raster_view.cpp" />
     <ClCompile Include="src\raytrace_view.cpp" />
+    <ClCompile Include="src\vulkan_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
@@ -52,6 +53,7 @@
     <ClInclude Include="src\layer.h" />
     <ClInclude Include="src\raster_view.h" />
     <ClInclude Include="src\raytrace_view.h" />
+    <ClInclude Include="src\vulkan_utils.h" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="external\imgui-docking\fonts\Cousine-Regular.ttf" />
