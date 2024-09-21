@@ -9,6 +9,10 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
 
+
+#include "mesh.h"
+
+
 //#define APP_USE_UNLIMITED_FRAME_RATE
 #ifdef _DEBUG
 #define APP_USE_VULKAN_DEBUG_REPORT
@@ -110,4 +114,10 @@ namespace VK
 	void CreateFrameBuffers(std::vector<VkImageView> attachments, VkRenderPass* renderPass, ImVec2 extent, uint32_t count, std::vector<VkFramebuffer>* framebuffers);
 
 	void CreateSampler(VkSampler* sampler);
+
+	/* === Buffers === */
+	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
+	void CreateVertexBuffer(const std::vector<Vertex> vertices, VkBuffer* vertexBuffer, VkDeviceMemory* memory);
+
 }

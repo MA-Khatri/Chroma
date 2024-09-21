@@ -6,6 +6,7 @@
 
 #include "shader.h"
 
+
 namespace VK
 {
 	/* === Namespace Globals === */
@@ -706,11 +707,15 @@ namespace VK
 		/* === Vertex Input === */
 		/* This is where we state the bindings and attribute layout of input data */
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+
+		auto bindingDescription = Vertex::getBindingDescription();
+		auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.pVertexBindingDescriptions = nullptr; /* optional */
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputInfo.pVertexAttributeDescriptions = nullptr; /* optional -- we'll set this later when drawing with actual vertex data */
+		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 		/* === Input Assembly === */
 		/* Where we define the type of primitive to draw (e.g. LINE_STRIP/TRIANGLE_LIST) */
@@ -884,5 +889,60 @@ namespace VK
 		info.maxAnisotropy = 1.0f;
 		VkResult err = vkCreateSampler(Device, &info, nullptr, sampler);
 		VK::check_vk_result(err);
+	}
+
+
+	/* =============== */
+	/* === Buffers === */
+	/* =============== */
+
+	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+	{
+		VkPhysicalDeviceMemoryProperties memProperties;
+		vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &memProperties);
+
+		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+		{
+			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+			{
+				return i;
+			}
+		}
+
+		std::cerr << "Failed to find suitable memory type!" << std::endl;
+		exit(-1);
+	}
+
+
+	void CreateVertexBuffer(const std::vector<Vertex> vertices, VkBuffer* vertexBuffer, VkDeviceMemory* vertexBufferMemory)
+	{
+		/* Buffer creation */
+		VkBufferCreateInfo bufferInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = sizeof(vertices[0]) * vertices.size();
+		bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; /* might want to change this later if we want to do things like ray tracing using the same vertex data? (currently exclusive to graphics pipeline) */
+
+		VkResult err = vkCreateBuffer(Device, &bufferInfo, nullptr, vertexBuffer);
+		check_vk_result(err);
+
+		/* Memory allocation for buffer */
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(Device, *vertexBuffer, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		err = vkAllocateMemory(Device, &allocInfo, nullptr, vertexBufferMemory);
+		check_vk_result(err);
+
+		vkBindBufferMemory(Device, *vertexBuffer, *vertexBufferMemory, 0);
+
+		/* Transfer vertices to the buffer (device memory) */
+		void* data;
+		vkMapMemory(Device, *vertexBufferMemory, 0, bufferInfo.size, 0, &data);
+		memcpy(data, vertices.data(), (size_t)bufferInfo.size);
+		vkUnmapMemory(Device, *vertexBufferMemory);
 	}
 }

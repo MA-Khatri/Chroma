@@ -80,12 +80,15 @@ void RasterView::OnUIRender()
 
 void RasterView::InitVulkan()
 {
-	VK::CreateImage(m_ViewportSize, &m_ViewportImage, &m_ImageDeviceMemory);
+	VK::CreateImage(m_ViewportSize, &m_ViewportImage, &m_ViewportImageDeviceMemory);
 	VK::CreateImageView(&m_ViewportImage, &m_ViewportImageView);
 
 	VK::CreateRenderPass(&m_ViewportRenderPass);
 
-	std::vector<std::string> shaders = { "res/shaders/src/HelloTriangle.vert", "res/shaders/src/HelloTriangle.frag" };
+	m_Vertices = CreateHelloTriangle();
+	VK::CreateVertexBuffer(m_Vertices, &m_VertexBuffer, &m_VertexBufferMemory);
+
+	std::vector<std::string> shaders = { "res/shaders/Basic.vert", "res/shaders/Basic.frag" };
 	VK::CreateGraphicsPipeline(shaders, m_ViewportSize, &m_ViewportRenderPass, &m_ViewportPipelineLayout, &m_ViewportGraphicsPipeline);
 
 	VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageView}, & m_ViewportRenderPass, m_ViewportSize, &m_ViewportFramebuffer);
@@ -99,13 +102,16 @@ void RasterView::CleanupVulkan()
 
 	vkDestroyFramebuffer(VK::Device, m_ViewportFramebuffer, nullptr);
 
+	vkDestroyBuffer(VK::Device, m_VertexBuffer, nullptr);
+	vkFreeMemory(VK::Device, m_VertexBufferMemory, nullptr);
+
 	vkDestroyPipeline(VK::Device, m_ViewportGraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(VK::Device, m_ViewportPipelineLayout, nullptr);
 	vkDestroyRenderPass(VK::Device, m_ViewportRenderPass, nullptr);
 
 	vkDestroyImageView(VK::Device, m_ViewportImageView, nullptr);
-
 	vkDestroyImage(VK::Device, m_ViewportImage, nullptr);
+	vkFreeMemory(VK::Device, m_ViewportImageDeviceMemory, nullptr);
 }
 
 
@@ -119,7 +125,7 @@ void RasterView::OnResize(ImVec2 newSize)
 	vkDestroyImageView(VK::Device, m_ViewportImageView, nullptr);
 	vkDestroyImage(VK::Device, m_ViewportImage, nullptr);
 	
-	VK::CreateImage(m_ViewportSize, &m_ViewportImage, &m_ImageDeviceMemory);
+	VK::CreateImage(m_ViewportSize, &m_ViewportImage, &m_ViewportImageDeviceMemory);
 	VK::CreateImageView(&m_ViewportImage, &m_ViewportImageView);
 	VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageView}, &m_ViewportRenderPass, m_ViewportSize, &m_ViewportFramebuffer);
 }
@@ -155,7 +161,13 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer commandBuffer)
 	scissor.extent = { (uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y };
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+	/* Bind the buffers... */
+	VkBuffer vertexBuffers[] = { m_VertexBuffer };
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+	/* Actual draw call */
+	vkCmdDraw(commandBuffer, static_cast<uint32_t>(m_Vertices.size()), 1, 0, 0);
 
 	vkCmdEndRenderPass(commandBuffer);
 }

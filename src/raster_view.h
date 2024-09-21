@@ -34,12 +34,18 @@ private:
 	ImVec2 m_ViewportSize = ImVec2(400.0f, 400.0f);
 
 	VkImage m_ViewportImage;
-	VkDeviceMemory m_ImageDeviceMemory;
+	VkDeviceMemory m_ViewportImageDeviceMemory;
 	VkImageView m_ViewportImageView;
+
 	VkRenderPass m_ViewportRenderPass;
 	VkPipelineLayout m_ViewportPipelineLayout;
 	VkPipeline m_ViewportGraphicsPipeline;
 	VkFramebuffer m_ViewportFramebuffer;
 	VkSampler m_Sampler;
 	VkDescriptorSet m_DescriptorSet;
+
+	/* later should be multiple buffers for each mesh? */
+	std::vector<Vertex> m_Vertices;
+	VkBuffer m_VertexBuffer;
+	VkDeviceMemory m_VertexBufferMemory;
 };
