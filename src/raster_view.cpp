@@ -29,11 +29,6 @@ void RasterView::OnUpdate()
 	{
 		m_Camera->Inputs(m_WindowHandle);
 	}
-
-	VkCommandBuffer commandBuffer = m_AppHandle->GetCommandBuffer();
-	RecordCommandBuffer(commandBuffer);
-	m_AppHandle->FlushCommandBuffer(commandBuffer);
-	m_DescriptorSet = (VkDescriptorSet)ImGui_ImplVulkan_AddTexture(m_Sampler, m_ViewportImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 
@@ -47,12 +42,20 @@ void RasterView::OnUIRender()
 			ImGui::BeginChild("Rasterized");
 			{
 				m_ViewportFocused = ImGui::IsWindowFocused();
-				ImVec2 tempSize = ImGui::GetContentRegionAvail();
-				if (m_ViewportSize.x != tempSize.x || m_ViewportSize.y != tempSize.y)
+				ImVec2 newSize = ImGui::GetContentRegionAvail();
+				/* The IsWindowHovered check is to prevent runaway memory leaks from the OnResize function. I.e., we limit the calls to OnResize. */
+				if (ImGui::IsWindowHovered() && (m_ViewportSize.x != newSize.x || m_ViewportSize.y != newSize.y))
 				{
-					OnResize(tempSize);
+					OnResize(newSize);
 				}
 
+				VkCommandBuffer commandBuffer = m_AppHandle->GetCommandBuffer();
+				RecordCommandBuffer(commandBuffer);
+				m_AppHandle->FlushCommandBuffer(commandBuffer);
+				m_DescriptorSet = (VkDescriptorSet)ImGui_ImplVulkan_AddTexture(m_Sampler, m_ViewportImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+				
+				/* Wait until the descriptor set for the viewport image is created */
+				vkDeviceWaitIdle(VK::Device);
 				ImGui::Image(m_DescriptorSet, m_ViewportSize);
 			}
 			ImGui::EndChild();
@@ -108,6 +111,11 @@ void RasterView::OnResize(ImVec2 newSize)
 	m_ViewportSize = newSize;
 
 	vkDeviceWaitIdle(VK::Device);
+
+	vkDestroyFramebuffer(VK::Device, m_ViewportFramebuffer, nullptr);
+	vkDestroyImageView(VK::Device, m_ViewportImageView, nullptr);
+	vkDestroyImage(VK::Device, m_ViewportImage, nullptr);
+	
 	VK::CreateImage(m_ViewportSize, &m_ViewportImage, &m_ImageDeviceMemory);
 	VK::CreateImageView(&m_ViewportImage, &m_ViewportImageView);
 	VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageView}, &m_ViewportRenderPass, m_ViewportSize, &m_ViewportFramebuffer);
