@@ -77,7 +77,6 @@ namespace VK
 	void SubmitResourceFree(std::function<void()>&& func);
 
 	uint32_t GetVulkanMemoryType(VkMemoryPropertyFlags properties, uint32_t type_bits);
-	std::vector<char> ReadShaderFile(const std::string& filename);
 
 	/* === Vulkan Setup Functions === */
 	void SetupVulkan(ImVector<const char*> instance_extensions);
@@ -104,8 +103,6 @@ namespace VK
 	void CreateImageViews(uint32_t count, std::vector<VkImage>* images, std::vector<VkImageView>* views);
 
 	void CreateRenderPass(VkRenderPass* renderPass);
-
-	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
 	void CreateGraphicsPipeline(std::string vertexShaderFile, std::string fragmentShaderFile, ImVec2 extent, VkRenderPass* renderPass, VkPipelineLayout* layout, VkPipeline* pipeline);
 	/* More versions of the function to create pipelines with different shaders... */

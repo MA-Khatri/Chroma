@@ -4,6 +4,8 @@
 #include <vector>
 #include <fstream>
 
+#include "shader.h"
+
 namespace VK
 {
 	/* === Namespace Globals === */
@@ -155,27 +157,6 @@ namespace VK
 		}
 
 		return 0xffffffff;
-	}
-
-
-	std::vector<char> ReadShaderFile(const std::string& filename)
-	{
-		std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-		if (!file.is_open())
-		{
-			std::cerr << "Failed to open file: " << filename << std::endl;
-			abort();
-		}
-
-		size_t fileSize = (size_t)file.tellg();
-		std::vector<char> buffer(fileSize);
-
-		file.seekg(0);
-		file.read(buffer.data(), fileSize);
-
-		file.close();
-		return buffer;
 	}
 
 
@@ -712,33 +693,19 @@ namespace VK
 	}
 
 
-	VkShaderModule CreateShaderModule(const std::vector<char>& code)
-	{
-		VkResult err;
-
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = code.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-		VkShaderModule shaderModule;
-		err = vkCreateShaderModule(Device, &createInfo, nullptr, &shaderModule);
-		check_vk_result(err);
-
-		return shaderModule;
-	}
-
-
 	void CreateGraphicsPipeline(std::string vertexShaderFile, std::string fragmentShaderFile, ImVec2 extent, VkRenderPass* renderPass, VkPipelineLayout* layout, VkPipeline* pipeline)
 	{
 		VkResult err;
 
 		/* ====== Shader Modules and Shader Stages ====== */
-		auto vertShaderCode = VK::ReadShaderFile(vertexShaderFile);
-		auto fragShaderCode = VK::ReadShaderFile(fragmentShaderFile);
+		//auto vertShaderCode = ReadShaderFile(vertexShaderFile);
+		//auto fragShaderCode = ReadShaderFile(fragmentShaderFile);
 
-		VkShaderModule vertShaderModule = VK::CreateShaderModule(vertShaderCode);
-		VkShaderModule fragShaderModule = VK::CreateShaderModule(fragShaderCode);
+		//VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode);
+		//VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode);
+
+		VkShaderModule vertShaderModule = CreateShaderModule(vertexShaderFile);
+		VkShaderModule fragShaderModule = CreateShaderModule(fragmentShaderFile);
 
 		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
 		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
