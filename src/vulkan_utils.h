@@ -100,24 +100,26 @@ namespace VK
 	void FramePresent(ImGui_ImplVulkanH_Window* wd);
 
 	/* === Layer Utility Functions === */
-	void CreateImage(ImVec2 extent, VkImage* image, VkDeviceMemory* memory);
-	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>* images, std::vector<VkDeviceMemory>* memory);
+	void CreateImage(ImVec2 extent, VkImage& image, VkDeviceMemory& memory);
+	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>& images, std::vector<VkDeviceMemory>& memory);
 
-	void CreateImageView(VkImage* image, VkImageView* view);
-	void CreateImageViews(uint32_t count, std::vector<VkImage>* images, std::vector<VkImageView>* views);
+	void CreateImageView(VkImage& image, VkImageView& view);
+	void CreateImageViews(uint32_t count, std::vector<VkImage>& images, std::vector<VkImageView>& views);
 
-	void CreateRenderPass(VkRenderPass* renderPass);
+	void CreateRenderPass(VkRenderPass& renderPass);
 
-	void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, VkRenderPass* renderPass, VkPipelineLayout* layout, VkPipeline* pipeline);
+	void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, VkRenderPass& renderPass, VkPipelineLayout& layout, VkPipeline& pipeline);
 
-	void CreateFrameBuffer(std::vector<VkImageView> attachments, VkRenderPass* renderPass, ImVec2 extent, VkFramebuffer* framebuffer);
-	void CreateFrameBuffers(std::vector<VkImageView> attachments, VkRenderPass* renderPass, ImVec2 extent, uint32_t count, std::vector<VkFramebuffer>* framebuffers);
+	void CreateFrameBuffer(std::vector<VkImageView> attachments, VkRenderPass& renderPass, ImVec2 extent, VkFramebuffer& framebuffer);
+	void CreateFrameBuffers(std::vector<VkImageView> attachments, VkRenderPass& renderPass, ImVec2 extent, uint32_t count, std::vector<VkFramebuffer>& framebuffers);
 
 	void CreateSampler(VkSampler* sampler);
 
 	/* === Buffers === */
 	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
-	void CreateVertexBuffer(const std::vector<Vertex> vertices, VkBuffer* vertexBuffer, VkDeviceMemory* memory);
+	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+
+	void CreateVertexBuffer(const std::vector<Vertex> vertices, VkBuffer& vertexBuffer, VkDeviceMemory& memory);
 
 }

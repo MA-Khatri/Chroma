@@ -578,7 +578,7 @@ namespace VK
 	/* === Layer Utility Functions === */
 	/* =============================== */
 
-	void CreateImage(ImVec2 extent, VkImage* image, VkDeviceMemory* memory)
+	void CreateImage(ImVec2 extent, VkImage& image, VkDeviceMemory& memory)
 	{
 		VkResult err;
 
@@ -596,69 +596,69 @@ namespace VK
 		imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		err = vkCreateImage(Device, &imageCreateInfo, nullptr, image);
+		err = vkCreateImage(Device, &imageCreateInfo, nullptr, &image);
 		VK::check_vk_result(err);
 
 		/* Free the existing memory (if there is any) */
-		vkFreeMemory(Device, *memory, nullptr);
+		vkFreeMemory(Device, memory, nullptr);
 
 		/* Determine the new memory size and allocate */
 		VkMemoryRequirements memRequirements;
-		vkGetImageMemoryRequirements(Device, *image, &memRequirements);
+		vkGetImageMemoryRequirements(Device, image, &memRequirements);
 
 		VkMemoryAllocateInfo memAllocInfo{};
 		memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		memAllocInfo.allocationSize = memRequirements.size;
 		memAllocInfo.memoryTypeIndex = VK::GetVulkanMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memRequirements.memoryTypeBits);
-		err = vkAllocateMemory(Device, &memAllocInfo, nullptr, memory);
+		err = vkAllocateMemory(Device, &memAllocInfo, nullptr, &memory);
 		VK::check_vk_result(err);
 
 		/* Bind image data to the new memory allocation */
-		err = vkBindImageMemory(Device, *image, *memory, 0);
+		err = vkBindImageMemory(Device, image, memory, 0);
 		VK::check_vk_result(err);
 	}
 
 
-	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>* images, std::vector<VkDeviceMemory>* memory)
+	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>& images, std::vector<VkDeviceMemory>& memory)
 	{
-		images->resize(count);
-		memory->resize(count);
+		images.resize(count);
+		memory.resize(count);
 
 		for (uint32_t i = 0; i < count; i++)
 		{
-			CreateImage(extent, &(*images)[i], &(*memory)[i]);
+			CreateImage(extent, images[i], memory[i]);
 		}
 	}
 
-	void CreateImageView(VkImage* image, VkImageView* view)
+	void CreateImageView(VkImage& image, VkImageView& view)
 	{
 		VkResult err;
 
 		VkImageViewCreateInfo imageViewCreateInfo{};
 		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		imageViewCreateInfo.image = *image;
+		imageViewCreateInfo.image = image;
 		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		imageViewCreateInfo.format = MainWindowData.SurfaceFormat.format;
 		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		imageViewCreateInfo.subresourceRange.levelCount = 1;
 		imageViewCreateInfo.subresourceRange.layerCount = 1;
-		err = vkCreateImageView(Device, &imageViewCreateInfo, nullptr, view);
+		err = vkCreateImageView(Device, &imageViewCreateInfo, nullptr, &view);
 		VK::check_vk_result(err);
 	}
 
 
-	void CreateImageViews(uint32_t count, std::vector<VkImage>* images, std::vector<VkImageView>* views)
+	void CreateImageViews(uint32_t count, std::vector<VkImage> images, std::vector<VkImageView> views)
 	{
-		views->resize(images->size());
+		views.resize(images.size());
 
-		for (uint32_t i = 0; i < images->size(); i++)
+		for (uint32_t i = 0; i < images.size(); i++)
 		{
-			CreateImageView(&(*images)[i], &(*views)[i]);
+			CreateImageView(images[i], views[i]);
 		}
 	}
 
 
-	void CreateRenderPass(VkRenderPass* renderPass)
+	void CreateRenderPass(VkRenderPass& renderPass)
 	{
 		/* THIS FUNCTION SHOULD HAVE MORE OPTIONS TO SETUP THE RENDER PASS */
 
@@ -689,12 +689,12 @@ namespace VK
 		renderPassInfo.pAttachments = &colorAttachment;
 		renderPassInfo.subpassCount = 1;
 		renderPassInfo.pSubpasses = &subpass;
-		err = vkCreateRenderPass(Device, &renderPassInfo, nullptr, renderPass);
+		err = vkCreateRenderPass(Device, &renderPassInfo, nullptr, &renderPass);
 		VK::check_vk_result(err);
 	}
 
 
-	void CreateGraphicsPipeline(std::vector<std::string> shaderFiles , ImVec2 extent, VkRenderPass* renderPass, VkPipelineLayout* layout, VkPipeline* pipeline)
+	void CreateGraphicsPipeline(std::vector<std::string> shaderFiles , ImVec2 extent, VkRenderPass& renderPass, VkPipelineLayout& layout, VkPipeline& pipeline)
 	{
 		VkResult err;
 
@@ -818,7 +818,7 @@ namespace VK
 		pipelineLayoutInfo.pSetLayouts = nullptr; /* optional */
 		pipelineLayoutInfo.pushConstantRangeCount = 0; /* optional */
 		pipelineLayoutInfo.pPushConstantRanges = nullptr; /* optional */
-		err = vkCreatePipelineLayout(Device, &pipelineLayoutInfo, nullptr, layout);
+		err = vkCreatePipelineLayout(Device, &pipelineLayoutInfo, nullptr, &layout);
 		VK::check_vk_result(err);
 
 
@@ -835,12 +835,12 @@ namespace VK
 		pipelineInfo.pDepthStencilState = nullptr; /* optional */
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = &dynamicState;
-		pipelineInfo.layout = *layout;
-		pipelineInfo.renderPass = *renderPass;
+		pipelineInfo.layout = layout;
+		pipelineInfo.renderPass = renderPass;
 		pipelineInfo.subpass = 0; /* index of the subpass where this graphics pipeline will be used */
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; /* optional -- used if you are creating derivative pipelines */
 		pipelineInfo.basePipelineIndex = -1; /* optional */
-		err = vkCreateGraphicsPipelines(Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, pipeline);
+		err = vkCreateGraphicsPipelines(Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline);
 		VK::check_vk_result(err);
 
 		/* === Clean up === */
@@ -848,28 +848,28 @@ namespace VK
 	}
 
 
-	void CreateFrameBuffer(std::vector<VkImageView> attachments, VkRenderPass* renderPass, ImVec2 extent, VkFramebuffer* framebuffer)
+	void CreateFrameBuffer(std::vector<VkImageView> attachments, VkRenderPass& renderPass, ImVec2 extent, VkFramebuffer& framebuffer)
 	{
 		VkFramebufferCreateInfo framebufferInfo{};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass = *renderPass;
+		framebufferInfo.renderPass = renderPass;
 		framebufferInfo.attachmentCount = (uint32_t)attachments.size();
 		framebufferInfo.pAttachments = attachments.data();
 		framebufferInfo.width = (uint32_t)extent.x;
 		framebufferInfo.height = (uint32_t)extent.y;
 		framebufferInfo.layers = 1;
-		VkResult err = vkCreateFramebuffer(Device, &framebufferInfo, nullptr, framebuffer);
+		VkResult err = vkCreateFramebuffer(Device, &framebufferInfo, nullptr, &framebuffer);
 		VK::check_vk_result(err);
 	}
 
 
-	void CreateFrameBuffers(std::vector<VkImageView> attachments, VkRenderPass* renderPass, ImVec2 extent, uint32_t count, std::vector<VkFramebuffer>* framebuffers)
+	void CreateFrameBuffers(std::vector<VkImageView> attachments, VkRenderPass& renderPass, ImVec2 extent, uint32_t count, std::vector<VkFramebuffer>& framebuffers)
 	{
-		framebuffers->resize(count);
+		framebuffers.resize(count);
 
 		for (uint32_t i = 0; i < count; i++)
 		{
-			CreateFrameBuffer(attachments, renderPass, extent, &(*framebuffers)[i]);
+			CreateFrameBuffer(attachments, renderPass, extent, framebuffers[i]);
 		}
 	}
 
@@ -914,7 +914,13 @@ namespace VK
 	}
 
 
-	void CreateVertexBuffer(const std::vector<Vertex> vertices, VkBuffer* vertexBuffer, VkDeviceMemory* vertexBufferMemory)
+	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+	{
+
+	}
+
+
+	void CreateVertexBuffer(const std::vector<Vertex> vertices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory)
 	{
 		/* Buffer creation */
 		VkBufferCreateInfo bufferInfo{};
@@ -923,26 +929,26 @@ namespace VK
 		bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; /* might want to change this later if we want to do things like ray tracing using the same vertex data? (currently exclusive to graphics pipeline) */
 
-		VkResult err = vkCreateBuffer(Device, &bufferInfo, nullptr, vertexBuffer);
+		VkResult err = vkCreateBuffer(Device, &bufferInfo, nullptr, &vertexBuffer);
 		check_vk_result(err);
 
 		/* Memory allocation for buffer */
 		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(Device, *vertexBuffer, &memRequirements);
+		vkGetBufferMemoryRequirements(Device, vertexBuffer, &memRequirements);
 
 		VkMemoryAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		err = vkAllocateMemory(Device, &allocInfo, nullptr, vertexBufferMemory);
+		err = vkAllocateMemory(Device, &allocInfo, nullptr, &vertexBufferMemory);
 		check_vk_result(err);
 
-		vkBindBufferMemory(Device, *vertexBuffer, *vertexBufferMemory, 0);
+		vkBindBufferMemory(Device, vertexBuffer, vertexBufferMemory, 0);
 
 		/* Transfer vertices to the buffer (device memory) */
 		void* data;
-		vkMapMemory(Device, *vertexBufferMemory, 0, bufferInfo.size, 0, &data);
+		vkMapMemory(Device, vertexBufferMemory, 0, bufferInfo.size, 0, &data);
 		memcpy(data, vertices.data(), (size_t)bufferInfo.size);
-		vkUnmapMemory(Device, *vertexBufferMemory);
+		vkUnmapMemory(Device, vertexBufferMemory);
 	}
 }

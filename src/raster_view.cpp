@@ -80,18 +80,18 @@ void RasterView::OnUIRender()
 
 void RasterView::InitVulkan()
 {
-	VK::CreateImage(m_ViewportSize, &m_ViewportImage, &m_ViewportImageDeviceMemory);
-	VK::CreateImageView(&m_ViewportImage, &m_ViewportImageView);
+	VK::CreateImage(m_ViewportSize, m_ViewportImage, m_ViewportImageDeviceMemory);
+	VK::CreateImageView(m_ViewportImage, m_ViewportImageView);
 
-	VK::CreateRenderPass(&m_ViewportRenderPass);
+	VK::CreateRenderPass(m_ViewportRenderPass);
 
 	m_Vertices = CreateHelloTriangle();
-	VK::CreateVertexBuffer(m_Vertices, &m_VertexBuffer, &m_VertexBufferMemory);
+	VK::CreateVertexBuffer(m_Vertices, m_VertexBuffer, m_VertexBufferMemory);
 
 	std::vector<std::string> shaders = { "res/shaders/Basic.vert", "res/shaders/Basic.frag" };
-	VK::CreateGraphicsPipeline(shaders, m_ViewportSize, &m_ViewportRenderPass, &m_ViewportPipelineLayout, &m_ViewportGraphicsPipeline);
+	VK::CreateGraphicsPipeline(shaders, m_ViewportSize, m_ViewportRenderPass, m_ViewportPipelineLayout, m_ViewportGraphicsPipeline);
 
-	VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageView}, & m_ViewportRenderPass, m_ViewportSize, &m_ViewportFramebuffer);
+	VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageView}, m_ViewportRenderPass, m_ViewportSize, m_ViewportFramebuffer);
 	VK::CreateSampler(&m_Sampler);
 }
 
@@ -125,9 +125,9 @@ void RasterView::OnResize(ImVec2 newSize)
 	vkDestroyImageView(VK::Device, m_ViewportImageView, nullptr);
 	vkDestroyImage(VK::Device, m_ViewportImage, nullptr);
 	
-	VK::CreateImage(m_ViewportSize, &m_ViewportImage, &m_ViewportImageDeviceMemory);
-	VK::CreateImageView(&m_ViewportImage, &m_ViewportImageView);
-	VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageView}, &m_ViewportRenderPass, m_ViewportSize, &m_ViewportFramebuffer);
+	VK::CreateImage(m_ViewportSize, m_ViewportImage, m_ViewportImageDeviceMemory);
+	VK::CreateImageView(m_ViewportImage, m_ViewportImageView);
+	VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageView}, m_ViewportRenderPass, m_ViewportSize, m_ViewportFramebuffer);
 }
 
 

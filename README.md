@@ -9,3 +9,4 @@
 - [Walnut by the Cherno](https://github.com/StudioCherno/Walnut) - App/layer system, menubar, image
 - [Vulkan Lecture Series from TU Wien](https://youtube.com/playlist?list=PLmIqTlJ6KsE1Jx5HV4sd2jOe3V1KMHHgn&si=uBU461ubxmseYhY6)
 - [Vulkan Tutorial](https://vulkan-tutorial.com/)
+- [Runtime Shader Compilation Tutorial by GetIntoGameDev](https://youtu.be/z1QrxFTrO8E?si=w7T9i_3PLV3Jrit-)
