@@ -76,6 +76,9 @@ namespace VK
 	void FlushGraphicsCommandBuffer(VkCommandBuffer commandBuffer);
 	void SubmitResourceFree(std::function<void()>&& func);
 
+	uint32_t GetVulkanMemoryType(VkMemoryPropertyFlags properties, uint32_t type_bits);
+	std::vector<char> ReadShaderFile(const std::string& filename);
+
 	/* === Vulkan Setup Functions === */
 	void SetupVulkan(ImVector<const char*> instance_extensions);
 	void SetupVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height);
@@ -94,5 +97,21 @@ namespace VK
 	void FramePresent(ImGui_ImplVulkanH_Window* wd);
 
 	/* === Layer Utility Functions === */
-	// TODO
+	void CreateImage(ImVec2 extent, VkImage* image, VkDeviceMemory* memory);
+	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>* images, std::vector<VkDeviceMemory>* memory);
+
+	void CreateImageView(VkImage* image, VkImageView* view);
+	void CreateImageViews(uint32_t count, std::vector<VkImage>* images, std::vector<VkImageView>* views);
+
+	void CreateRenderPass(VkRenderPass* renderPass);
+
+	VkShaderModule CreateShaderModule(const std::vector<char>& code);
+
+	void CreateGraphicsPipeline(std::string vertexShaderFile, std::string fragmentShaderFile, ImVec2 extent, VkRenderPass* renderPass, VkPipelineLayout* layout, VkPipeline* pipeline);
+	/* More versions of the function to create pipelines with different shaders... */
+
+	void CreateFrameBuffer(std::vector<VkImageView> attachments, VkRenderPass* renderPass, ImVec2 extent, VkFramebuffer* framebuffer);
+	void CreateFrameBuffers(std::vector<VkImageView> attachments, VkRenderPass* renderPass, ImVec2 extent, uint32_t count, std::vector<VkFramebuffer>* framebuffers);
+
+	void CreateSampler(VkSampler* sampler);
 }
