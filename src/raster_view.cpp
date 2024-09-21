@@ -82,8 +82,12 @@ void RasterView::InitVulkan()
 {
 	VK::CreateImage(m_ViewportSize, &m_ViewportImage, &m_ImageDeviceMemory);
 	VK::CreateImageView(&m_ViewportImage, &m_ViewportImageView);
+
 	VK::CreateRenderPass(&m_ViewportRenderPass);
-	VK::CreateGraphicsPipeline("res/shaders/src/HelloTriangle.vert", "res/shaders/src/HelloTriangle.frag", m_ViewportSize, &m_ViewportRenderPass, &m_ViewportPipelineLayout, &m_ViewportGraphicsPipeline);
+
+	std::vector<std::string> shaders = { "res/shaders/src/HelloTriangle.vert", "res/shaders/src/HelloTriangle.frag" };
+	VK::CreateGraphicsPipeline(shaders, m_ViewportSize, &m_ViewportRenderPass, &m_ViewportPipelineLayout, &m_ViewportGraphicsPipeline);
+
 	VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageView}, & m_ViewportRenderPass, m_ViewportSize, &m_ViewportFramebuffer);
 	VK::CreateSampler(&m_Sampler);
 }

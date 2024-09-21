@@ -693,34 +693,13 @@ namespace VK
 	}
 
 
-	void CreateGraphicsPipeline(std::string vertexShaderFile, std::string fragmentShaderFile, ImVec2 extent, VkRenderPass* renderPass, VkPipelineLayout* layout, VkPipeline* pipeline)
+	void CreateGraphicsPipeline(std::vector<std::string> shaderFiles , ImVec2 extent, VkRenderPass* renderPass, VkPipelineLayout* layout, VkPipeline* pipeline)
 	{
 		VkResult err;
 
 		/* ====== Shader Modules and Shader Stages ====== */
-		//auto vertShaderCode = ReadShaderFile(vertexShaderFile);
-		//auto fragShaderCode = ReadShaderFile(fragmentShaderFile);
-
-		//VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode);
-		//VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode);
-
-		VkShaderModule vertShaderModule = CreateShaderModule(vertexShaderFile);
-		VkShaderModule fragShaderModule = CreateShaderModule(fragmentShaderFile);
-
-		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
-		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertShaderStageInfo.module = vertShaderModule;
-		vertShaderStageInfo.pName = "main"; /* i.e., entry point */
-
-		VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
-		fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragShaderStageInfo.module = fragShaderModule;
-		fragShaderStageInfo.pName = "main";
-
-		VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
-
+		auto shaderModules = CreateShaderModules(shaderFiles);
+		auto shaderStages = CreateShaderStages(shaderModules);
 
 		/* ====== Fixed Function Stages ====== */
 
@@ -841,8 +820,8 @@ namespace VK
 		/* ====== Pipeline creation ====== */
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = 2;
-		pipelineInfo.pStages = shaderStages;
+		pipelineInfo.stageCount = shaderStages.size();
+		pipelineInfo.pStages = shaderStages.data();
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &inputAssembly;
 		pipelineInfo.pViewportState = &viewportState;
@@ -859,9 +838,8 @@ namespace VK
 		err = vkCreateGraphicsPipelines(Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, pipeline);
 		VK::check_vk_result(err);
 
-		/* === Cleanup === */
-		vkDestroyShaderModule(Device, vertShaderModule, nullptr);
-		vkDestroyShaderModule(Device, fragShaderModule, nullptr);
+		/* === Clean up === */
+		DestroyShaderModules(shaderModules);
 	}
 
 

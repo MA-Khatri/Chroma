@@ -13,22 +13,6 @@ bool print_spirv_code = false;
 
 namespace VK
 {
-	struct CompilationInfo
-	{
-		/* Filename of the original file, used in Debug messages */
-		std::string fileName;
-
-		/* Shader kind, i.e. type of shader to be produced */
-		shaderc_shader_kind kind;
-
-		/* Shader source code */
-		std::vector<char> source;
-
-		/* Compilation options */
-		shaderc::CompileOptions options;
-	};
-
-
 	std::string ParseShaderFile(std::string filename)
 	{
 		std::ifstream stream(filename);
@@ -53,13 +37,42 @@ namespace VK
 
 		/* Figure out the kind of shader by looking at the file extension */
 		std::string l4c = info.fileName.substr(info.fileName.size() - 4);
-		if (l4c == "vert") info.kind = shaderc_vertex_shader;
-		else if (l4c == "frag") info.kind = shaderc_fragment_shader;
-		else if (l4c == ".tcs") info.kind = shaderc_tess_control_shader;
-		else if (l4c == ".tes") info.kind = shaderc_tess_evaluation_shader;
-		else if (l4c == "geom") info.kind = shaderc_geometry_shader;
-		else if (l4c == "mesh") info.kind = shaderc_mesh_shader;
-		else if (l4c == "comp") info.kind = shaderc_compute_shader;
+
+		if (l4c == "vert") 
+		{
+			info.kind = shaderc_vertex_shader;
+			info.type = VK_SHADER_STAGE_VERTEX_BIT;
+		} 
+		else if (l4c == "frag") 
+		{
+			info.kind = shaderc_fragment_shader;
+			info.type = VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+		else if (l4c == ".tcs")
+		{
+			info.kind = shaderc_tess_control_shader;
+			info.type = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+		}
+		else if (l4c == ".tes")
+		{
+			info.kind = shaderc_tess_evaluation_shader;
+			info.type = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+		}
+		else if (l4c == "geom")
+		{
+			info.kind = shaderc_geometry_shader;
+			info.type = VK_SHADER_STAGE_GEOMETRY_BIT;
+		}
+		else if (l4c == "mesh")
+		{
+			info.kind = shaderc_mesh_shader;
+			info.type = VK_SHADER_STAGE_MESH_BIT_EXT;
+		}
+		else if (l4c == "comp")
+		{
+			info.kind = shaderc_compute_shader;
+			info.type = VK_SHADER_STAGE_COMPUTE_BIT;
+		}
 		else
 		{
 			std::cerr << "File " << info.fileName << " has an unknown shader file extension!" << std::endl;
@@ -176,7 +189,7 @@ namespace VK
 	}
 
 
-	VkShaderModule CreateShaderModule(const std::string filename)
+	ShaderModule CreateShaderModule(const std::string filename)
 	{
 		VkResult err;
 
@@ -197,6 +210,48 @@ namespace VK
 		err = vkCreateShaderModule(Device, &createInfo, nullptr, &shaderModule);
 		check_vk_result(err);
 
-		return shaderModule;
+		return { shaderModule, info.type };
+	}
+
+
+	std::vector<ShaderModule> CreateShaderModules(std::vector<std::string> filenames)
+	{
+		std::vector<ShaderModule> modules;
+
+		for (auto& file : filenames)
+		{
+			modules.push_back(CreateShaderModule(file));
+		}
+
+		return modules;
+	}
+
+
+	std::vector<VkPipelineShaderStageCreateInfo> CreateShaderStages(std::vector<ShaderModule> shaderModules)
+	{
+		/* Create shader stage create info structs */
+		std::vector<VkPipelineShaderStageCreateInfo> createInfos;
+
+		for (auto& shaderModule : shaderModules)
+		{
+			VkPipelineShaderStageCreateInfo shaderStageInfo{};
+			shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			shaderStageInfo.stage = shaderModule.type;
+			shaderStageInfo.module = shaderModule.module;
+			shaderStageInfo.pName = "main"; /* i.e., entry point */
+
+			createInfos.push_back(shaderStageInfo);
+		}
+
+		return createInfos;
+	}
+
+
+	void DestroyShaderModules(std::vector<ShaderModule> shaderModules)
+	{
+		for (auto shaderModule : shaderModules)
+		{
+			vkDestroyShaderModule(Device, shaderModule.module, nullptr);
+		}
 	}
 }
