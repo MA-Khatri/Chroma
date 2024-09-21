@@ -31,8 +31,7 @@ private:
 	GLFWwindow* m_WindowHandle;
 	Camera* m_Camera;
 	bool m_ViewportFocused = false;
-	ImVec2 m_ViewportSize = ImVec2(3840.0f, 2160.0f);
-	ImVec2 m_LargestViewportSize = m_ViewportSize; /* Initialize viewport memory allocation assuming the largest possible size of the viewport is a 4k image */
+	ImVec2 m_ViewportSize = ImVec2(400.0f, 400.0f);
 
 	VkImage m_ViewportImage;
 	VkDeviceMemory m_ImageDeviceMemory;

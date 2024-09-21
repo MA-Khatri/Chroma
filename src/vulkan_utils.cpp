@@ -596,10 +596,11 @@ namespace VK
 	/* === Layer Utility Functions === */
 	/* =============================== */
 
-	void CreateImage(ImVec2 extent, VkImage* image, VkDeviceMemory* memory, bool reallocateMemory /* = true */)
+	void CreateImage(ImVec2 extent, VkImage* image, VkDeviceMemory* memory)
 	{
 		VkResult err;
 
+		/* Create the image */
 		VkImageCreateInfo imageCreateInfo{};
 		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -616,32 +617,34 @@ namespace VK
 		err = vkCreateImage(Device, &imageCreateInfo, nullptr, image);
 		VK::check_vk_result(err);
 
-		if (reallocateMemory)
-		{
-			VkMemoryRequirements memRequirements;
-			vkGetImageMemoryRequirements(Device, *image, &memRequirements);
+		/* Free the existing memory (if there is any) */
+		vkFreeMemory(Device, *memory, nullptr);
 
-			VkMemoryAllocateInfo memAllocInfo{};
-			memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			memAllocInfo.allocationSize = memRequirements.size;
-			memAllocInfo.memoryTypeIndex = VK::GetVulkanMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memRequirements.memoryTypeBits);
-			err = vkAllocateMemory(Device, &memAllocInfo, nullptr, memory);
-			VK::check_vk_result(err);
-		}
+		/* Determine the new memory size and allocate */
+		VkMemoryRequirements memRequirements;
+		vkGetImageMemoryRequirements(Device, *image, &memRequirements);
 
+		VkMemoryAllocateInfo memAllocInfo{};
+		memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		memAllocInfo.allocationSize = memRequirements.size;
+		memAllocInfo.memoryTypeIndex = VK::GetVulkanMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memRequirements.memoryTypeBits);
+		err = vkAllocateMemory(Device, &memAllocInfo, nullptr, memory);
+		VK::check_vk_result(err);
+
+		/* Bind image data to the new memory allocation */
 		err = vkBindImageMemory(Device, *image, *memory, 0);
 		VK::check_vk_result(err);
 	}
 
 
-	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>* images, std::vector<VkDeviceMemory>* memory, bool reallocateMemory /* = true */)
+	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>* images, std::vector<VkDeviceMemory>* memory)
 	{
 		images->resize(count);
 		memory->resize(count);
 
 		for (uint32_t i = 0; i < count; i++)
 		{
-			CreateImage(extent, &(*images)[i], &(*memory)[i], reallocateMemory);
+			CreateImage(extent, &(*images)[i], &(*memory)[i]);
 		}
 	}
 
