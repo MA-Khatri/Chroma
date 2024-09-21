@@ -596,7 +596,7 @@ namespace VK
 	/* === Layer Utility Functions === */
 	/* =============================== */
 
-	void CreateImage(ImVec2 extent, VkImage* image, VkDeviceMemory* memory)
+	void CreateImage(ImVec2 extent, VkImage* image, VkDeviceMemory* memory, bool reallocateMemory /* = true */)
 	{
 		VkResult err;
 
@@ -616,29 +616,32 @@ namespace VK
 		err = vkCreateImage(Device, &imageCreateInfo, nullptr, image);
 		VK::check_vk_result(err);
 
-		VkMemoryRequirements memRequirements;
-		vkGetImageMemoryRequirements(Device, *image, &memRequirements);
+		if (reallocateMemory)
+		{
+			VkMemoryRequirements memRequirements;
+			vkGetImageMemoryRequirements(Device, *image, &memRequirements);
 
-		VkMemoryAllocateInfo memAllocInfo{};
-		memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		memAllocInfo.allocationSize = memRequirements.size;
-		memAllocInfo.memoryTypeIndex = VK::GetVulkanMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memRequirements.memoryTypeBits);
-		err = vkAllocateMemory(Device, &memAllocInfo, nullptr, memory);
-		VK::check_vk_result(err);
+			VkMemoryAllocateInfo memAllocInfo{};
+			memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+			memAllocInfo.allocationSize = memRequirements.size;
+			memAllocInfo.memoryTypeIndex = VK::GetVulkanMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memRequirements.memoryTypeBits);
+			err = vkAllocateMemory(Device, &memAllocInfo, nullptr, memory);
+			VK::check_vk_result(err);
+		}
 
 		err = vkBindImageMemory(Device, *image, *memory, 0);
 		VK::check_vk_result(err);
 	}
 
 
-	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>* images, std::vector<VkDeviceMemory>* memory)
+	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>* images, std::vector<VkDeviceMemory>* memory, bool reallocateMemory /* = true */)
 	{
 		images->resize(count);
 		memory->resize(count);
 
 		for (uint32_t i = 0; i < count; i++)
 		{
-			CreateImage(extent, &(*images)[i], &(*memory)[i]);
+			CreateImage(extent, &(*images)[i], &(*memory)[i], reallocateMemory);
 		}
 	}
 

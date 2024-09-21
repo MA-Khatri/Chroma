@@ -43,8 +43,7 @@ void RasterView::OnUIRender()
 			{
 				m_ViewportFocused = ImGui::IsWindowFocused();
 				ImVec2 newSize = ImGui::GetContentRegionAvail();
-				/* The IsWindowHovered check is to prevent runaway memory leaks from the OnResize function. I.e., we limit the calls to OnResize. */
-				if (ImGui::IsWindowHovered() && (m_ViewportSize.x != newSize.x || m_ViewportSize.y != newSize.y))
+				if (m_ViewportSize.x != newSize.x || m_ViewportSize.y != newSize.y)
 				{
 					OnResize(newSize);
 				}
@@ -108,6 +107,14 @@ void RasterView::CleanupVulkan()
 
 void RasterView::OnResize(ImVec2 newSize)
 {
+	/* Only re-allocate memory for viewport image if it is larger than the existing memory allocation */
+	bool reallocate = false;
+	if (m_LargestViewportSize.x * m_LargestViewportSize.y < newSize.x * newSize.y)
+	{
+		reallocate = true;
+		m_LargestViewportSize = newSize;
+	}
+
 	m_ViewportSize = newSize;
 
 	vkDeviceWaitIdle(VK::Device);
@@ -116,7 +123,7 @@ void RasterView::OnResize(ImVec2 newSize)
 	vkDestroyImageView(VK::Device, m_ViewportImageView, nullptr);
 	vkDestroyImage(VK::Device, m_ViewportImage, nullptr);
 	
-	VK::CreateImage(m_ViewportSize, &m_ViewportImage, &m_ImageDeviceMemory);
+	VK::CreateImage(m_ViewportSize, &m_ViewportImage, &m_ImageDeviceMemory, reallocate);
 	VK::CreateImageView(&m_ViewportImage, &m_ViewportImageView);
 	VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageView}, &m_ViewportRenderPass, m_ViewportSize, &m_ViewportFramebuffer);
 }

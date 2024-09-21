@@ -97,8 +97,8 @@ namespace VK
 	void FramePresent(ImGui_ImplVulkanH_Window* wd);
 
 	/* === Layer Utility Functions === */
-	void CreateImage(ImVec2 extent, VkImage* image, VkDeviceMemory* memory);
-	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>* images, std::vector<VkDeviceMemory>* memory);
+	void CreateImage(ImVec2 extent, VkImage* image, VkDeviceMemory* memory, bool reallocateMemory = true);
+	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>* images, std::vector<VkDeviceMemory>* memory, bool reallocateMemory = true);
 
 	void CreateImageView(VkImage* image, VkImageView* view);
 	void CreateImageViews(uint32_t count, std::vector<VkImage>* images, std::vector<VkImageView>* views);
