@@ -27,6 +27,7 @@ namespace VK
 	extern VkDevice Device;
 	extern VkDescriptorPool DescriptorPool;
 	extern VkPipelineCache PipelineCache;
+	extern VkCommandPool TransferCommandPool;
 
 	extern ImGui_ImplVulkanH_Window MainWindowData;
 	extern uint32_t MinImageCount;
@@ -91,6 +92,7 @@ namespace VK
 	void GetQueueFamilies();
 	void CreateLogicalDevice();
 	void CreateDescriptorPool();
+	void CreateTransferCommandPool();
 
 	void CleanupVulkan();
 	void CleanupVulkanWindow();
@@ -109,6 +111,7 @@ namespace VK
 	void CreateRenderPass(VkRenderPass& renderPass);
 
 	void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, VkRenderPass& renderPass, VkPipelineLayout& layout, VkPipeline& pipeline);
+	VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, VkRenderPass& renderPass, VkPipelineLayout& layout);
 
 	void CreateFrameBuffer(std::vector<VkImageView> attachments, VkRenderPass& renderPass, ImVec2 extent, VkFramebuffer& framebuffer);
 	void CreateFrameBuffers(std::vector<VkImageView> attachments, VkRenderPass& renderPass, ImVec2 extent, uint32_t count, std::vector<VkFramebuffer>& framebuffers);
@@ -117,9 +120,10 @@ namespace VK
 
 	/* === Buffers === */
 	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
 	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 
-	void CreateVertexBuffer(const std::vector<Vertex> vertices, VkBuffer& vertexBuffer, VkDeviceMemory& memory);
-
+	void CreateVertexBuffer(const std::vector<Vertex> vertices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory);
+	void CreateIndexBuffer(const std::vector<uint32_t> indices, VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory);
 }

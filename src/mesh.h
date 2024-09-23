@@ -51,12 +51,11 @@ struct Vertex
 
 struct Mesh
 {
-	// TODO
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
-	enum drawMode;
+	int drawMode; /* index into enum VkPrimitiveTopology */
 };
 
 
-std::vector<Vertex> CreateHelloTriangle();
-std::vector<Vertex> CreatePlane();
+Mesh CreateHelloTriangle();
+Mesh CreatePlane();

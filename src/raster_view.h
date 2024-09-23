@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <map>
 #include <optional>
 #include "vulkan/vulkan.h"
 
@@ -8,6 +9,9 @@
 #include "layer.h"
 #include "image.h"
 #include "camera.h"
+#include "mesh.h"
+#include "object.h"
+
 
 class RasterView : public Layer 
 {
@@ -24,7 +28,13 @@ public:
 	void CleanupVulkan();
 	void OnResize(ImVec2 newSize);
 
-	void RecordCommandBuffer(VkCommandBuffer commandBuffer);
+	void RecordCommandBuffer(VkCommandBuffer& commandBuffer);
+
+	/* List of pipeline types */
+	enum Pipelines
+	{
+		Basic,
+	};
 
 private:
 	Application* m_AppHandle;
@@ -39,13 +49,11 @@ private:
 
 	VkRenderPass m_ViewportRenderPass;
 	VkPipelineLayout m_ViewportPipelineLayout;
-	VkPipeline m_ViewportGraphicsPipeline;
 	VkFramebuffer m_ViewportFramebuffer;
 	VkSampler m_Sampler;
 	VkDescriptorSet m_DescriptorSet;
 
-	/* later should be multiple buffers for each mesh? */
-	std::vector<Vertex> m_Vertices;
-	VkBuffer m_VertexBuffer;
-	VkDeviceMemory m_VertexBufferMemory;
+	std::map<Pipelines, VkPipeline> m_Pipelines; /* Pipelines with diff. shaders */
+	
+	std::vector<Object> m_Objects; /* Objects to be drawn */
 };

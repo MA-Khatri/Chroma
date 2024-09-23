@@ -15,6 +15,7 @@ namespace VK
 	extern VkDevice Device = VK_NULL_HANDLE;
 	extern VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
 	extern VkPipelineCache PipelineCache = VK_NULL_HANDLE;
+	extern VkCommandPool TransferCommandPool = VK_NULL_HANDLE;
 
 	extern ImGui_ImplVulkanH_Window MainWindowData{};
 	extern uint32_t MinImageCount = 2;
@@ -172,6 +173,7 @@ namespace VK
 		GetQueueFamilies();
 		CreateLogicalDevice();
 		CreateDescriptorPool();
+		CreateTransferCommandPool();
 	}
 
 
@@ -436,8 +438,22 @@ namespace VK
 	}
 
 
+	void CreateTransferCommandPool()
+	{
+		/* Create a transient command pool for memory transfer operations */
+		VkCommandPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+		poolInfo.queueFamilyIndex = TransferQueueFamily;
+
+		VkResult err = vkCreateCommandPool(Device, &poolInfo, nullptr, &TransferCommandPool);
+		check_vk_result(err);
+	}
+
+
 	void CleanupVulkan()
 	{
+		vkDestroyCommandPool(Device, TransferCommandPool, Allocator);
 		vkDestroyDescriptorPool(Device, DescriptorPool, Allocator);
 
 #ifdef APP_USE_VULKAN_DEBUG_REPORT
@@ -825,7 +841,7 @@ namespace VK
 		/* ====== Pipeline creation ====== */
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = shaderStages.size();
+		pipelineInfo.stageCount = (uint32_t)shaderStages.size();
 		pipelineInfo.pStages = shaderStages.data();
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &inputAssembly;
@@ -845,6 +861,14 @@ namespace VK
 
 		/* === Clean up === */
 		DestroyShaderModules(shaderModules);
+	}
+
+
+	VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, VkRenderPass& renderPass, VkPipelineLayout& layout)
+	{
+		VkPipeline pipeline;
+		CreateGraphicsPipeline(shaderFiles, extent, renderPass, layout, pipeline);
+		return pipeline;
 	}
 
 
@@ -914,41 +938,133 @@ namespace VK
 	}
 
 
-	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 	{
+		/* Create a command buffer with a single vkCmdCopyBuffer to do the memory transfer */
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = TransferCommandPool;
+		allocInfo.commandBufferCount = 1;
 
+		VkCommandBuffer commandBuffer;
+		VkResult err = vkAllocateCommandBuffers(Device, &allocInfo, &commandBuffer);
+		check_vk_result(err);
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		err = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		check_vk_result(err);
+
+		VkBufferCopy copyRegion{};
+		copyRegion.srcOffset = 0; /* optional */
+		copyRegion.dstOffset = 0; /* optional */
+		copyRegion.size = size;
+		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+		vkEndCommandBuffer(commandBuffer);
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		VkFence transferFence;
+		VkFenceCreateInfo fenceInfo{};
+		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		err = vkCreateFence(Device, &fenceInfo, nullptr, &transferFence);
+		check_vk_result(err);
+
+		/* 
+		 * Submit the command buffer then wait for transferFence to be set.
+		 * This should let us queue multiple transfers at once then wait for all 
+		 * transfers to finish instead of waiting between each transfer.
+		 * Though, right now, I'm not sure if its exactly right or if we need to store 
+		 * the fences somewhere... ??
+		 */
+		vkQueueSubmit(TransferQueue, 1, &submitInfo, transferFence);
+		vkWaitForFences(Device, 1, &transferFence, VK_TRUE, UINT64_MAX);
+
+		/* Cleanup */
+		vkDestroyFence(Device, transferFence, nullptr);
+		vkFreeCommandBuffers(Device, TransferCommandPool, 1, &commandBuffer);
 	}
 
 
-	void CreateVertexBuffer(const std::vector<Vertex> vertices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory)
+	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
 	{
 		/* Buffer creation */
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = sizeof(vertices[0]) * vertices.size();
-		bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		bufferInfo.size = size;
+		bufferInfo.usage = usage;
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; /* might want to change this later if we want to do things like ray tracing using the same vertex data? (currently exclusive to graphics pipeline) */
 
-		VkResult err = vkCreateBuffer(Device, &bufferInfo, nullptr, &vertexBuffer);
+		VkResult err = vkCreateBuffer(Device, &bufferInfo, nullptr, &buffer);
 		check_vk_result(err);
 
 		/* Memory allocation for buffer */
 		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(Device, vertexBuffer, &memRequirements);
+		vkGetBufferMemoryRequirements(Device, buffer, &memRequirements);
 
 		VkMemoryAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		err = vkAllocateMemory(Device, &allocInfo, nullptr, &vertexBufferMemory);
+		err = vkAllocateMemory(Device, &allocInfo, nullptr, &bufferMemory);
 		check_vk_result(err);
 
-		vkBindBufferMemory(Device, vertexBuffer, vertexBufferMemory, 0);
+		vkBindBufferMemory(Device, buffer, bufferMemory, 0);
+	}
 
-		/* Transfer vertices to the buffer (device memory) */
+
+	void CreateVertexBuffer(const std::vector<Vertex> vertices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory)
+	{
+		VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+	
+		/* Create a staging buffer */
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+		/* Transfer vertices to the staging buffer */
 		void* data;
-		vkMapMemory(Device, vertexBufferMemory, 0, bufferInfo.size, 0, &data);
-		memcpy(data, vertices.data(), (size_t)bufferInfo.size);
-		vkUnmapMemory(Device, vertexBufferMemory);
+		vkMapMemory(Device, stagingBufferMemory, 0, bufferSize, 0, &data);
+		memcpy(data, vertices.data(), (size_t)bufferSize);
+		vkUnmapMemory(Device, stagingBufferMemory);
+
+		/* Create device local buffer and copy from staging buffer */
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
+		CopyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+
+		/* Cleanup the staging buffer that is no longer needed */
+		vkDestroyBuffer(Device, stagingBuffer, nullptr);
+		vkFreeMemory(Device, stagingBufferMemory, nullptr);
+	}
+
+
+	void CreateIndexBuffer(const std::vector<uint32_t> indices, VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory)
+	{
+		VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+		/* Create a staging buffer */
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+		/* Transfer vertices to the staging buffer */
+		void* data;
+		vkMapMemory(Device, stagingBufferMemory, 0, bufferSize, 0, &data);
+		memcpy(data, indices.data(), (size_t)bufferSize);
+		vkUnmapMemory(Device, stagingBufferMemory);
+
+		/* Create device local buffer and copy from staging buffer */
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
+		CopyBuffer(stagingBuffer, indexBuffer, bufferSize);
+
+		/* Cleanup the staging buffer that is no longer needed */
+		vkDestroyBuffer(Device, stagingBuffer, nullptr);
+		vkFreeMemory(Device, stagingBufferMemory, nullptr);
 	}
 }

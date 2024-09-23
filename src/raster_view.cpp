@@ -85,11 +85,13 @@ void RasterView::InitVulkan()
 
 	VK::CreateRenderPass(m_ViewportRenderPass);
 
-	m_Vertices = CreateHelloTriangle();
-	VK::CreateVertexBuffer(m_Vertices, m_VertexBuffer, m_VertexBufferMemory);
+	/* Generate graphics pipelines with different shaders */
+	std::vector<std::string> shadersBasic = { "res/shaders/Basic.vert", "res/shaders/Basic.frag" };
+	m_Pipelines[Pipelines::Basic] = VK::CreateGraphicsPipeline(shadersBasic, m_ViewportSize, m_ViewportRenderPass, m_ViewportPipelineLayout);
 
-	std::vector<std::string> shaders = { "res/shaders/Basic.vert", "res/shaders/Basic.frag" };
-	VK::CreateGraphicsPipeline(shaders, m_ViewportSize, m_ViewportRenderPass, m_ViewportPipelineLayout, m_ViewportGraphicsPipeline);
+	/* Create objects that will be drawn */
+	Object triangle(CreateHelloTriangle(), m_Pipelines[Pipelines::Basic]);
+	m_Objects.push_back(triangle);
 
 	VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageView}, m_ViewportRenderPass, m_ViewportSize, m_ViewportFramebuffer);
 	VK::CreateSampler(&m_Sampler);
@@ -102,10 +104,12 @@ void RasterView::CleanupVulkan()
 
 	vkDestroyFramebuffer(VK::Device, m_ViewportFramebuffer, nullptr);
 
-	vkDestroyBuffer(VK::Device, m_VertexBuffer, nullptr);
-	vkFreeMemory(VK::Device, m_VertexBufferMemory, nullptr);
+	auto it = m_Pipelines.begin();
+	while (it != m_Pipelines.end())
+	{
+		vkDestroyPipeline(VK::Device, it->second, nullptr);
+	}
 
-	vkDestroyPipeline(VK::Device, m_ViewportGraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(VK::Device, m_ViewportPipelineLayout, nullptr);
 	vkDestroyRenderPass(VK::Device, m_ViewportRenderPass, nullptr);
 
@@ -131,7 +135,7 @@ void RasterView::OnResize(ImVec2 newSize)
 }
 
 
-void RasterView::RecordCommandBuffer(VkCommandBuffer commandBuffer)
+void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 {
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -143,8 +147,6 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer commandBuffer)
 	renderPassInfo.clearValueCount = 1;
 	renderPassInfo.pClearValues = &clearColor;
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_ViewportGraphicsPipeline);
 
 	/* We need to set the viewport and scissor since we said they are dynamic */
 	VkViewport viewport{};
@@ -161,13 +163,11 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer commandBuffer)
 	scissor.extent = { (uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y };
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-	/* Bind the buffers... */
-	VkBuffer vertexBuffers[] = { m_VertexBuffer };
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-	/* Actual draw call */
-	vkCmdDraw(commandBuffer, static_cast<uint32_t>(m_Vertices.size()), 1, 0, 0);
+	/* Draw the objects */
+	for (auto& object : m_Objects)
+	{
+		object.Draw(commandBuffer);
+	}
 
 	vkCmdEndRenderPass(commandBuffer);
 }

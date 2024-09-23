@@ -1,26 +1,42 @@
 #include "mesh.h"
 
 
-std::vector<Vertex> CreateHelloTriangle()
+Mesh CreateHelloTriangle()
 {
-	std::vector<Vertex> vertices = {
+	Mesh mesh;
+
+	mesh.vertices = {
 		Vertex {glm::vec3( 0.0f, -0.5f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec2(0.0f, 0.0f)},
 		Vertex {glm::vec3( 0.5f,  0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec2(0.0f, 0.0f)},
 		Vertex {glm::vec3(-0.5f,  0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(0.0f, 0.0f)},
 	};
 
-	return vertices;
+	mesh.indices = {
+		0, 1, 2
+	};
+
+	mesh.drawMode = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+	return mesh;
 }
 
 
-std::vector<Vertex> CreatePlane()
+Mesh CreatePlane()
 {
-	std::vector<Vertex> vertices = {
-		Vertex {glm::vec3(-1.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(0.0f, 0.0f)},
-		Vertex {glm::vec3(1.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(1.0f, 0.0f)},
-		Vertex {glm::vec3(1.0f,  1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(1.0f, 1.0f)},
-		Vertex {glm::vec3(-1.0f,  1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(0.0f, 1.0f)},
+	Mesh mesh;
+
+	mesh.vertices = {
+		Vertex {glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(0.0f, 0.0f)},
+		Vertex {glm::vec3(0.5f, -0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(1.0f, 0.0f)},
+		Vertex {glm::vec3(0.5f,  0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(1.0f, 1.0f)},
+		Vertex {glm::vec3(-0.5f,  0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(0.0f, 1.0f)},
 	};
 
-	return vertices;
+	mesh.indices = {
+		0, 1, 2, 2, 3, 0
+	};
+
+	mesh.drawMode = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+	return mesh;
 }
