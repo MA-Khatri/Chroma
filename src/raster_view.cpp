@@ -14,6 +14,7 @@ void RasterView::OnAttach(Application* app)
 	m_Camera = new Camera(100, 100, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), 45.0f);
 
 	InitVulkan();
+	SceneSetup();
 }
 
 
@@ -80,19 +81,11 @@ void RasterView::OnUIRender()
 
 void RasterView::InitVulkan()
 {
+	/* Set up viewport rendering */
 	VK::CreateImage(m_ViewportSize, m_ViewportImage, m_ViewportImageDeviceMemory);
 	VK::CreateImageView(m_ViewportImage, m_ViewportImageView);
 
 	VK::CreateRenderPass(m_ViewportRenderPass);
-
-	/* Generate graphics pipelines with different shaders */
-	std::vector<std::string> shadersBasic = { "res/shaders/Basic.vert", "res/shaders/Basic.frag" };
-	m_Pipelines[Pipelines::Basic] = VK::CreateGraphicsPipeline(shadersBasic, m_ViewportSize, m_ViewportRenderPass, m_ViewportPipelineLayout);
-
-	/* Create objects that will be drawn */
-	Object triangle(CreateHelloTriangle(), m_Pipelines[Pipelines::Basic]);
-	m_Objects.push_back(triangle);
-
 	VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageView}, m_ViewportRenderPass, m_ViewportSize, m_ViewportFramebuffer);
 	VK::CreateSampler(&m_Sampler);
 }
@@ -135,6 +128,21 @@ void RasterView::OnResize(ImVec2 newSize)
 }
 
 
+void RasterView::SceneSetup()
+{
+	/* Generate graphics pipelines with different shaders */
+	std::vector<std::string> shadersBasic = { "res/shaders/Basic.vert", "res/shaders/Basic.frag" };
+	m_Pipelines[Basic] = VK::CreateGraphicsPipeline(shadersBasic, m_ViewportSize, m_ViewportRenderPass, m_ViewportPipelineLayout);
+
+	/* Create objects that will be drawn */
+	Object* triangle = new Object(CreateHelloTriangle(), m_Pipelines[Basic]);
+	m_Objects.push_back(triangle);
+
+	Object* plane = new Object(CreatePlane(), m_Pipelines[Basic]);
+	m_Objects.push_back(plane);
+}
+
+
 void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 {
 	VkRenderPassBeginInfo renderPassInfo{};
@@ -164,9 +172,9 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 	/* Draw the objects */
-	for (auto& object : m_Objects)
+	for (auto object : m_Objects)
 	{
-		object.Draw(commandBuffer);
+		object->Draw(commandBuffer);
 	}
 
 	vkCmdEndRenderPass(commandBuffer);

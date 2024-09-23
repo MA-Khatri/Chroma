@@ -23,10 +23,12 @@ public:
 	virtual void OnUpdate();
 	virtual void OnUIRender();
 
-	/* RasterView specific methods -- many of these should probably be moved and improved... */
+	/* RasterView specific methods */
 	void InitVulkan();
 	void CleanupVulkan();
 	void OnResize(ImVec2 newSize);
+
+	void SceneSetup();
 
 	void RecordCommandBuffer(VkCommandBuffer& commandBuffer);
 
@@ -53,7 +55,7 @@ private:
 	VkSampler m_Sampler;
 	VkDescriptorSet m_DescriptorSet;
 
-	std::map<Pipelines, VkPipeline> m_Pipelines; /* Pipelines with diff. shaders */
+	std::map<Pipelines, VkPipeline> m_Pipelines; /* Pipelines with diff. shaders/draw modes */
 	
-	std::vector<Object> m_Objects; /* Objects to be drawn */
+	std::vector<Object*> m_Objects; /* Objects to be drawn */
 };
