@@ -149,7 +149,7 @@ namespace VK
 	uint32_t GetVulkanMemoryType(VkMemoryPropertyFlags properties, uint32_t type_bits)
 	{
 		VkPhysicalDeviceMemoryProperties prop;
-		vkGetPhysicalDeviceMemoryProperties(VK::PhysicalDevice, &prop);
+		vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &prop);
 		for (uint32_t i = 0; i < prop.memoryTypeCount; i++)
 		{
 			if ((prop.memoryTypes[i].propertyFlags & properties) == properties && type_bits & (1 << i))
@@ -602,7 +602,7 @@ namespace VK
 		VkImageCreateInfo imageCreateInfo{};
 		imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageCreateInfo.format = VK::MainWindowData.SurfaceFormat.format;
+		imageCreateInfo.format = MainWindowData.SurfaceFormat.format;
 		imageCreateInfo.extent.width = (uint32_t)extent.x;
 		imageCreateInfo.extent.height = (uint32_t)extent.y;
 		imageCreateInfo.extent.depth = 1;
@@ -613,7 +613,7 @@ namespace VK
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 		err = vkCreateImage(Device, &imageCreateInfo, nullptr, &image);
-		VK::check_vk_result(err);
+		check_vk_result(err);
 
 		/* Free the existing memory (if there is any) */
 		vkFreeMemory(Device, memory, nullptr);
@@ -625,13 +625,13 @@ namespace VK
 		VkMemoryAllocateInfo memAllocInfo{};
 		memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		memAllocInfo.allocationSize = memRequirements.size;
-		memAllocInfo.memoryTypeIndex = VK::GetVulkanMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memRequirements.memoryTypeBits);
+		memAllocInfo.memoryTypeIndex = GetVulkanMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memRequirements.memoryTypeBits);
 		err = vkAllocateMemory(Device, &memAllocInfo, nullptr, &memory);
-		VK::check_vk_result(err);
+		check_vk_result(err);
 
 		/* Bind image data to the new memory allocation */
 		err = vkBindImageMemory(Device, image, memory, 0);
-		VK::check_vk_result(err);
+		check_vk_result(err);
 	}
 
 
@@ -659,7 +659,7 @@ namespace VK
 		imageViewCreateInfo.subresourceRange.levelCount = 1;
 		imageViewCreateInfo.subresourceRange.layerCount = 1;
 		err = vkCreateImageView(Device, &imageViewCreateInfo, nullptr, &view);
-		VK::check_vk_result(err);
+		check_vk_result(err);
 	}
 
 
@@ -706,11 +706,11 @@ namespace VK
 		renderPassInfo.subpassCount = 1;
 		renderPassInfo.pSubpasses = &subpass;
 		err = vkCreateRenderPass(Device, &renderPassInfo, nullptr, &renderPass);
-		VK::check_vk_result(err);
+		check_vk_result(err);
 	}
 
 
-	void CreateGraphicsPipeline(std::vector<std::string> shaderFiles , ImVec2 extent, VkRenderPass& renderPass, VkPipelineLayout& layout, VkPipeline& pipeline)
+	void CreateGraphicsPipeline(std::vector<std::string> shaderFiles , ImVec2 extent, VkRenderPass& renderPass, VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout, VkPipeline& pipeline)
 	{
 		VkResult err;
 
@@ -770,7 +770,7 @@ namespace VK
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
 		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 
 		/* === Multisampling === */
@@ -830,12 +830,12 @@ namespace VK
 		/* what we use to determine uniforms being sent to the shaders */
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 0; /* optional */
-		pipelineLayoutInfo.pSetLayouts = nullptr; /* optional */
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 		pipelineLayoutInfo.pushConstantRangeCount = 0; /* optional */
 		pipelineLayoutInfo.pPushConstantRanges = nullptr; /* optional */
 		err = vkCreatePipelineLayout(Device, &pipelineLayoutInfo, nullptr, &layout);
-		VK::check_vk_result(err);
+		check_vk_result(err);
 
 
 		/* ====== Pipeline creation ====== */
@@ -857,17 +857,17 @@ namespace VK
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; /* optional -- used if you are creating derivative pipelines */
 		pipelineInfo.basePipelineIndex = -1; /* optional */
 		err = vkCreateGraphicsPipelines(Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline);
-		VK::check_vk_result(err);
+		check_vk_result(err);
 
 		/* === Clean up === */
 		DestroyShaderModules(shaderModules);
 	}
 
 
-	VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, VkRenderPass& renderPass, VkPipelineLayout& layout)
+	VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, VkRenderPass& renderPass, VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout)
 	{
 		VkPipeline pipeline;
-		CreateGraphicsPipeline(shaderFiles, extent, renderPass, layout, pipeline);
+		CreateGraphicsPipeline(shaderFiles, extent, renderPass, descriptorSetLayout, layout, pipeline);
 		return pipeline;
 	}
 
@@ -883,7 +883,7 @@ namespace VK
 		framebufferInfo.height = (uint32_t)extent.y;
 		framebufferInfo.layers = 1;
 		VkResult err = vkCreateFramebuffer(Device, &framebufferInfo, nullptr, &framebuffer);
-		VK::check_vk_result(err);
+		check_vk_result(err);
 	}
 
 
@@ -912,7 +912,7 @@ namespace VK
 		info.maxLod = 1000;
 		info.maxAnisotropy = 1.0f;
 		VkResult err = vkCreateSampler(Device, &info, nullptr, sampler);
-		VK::check_vk_result(err);
+		check_vk_result(err);
 	}
 
 
@@ -1066,5 +1066,64 @@ namespace VK
 		/* Cleanup the staging buffer that is no longer needed */
 		vkDestroyBuffer(Device, stagingBuffer, nullptr);
 		vkFreeMemory(Device, stagingBufferMemory, nullptr);
+	}
+
+
+	void CreateDescriptorSetLayout(VkDescriptorSetLayoutBinding& layoutBinding, VkDescriptorSetLayout& descriptorSetLayout)
+	{
+		VkDescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.bindingCount = 1;
+		layoutInfo.pBindings = &layoutBinding;
+
+		VkResult err = vkCreateDescriptorSetLayout(Device, &layoutInfo, nullptr, &descriptorSetLayout);
+		check_vk_result(err);
+	}
+
+
+	void CreateUniformBuffers(VkDeviceSize bufferSize, std::vector<VkBuffer>& uniformBuffers, std::vector<VkDeviceMemory>& uniformBuffersMemory, std::vector<void*>& uniformBuffersMapped)
+	{
+		uniformBuffers.resize(MinImageCount);
+		uniformBuffersMemory.resize(MinImageCount);
+		uniformBuffersMapped.resize(MinImageCount);
+
+		for (size_t i = 0; i < MinImageCount; i++)
+		{
+			CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
+			vkMapMemory(Device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
+		}
+	}
+
+
+	void CreateDescriptorPool(VkDescriptorPool& descriptorPool)
+	{
+		VkDescriptorPoolSize poolSize{};
+		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize.descriptorCount = static_cast<uint32_t>(MinImageCount);
+
+		VkDescriptorPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolInfo.poolSizeCount = 1;
+		poolInfo.pPoolSizes = &poolSize;
+		poolInfo.maxSets = static_cast<uint32_t>(MinImageCount);
+
+		VkResult err = vkCreateDescriptorPool(Device, &poolInfo, nullptr, &descriptorPool);
+		check_vk_result(err);
+	}
+
+
+	void CreateDescriptorSets(VkDescriptorSetLayout& descriptorSetLayout, VkDescriptorPool& descriptorPool, std::vector<VkDescriptorSet>& descriptorSets)
+	{
+		std::vector<VkDescriptorSetLayout> layouts(MinImageCount, descriptorSetLayout);
+
+		VkDescriptorSetAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = descriptorPool;
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(MinImageCount);
+		allocInfo.pSetLayouts = layouts.data();
+
+		descriptorSets.resize(MinImageCount);
+		VkResult err = vkAllocateDescriptorSets(Device, &allocInfo, descriptorSets.data());
+		check_vk_result(err);
 	}
 }
