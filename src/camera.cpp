@@ -8,6 +8,8 @@ Camera::Camera(int width, int height, glm::vec3 position, glm::vec3 orientation,
 	Camera::orientation = orientation;
 	Camera::up = up;
 	Camera::vfov = vfov;
+	Camera::m_NearPlane = near_plane;
+	Camera::m_FarPlane = far_plane;
 
 	Update(vfov, near_plane, far_plane, width, height);
 }
@@ -23,11 +25,13 @@ void Camera::Update(float vFOVdeg, float nearPlane, float farPlane, int inWidth,
 
 	m_Width = inWidth;
 	m_Height = inHeight;
+	m_NearPlane = nearPlane;
+	m_FarPlane = farPlane;
 
 	/* Set the view and projection matrices using the lookAt and perspective glm functions */
 	view_matrix = glm::lookAt(position, position + orientation, up);
 
-	projection_matrix = glm::perspective(glm::radians(vFOVdeg), (float)(m_Width) / float(m_Height), nearPlane, farPlane);
+	projection_matrix = glm::perspective(glm::radians(vfov), (float)(m_Width) / float(m_Height), m_NearPlane, m_FarPlane);
 
 	matrix = projection_matrix * view_matrix;
 }
@@ -35,6 +39,23 @@ void Camera::Update(float vFOVdeg, float nearPlane, float farPlane, int inWidth,
 void Camera::UpdateViewMatrix()
 {
 	view_matrix = glm::lookAt(position, position + orientation, up);
+	matrix = projection_matrix * view_matrix;
+}
+
+void Camera::UpdateProjectionMatrix(int width, int height)
+{
+	m_Width = width;
+	m_Height = height;
+
+	projection_matrix = glm::perspective(glm::radians(vfov), (float)(m_Width) / float(m_Height), m_NearPlane, m_FarPlane);
+	matrix = projection_matrix * view_matrix;
+}
+
+void Camera::UpdateProjectionMatrix(float vFOVdeg)
+{
+	vfov = vFOVdeg;
+
+	projection_matrix = glm::perspective(glm::radians(vfov), (float)(m_Width) / float(m_Height), m_NearPlane, m_FarPlane);
 	matrix = projection_matrix * view_matrix;
 }
 
@@ -81,10 +102,6 @@ void Camera::Inputs(GLFWwindow* window)
 	/* Mouse drag for orientation */
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
 	{
-		/* 
-		Later TODO: Make mouse wrap around viewport if dragged past the viewport bounds?
-		*/
-
 		/* Check if left mouse button is pressed */
 		if (!m_LMB)
 		{
@@ -117,6 +134,26 @@ void Camera::Inputs(GLFWwindow* window)
 
 		/* Right/Left rotate (allowed to fully spin around) */
 		orientation = glm::rotate(orientation, glm::radians(-rotY), up);
+
+		/* Wrap mouse around viewport if LMB is still pressed */
+		int padding = 2; /* we add some padding to the viewport bc we're using ImGui::IsWindowHovered() to check for inputs */
+		if (mouseX < viewportContentMin[0] + padding)
+		{
+			mouseX = viewportContentMax[0] - padding;
+		}
+		if (mouseX > viewportContentMax[0] - padding)
+		{
+			mouseX = viewportContentMin[0] + padding;
+		}
+		if (mouseY < viewportContentMin[1] + padding)
+		{
+			mouseY = viewportContentMax[1] - padding;
+		}
+		if (mouseY > viewportContentMax[1] - padding)
+		{
+			mouseY = viewportContentMin[1] + padding;
+		}
+		glfwSetCursorPos(window, (double)mouseX, (double)mouseY);
 
 		/* Update prev mouse posn */
 		m_PrevMousePosn = glm::vec2(mouseX, mouseY);

@@ -10,6 +10,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <imgui.h>
+
 class Camera
 {
 private:
@@ -17,17 +19,19 @@ private:
 	int m_Width;
 	int m_Height;
 
-	/* Is the left mouse key pressed? */
-	bool m_LMB = false;
+	float m_NearPlane;
+	float m_FarPlane;
 
 	/* Camera movement speed */
 	float m_Speed = 0.01f;
 	
 	/* Camera rotation sensitivity */
-	float m_Sensitivity = 10.0f;
+	float m_Sensitivity = 100.0f;
 
 	/* Previous mouse position */
 	glm::vec2 m_PrevMousePosn;
+
+
 
 public:
 	/* The position of the camera */
@@ -51,6 +55,13 @@ public:
 	/* The vertical field of view (in degrees) */
 	float vfov;
 
+	/* Viewport bounds in pixels used to wrap the cursor when dragging */
+	ImVec2 viewportContentMin = ImVec2(0.0f, 0.0f);
+	ImVec2 viewportContentMax = ImVec2(0.0f, 0.0f);
+
+	/* Is the left mouse key pressed? */
+	bool m_LMB = false;
+
 public:
 	Camera(int width, int height, glm::vec3 position, glm::vec3 orientation, glm::vec3 up, float vfov = 45.0f, float near_plane = 0.1f, float far_plane = 1000.0f);
 	~Camera();
@@ -59,6 +70,8 @@ public:
 	void Update(float vFOVdeg, float nearPlane, float farPlane, int inWidth, int inHeight);
 
 	void UpdateViewMatrix();
+	void UpdateProjectionMatrix(int width, int height);
+	void UpdateProjectionMatrix(float vFOVdeg);
 
 	/* Handles camera movement inputs */
 	void Inputs(GLFWwindow* window);

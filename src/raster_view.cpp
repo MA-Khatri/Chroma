@@ -26,10 +26,12 @@ void RasterView::OnDetach()
 
 void RasterView::OnUpdate()
 {
-	if (m_ViewportFocused)
+	if (m_ViewportHovered)
 	{
 		m_Camera->Inputs(m_WindowHandle);
 	}
+
+	UpdateUniformBuffer(VK::MainWindowData.FrameIndex);
 }
 
 
@@ -43,6 +45,8 @@ void RasterView::OnUIRender()
 			ImGui::BeginChild("Rasterized");
 			{
 				m_ViewportFocused = ImGui::IsWindowFocused();
+				m_ViewportHovered = ImGui::IsWindowHovered();
+
 				ImVec2 newSize = ImGui::GetContentRegionAvail();
 				if (m_ViewportSize.x != newSize.x || m_ViewportSize.y != newSize.y)
 				{
@@ -123,7 +127,17 @@ void RasterView::CleanupVulkan()
 
 void RasterView::OnResize(ImVec2 newSize)
 {
+	ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
+	ImVec2 viewportPos = ImGui::GetWindowPos();
+	ImVec2 rPos = ImVec2(viewportPos.x - mainWindowPos.x, viewportPos.y - mainWindowPos.y);
+	ImVec2 minR = ImGui::GetWindowContentRegionMin();
+	ImVec2 maxR = ImGui::GetWindowContentRegionMax();
+	m_Camera->viewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
+	m_Camera->viewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
+	//std::cout << m_Camera->viewportContentMin.x << " " << m_Camera->viewportContentMin.y << "   " << m_Camera->viewportContentMax.x << " " << m_Camera->viewportContentMax.y << std::endl;
 	m_ViewportSize = newSize;
+	m_Camera->UpdateProjectionMatrix((int)m_ViewportSize.x, (int)m_ViewportSize.y);
+
 
 	vkDeviceWaitIdle(VK::Device);
 
@@ -230,7 +244,6 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 	/* Update uniforms */
-	UpdateUniformBuffer(VK::MainWindowData.FrameIndex);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_ViewportPipelineLayout, 0, 1, &m_DescriptorSets[VK::MainWindowData.FrameIndex], 0, nullptr);
 
 	/* Draw the objects */
