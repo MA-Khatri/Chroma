@@ -715,6 +715,13 @@ namespace VK
 		VkResult err;
 
 		/* ====== Shader Modules and Shader Stages ====== */
+		//auto vertShader = ReadShaderFile(shaderFiles[0]);
+		//auto fragShader = ReadShaderFile(shaderFiles[1]);
+		//std::vector<VK::ShaderModule> shaderModules;
+		//shaderModules.push_back({ CreateShaderModule(vertShader), VK_SHADER_STAGE_VERTEX_BIT });
+		//shaderModules.push_back({ CreateShaderModule(fragShader), VK_SHADER_STAGE_FRAGMENT_BIT });
+		//auto shaderStages = CreateShaderStages(shaderModules);
+
 		auto shaderModules = CreateShaderModules(shaderFiles);
 		auto shaderStages = CreateShaderStages(shaderModules);
 
@@ -769,7 +776,7 @@ namespace VK
 		rasterizer.rasterizerDiscardEnable = VK_FALSE;
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
-		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+		rasterizer.cullMode = VK_CULL_MODE_NONE;
 		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 

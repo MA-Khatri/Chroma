@@ -173,6 +173,9 @@ void RasterView::SceneSetup()
 
 	/* Generate graphics pipelines with different shaders */
 	std::vector<std::string> shadersBasic = { "res/shaders/Basic.vert", "res/shaders/Basic.frag" };
+	//std::vector<std::string> shadersBasic = { "res/shaders/VkTut.vert", "res/shaders/VkTut.frag" };
+	//std::vector<std::string> shadersBasic = { "res/shaders/Basic.vert.spv", "res/shaders/Basic.frag.spv" };
+	//std::vector<std::string> shadersBasic = { "res/shaders/VkTut.vert.spv", "res/shaders/VkTut.frag.spv" };
 	m_Pipelines[Basic] = VK::CreateGraphicsPipeline(shadersBasic, m_ViewportSize, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
 
 	/* Create objects that will be drawn */
@@ -189,6 +192,7 @@ void RasterView::UpdateUniformBuffer(uint32_t currentImage)
 	UniformBufferObject ubo{};
 	ubo.proj = m_Camera->projection_matrix;
 	ubo.view = m_Camera->view_matrix;
+	ubo.model = glm::scale(glm::vec3(10.0f, 10.0f, 10.0f));
 
 	/* We need to flip y in the proj mat to convert from OpenGL clip coordinate convention to Vulkan convention */
 	ubo.proj[1][1] *= -1;

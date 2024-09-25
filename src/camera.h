@@ -55,8 +55,10 @@ public:
 	Camera(int width, int height, glm::vec3 position, glm::vec3 orientation, glm::vec3 up, float vfov = 45.0f, float near_plane = 0.1f, float far_plane = 1000.0f);
 	~Camera();
 
-	/* Updates the camera matrix */
+	/* Updates the view and projection matrices */
 	void Update(float vFOVdeg, float nearPlane, float farPlane, int inWidth, int inHeight);
+
+	void UpdateViewMatrix();
 
 	/* Handles camera movement inputs */
 	void Inputs(GLFWwindow* window);

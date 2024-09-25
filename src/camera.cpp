@@ -32,6 +32,12 @@ void Camera::Update(float vFOVdeg, float nearPlane, float farPlane, int inWidth,
 	matrix = projection_matrix * view_matrix;
 }
 
+void Camera::UpdateViewMatrix()
+{
+	view_matrix = glm::lookAt(position, position + orientation, up);
+	matrix = projection_matrix * view_matrix;
+}
+
 void Camera::Inputs(GLFWwindow* window)
 {
 	/* WASD keys for basic motion front/back, strafe left/right */ 
@@ -119,4 +125,7 @@ void Camera::Inputs(GLFWwindow* window)
 	{
 		m_LMB = false;
 	}
+
+	/* Update the view matrix accounting for changed to camera position/orientation */
+	UpdateViewMatrix();
 }
