@@ -176,6 +176,8 @@ namespace VK
 	{
 		VkResult err;
 
+		//std::cout << code.size() << std::endl;
+
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		createInfo.codeSize = code.size();
@@ -195,15 +197,18 @@ namespace VK
 
 		CompilationInfo info;
 		info.fileName = filename;
+		//info.options.SetOptimizationLevel(shaderc_optimization_level_zero);
 		info.options.SetOptimizationLevel(shaderc_optimization_level_performance);
 		info.options.SetTargetEnvironment(shaderc_target_env_opengl, shaderc_env_version_opengl_4_5);
 		info.options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
 		PreprocessShader(info);
 		std::vector<uint32_t> compiledCode = CompileShader(info);
 
+		//std::cout << compiledCode.size() * sizeof(uint32_t) << std::endl;
+
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = 4 * compiledCode.size();
+		createInfo.codeSize = compiledCode.size() * sizeof(uint32_t);
 		createInfo.pCode = compiledCode.data();
 
 		VkShaderModule shaderModule;

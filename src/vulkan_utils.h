@@ -30,7 +30,8 @@ namespace VK
 	extern VkCommandPool TransferCommandPool;
 
 	extern ImGui_ImplVulkanH_Window MainWindowData;
-	extern uint32_t MinImageCount;
+	extern uint32_t MinImageCount; /* >= 2 */
+	extern uint32_t ImageCount; /* >= MinImageCount */
 	extern bool SwapChainRebuild;
 
 	extern uint32_t GraphicsQueueFamily;

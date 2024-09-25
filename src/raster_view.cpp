@@ -59,6 +59,7 @@ void RasterView::OnUIRender()
 				m_DescriptorSet = (VkDescriptorSet)ImGui_ImplVulkan_AddTexture(m_Sampler, m_ViewportImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 				
 				/* Wait until the descriptor set for the viewport image is created */
+				/* This could be a source of latency later on -- might be better to add multiple images here as well to allow simultaneous rendering/displaying */
 				vkDeviceWaitIdle(VK::Device);
 				ImGui::Image(m_DescriptorSet, m_ViewportSize);
 			}
@@ -98,7 +99,7 @@ void RasterView::InitVulkan()
 void RasterView::CleanupVulkan()
 {
 	vkDestroyDescriptorPool(VK::Device, m_DescriptorPool, nullptr);
-	for (size_t i = 0; i < VK::MinImageCount; i++)
+	for (size_t i = 0; i < VK::ImageCount; i++)
 	{
 		vkDestroyBuffer(VK::Device, m_UniformBuffers[i], nullptr);
 		vkFreeMemory(VK::Device, m_UniformBuffersMemory[i], nullptr);
@@ -165,7 +166,7 @@ void RasterView::SceneSetup()
 	
 	VK::CreateDescriptorPool(m_DescriptorPool);
 	VK::CreateDescriptorSets(m_DescriptorSetLayout, m_DescriptorPool, m_DescriptorSets);
-	for (size_t i = 0; i < VK::MinImageCount; i++)
+	for (size_t i = 0; i < VK::ImageCount; i++)
 	{
 		VkDescriptorBufferInfo bufferInfo{};
 		bufferInfo.buffer = m_UniformBuffers[i];
@@ -187,9 +188,7 @@ void RasterView::SceneSetup()
 
 	/* Generate graphics pipelines with different shaders */
 	std::vector<std::string> shadersBasic = { "res/shaders/Basic.vert", "res/shaders/Basic.frag" };
-	//std::vector<std::string> shadersBasic = { "res/shaders/VkTut.vert", "res/shaders/VkTut.frag" };
 	//std::vector<std::string> shadersBasic = { "res/shaders/Basic.vert.spv", "res/shaders/Basic.frag.spv" };
-	//std::vector<std::string> shadersBasic = { "res/shaders/VkTut.vert.spv", "res/shaders/VkTut.frag.spv" };
 	m_Pipelines[Basic] = VK::CreateGraphicsPipeline(shadersBasic, m_ViewportSize, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
 
 	/* Create objects that will be drawn */

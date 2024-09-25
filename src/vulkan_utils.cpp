@@ -19,6 +19,7 @@ namespace VK
 
 	extern ImGui_ImplVulkanH_Window MainWindowData{};
 	extern uint32_t MinImageCount = 2;
+	extern uint32_t ImageCount = MinImageCount;
 	extern bool SwapChainRebuild = false;
 
 	extern uint32_t GraphicsQueueFamily = (uint32_t)-1;
@@ -206,6 +207,9 @@ namespace VK
 		/* Create SwapChain, RenderPass, Framebuffer, etc. */
 		IM_ASSERT(MinImageCount >= 2);
 		ImGui_ImplVulkanH_CreateOrResizeWindow(Instance, PhysicalDevice, Device, wd, GraphicsQueueFamily, Allocator, width, height, MinImageCount);
+
+		/* Update ImageCount in case its different... */
+		ImageCount = wd->ImageCount;
 	}
 
 
@@ -1090,11 +1094,11 @@ namespace VK
 
 	void CreateUniformBuffers(VkDeviceSize bufferSize, std::vector<VkBuffer>& uniformBuffers, std::vector<VkDeviceMemory>& uniformBuffersMemory, std::vector<void*>& uniformBuffersMapped)
 	{
-		uniformBuffers.resize(MinImageCount);
-		uniformBuffersMemory.resize(MinImageCount);
-		uniformBuffersMapped.resize(MinImageCount);
+		uniformBuffers.resize(ImageCount);
+		uniformBuffersMemory.resize(ImageCount);
+		uniformBuffersMapped.resize(ImageCount);
 
-		for (size_t i = 0; i < MinImageCount; i++)
+		for (size_t i = 0; i < ImageCount; i++)
 		{
 			CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
 			vkMapMemory(Device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
@@ -1106,13 +1110,13 @@ namespace VK
 	{
 		VkDescriptorPoolSize poolSize{};
 		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSize.descriptorCount = static_cast<uint32_t>(MinImageCount);
+		poolSize.descriptorCount = static_cast<uint32_t>(ImageCount);
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.poolSizeCount = 1;
 		poolInfo.pPoolSizes = &poolSize;
-		poolInfo.maxSets = static_cast<uint32_t>(MinImageCount);
+		poolInfo.maxSets = static_cast<uint32_t>(ImageCount);
 
 		VkResult err = vkCreateDescriptorPool(Device, &poolInfo, nullptr, &descriptorPool);
 		check_vk_result(err);
@@ -1121,15 +1125,15 @@ namespace VK
 
 	void CreateDescriptorSets(VkDescriptorSetLayout& descriptorSetLayout, VkDescriptorPool& descriptorPool, std::vector<VkDescriptorSet>& descriptorSets)
 	{
-		std::vector<VkDescriptorSetLayout> layouts(MinImageCount, descriptorSetLayout);
+		std::vector<VkDescriptorSetLayout> layouts(ImageCount, descriptorSetLayout);
 
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = descriptorPool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(MinImageCount);
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(ImageCount);
 		allocInfo.pSetLayouts = layouts.data();
 
-		descriptorSets.resize(MinImageCount);
+		descriptorSets.resize(ImageCount);
 		VkResult err = vkAllocateDescriptorSets(Device, &allocInfo, descriptorSets.data());
 		check_vk_result(err);
 	}

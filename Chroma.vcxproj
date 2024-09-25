@@ -38,8 +38,6 @@
     <None Include="res\shaders\Basic.vert" />
     <None Include="res\shaders\HelloTriangle.frag" />
     <None Include="res\shaders\HelloTriangle.vert" />
-    <None Include="res\shaders\VkTut.frag" />
-    <None Include="res\shaders\VkTut.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\imgui-docking\imconfig.h" />
