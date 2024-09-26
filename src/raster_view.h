@@ -23,19 +23,25 @@ public:
 	virtual void OnUpdate();
 	virtual void OnUIRender();
 
+
+private:
+
 	/* RasterView specific methods */
 	void InitVulkan();
 	void CleanupVulkan();
 	void OnResize(ImVec2 newSize);
 
 	void SceneSetup();
+	void CreateViewportImageDescriptorSets();
+	void CreateImagesAndFramebuffers();
+	void DestroyImagesAndFramebuffers();
 
 	void UpdateUniformBuffer(uint32_t currentImage);
 
 	void RecordCommandBuffer(VkCommandBuffer& commandBuffer);
 
-	void CreateImagesAndFramebuffers();
-	void DestroyImagesAndFramebuffers();
+
+private:
 
 	/* List of pipeline types */
 	enum Pipelines
@@ -43,7 +49,6 @@ public:
 		Basic,
 	};
 
-private:
 	Application* m_AppHandle;
 	GLFWwindow* m_WindowHandle;
 	Camera* m_Camera;
@@ -54,12 +59,12 @@ private:
 	std::vector<VkImage> m_ViewportImages;
 	std::vector<VkDeviceMemory> m_ViewportImagesDeviceMemory;
 	std::vector<VkImageView> m_ViewportImageViews;
+	std::vector<VkDescriptorSet> m_ViewportImageDescriptorSets;
 
 	VkRenderPass m_ViewportRenderPass;
 	VkPipelineLayout m_ViewportPipelineLayout;
 	std::vector<VkFramebuffer> m_ViewportFramebuffers;
 	VkSampler m_Sampler;
-	VkDescriptorSet m_DescriptorSet;
 
 	std::map<Pipelines, VkPipeline> m_Pipelines; /* Pipelines with diff. shaders/draw modes */
 	

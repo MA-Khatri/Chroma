@@ -57,12 +57,10 @@ void RasterView::OnUIRender()
 				RecordCommandBuffer(commandBuffer);
 				m_AppHandle->FlushCommandBuffer(commandBuffer);
 
-				m_DescriptorSet = (VkDescriptorSet)ImGui_ImplVulkan_AddTexture(m_Sampler, m_ViewportImageViews[VK::MainWindowData.FrameIndex], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
 				/* Wait until the descriptor set for the viewport image is created */
 				/* This could be a source of latency later on -- might be better to add multiple images here as well to allow simultaneous rendering/displaying */
 				vkDeviceWaitIdle(VK::Device);
-				ImGui::Image(m_DescriptorSet, m_ViewportSize);
+				ImGui::Image(m_ViewportImageDescriptorSets[VK::MainWindowData.FrameIndex], m_ViewportSize);
 			}
 			ImGui::EndChild();
 		}
@@ -92,6 +90,7 @@ void RasterView::InitVulkan()
 	VK::CreateSampler(&m_Sampler);
 
 	CreateImagesAndFramebuffers();
+	CreateViewportImageDescriptorSets();
 }
 
 
@@ -136,6 +135,7 @@ void RasterView::OnResize(ImVec2 newSize)
 	/* Before re-creating the images, we MUST wait for the device to be done using them */
 	vkDeviceWaitIdle(VK::Device);
 	CreateImagesAndFramebuffers();
+	CreateViewportImageDescriptorSets();
 }
 
 
@@ -219,6 +219,16 @@ void RasterView::DestroyImagesAndFramebuffers()
 	m_ViewportImagesDeviceMemory.clear();
 }
 
+
+void RasterView::CreateViewportImageDescriptorSets()
+{
+	m_ViewportImageDescriptorSets.clear();
+
+	for (uint32_t i = 0; i < VK::ImageCount; i++)
+	{
+		m_ViewportImageDescriptorSets.push_back((VkDescriptorSet)ImGui_ImplVulkan_AddTexture(m_Sampler, m_ViewportImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+	}
+}
 
 void RasterView::UpdateUniformBuffer(uint32_t currentImage)
 {
