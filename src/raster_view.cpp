@@ -87,7 +87,7 @@ void RasterView::InitVulkan()
 {
 	/* Set up viewport rendering */
 	VK::CreateRenderPass(m_ViewportRenderPass);
-	VK::CreateSampler(&m_Sampler);
+	VK::CreateViewportSampler(&m_ViewportSampler);
 
 	CreateImagesAndFramebuffers();
 	CreateViewportImageDescriptorSets();
@@ -96,6 +96,8 @@ void RasterView::InitVulkan()
 
 void RasterView::CleanupVulkan()
 {
+	vkDestroySampler(VK::Device, m_ViewportSampler, nullptr);
+	vkDestroyImageView(VK::Device, m_TextureImageView, nullptr);
 	vkDestroyImage(VK::Device, m_TextureImage, nullptr);
 	vkFreeMemory(VK::Device, m_TextureImageMemory, nullptr);
 
@@ -107,7 +109,7 @@ void RasterView::CleanupVulkan()
 	}
 	vkDestroyDescriptorSetLayout(VK::Device, m_DescriptorSetLayout, nullptr);
 
-	vkDestroySampler(VK::Device, m_Sampler, nullptr);
+	vkDestroySampler(VK::Device, m_ViewportSampler, nullptr);
 
 	DestroyImagesAndFramebuffers();
 
@@ -144,16 +146,33 @@ void RasterView::OnResize(ImVec2 newSize)
 
 void RasterView::SceneSetup()
 {
+	/* Textures */
+	VK::CreateTextureImage("res/textures/texture.jpg", m_TextureImage, m_TextureImageMemory);
+	VK::CreateTextureImageView(m_TextureImage, m_TextureImageView);
+	VK::CreateTextureSampler(m_TextureSampler);
+
 	/* Descriptor sets: uniforms, textures */
+	std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
+
 	VkDescriptorSetLayoutBinding mvpLayoutBinding{};
 	mvpLayoutBinding.binding = 0;
-	mvpLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	mvpLayoutBinding.descriptorCount = 1;
-	mvpLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	mvpLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	mvpLayoutBinding.pImmutableSamplers = nullptr; /* optional -- for texture samplers */
-	VK::CreateDescriptorSetLayout(mvpLayoutBinding, m_DescriptorSetLayout);
+	mvpLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	VK::CreateUniformBuffers(sizeof(UniformBufferObject), m_UniformBuffers, m_UniformBuffersMemory, m_UniformBuffersMapped);
+	layoutBindings.push_back(mvpLayoutBinding);
 	
+	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+	samplerLayoutBinding.binding = 1;
+	samplerLayoutBinding.descriptorCount = 1;
+	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	samplerLayoutBinding.pImmutableSamplers = nullptr;
+	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	layoutBindings.push_back(samplerLayoutBinding);
+
+	VK::CreateDescriptorSetLayout(layoutBindings, m_DescriptorSetLayout);
+
 	VK::CreateDescriptorPool(m_DescriptorPool);
 	VK::CreateDescriptorSets(m_DescriptorSetLayout, m_DescriptorPool, m_DescriptorSets);
 	for (size_t i = 0; i < VK::ImageCount; i++)
@@ -163,22 +182,37 @@ void RasterView::SceneSetup()
 		bufferInfo.offset = 0;
 		bufferInfo.range = sizeof(UniformBufferObject);
 
-		VkWriteDescriptorSet descriptorWrite{};
-		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrite.dstSet = m_DescriptorSets[i];
-		descriptorWrite.dstBinding = 0;
-		descriptorWrite.dstArrayElement = 0;
-		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrite.descriptorCount = 1;
-		descriptorWrite.pBufferInfo = &bufferInfo;
-		descriptorWrite.pImageInfo = nullptr; /* optional */
-		descriptorWrite.pTexelBufferView = nullptr; /* optional */
-		vkUpdateDescriptorSets(VK::Device, 1, &descriptorWrite, 0, nullptr);
+		VkDescriptorImageInfo imageInfo{};
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageView = m_TextureImageView;
+		imageInfo.sampler = m_TextureSampler;
+
+		std::vector<VkWriteDescriptorSet> descriptorWrites;
+
+		VkWriteDescriptorSet uboWrite{};
+		uboWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		uboWrite.dstSet = m_DescriptorSets[i];
+		uboWrite.dstBinding = 0;
+		uboWrite.dstArrayElement = 0;
+		uboWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uboWrite.descriptorCount = 1;
+		uboWrite.pBufferInfo = &bufferInfo;
+		uboWrite.pImageInfo = nullptr; /* optional */
+		uboWrite.pTexelBufferView = nullptr; /* optional */
+		descriptorWrites.push_back(uboWrite);
+
+		VkWriteDescriptorSet samplerWrite{};
+		samplerWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		samplerWrite.dstSet = m_DescriptorSets[i];
+		samplerWrite.dstBinding = 1;
+		samplerWrite.dstArrayElement = 0;
+		samplerWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		samplerWrite.descriptorCount = 1;
+		samplerWrite.pImageInfo = &imageInfo;
+		descriptorWrites.push_back(samplerWrite);
+
+		vkUpdateDescriptorSets(VK::Device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
-
-	/* Textures */
-	VK::CreateTextureImage("res/textures/texture.jpg", m_TextureImage, m_TextureImageMemory);
-
 
 	/* Generate graphics pipelines with different shaders */
 	std::vector<std::string> shadersBasic = { "res/shaders/Basic.vert", "res/shaders/Basic.frag" };
@@ -233,7 +267,7 @@ void RasterView::CreateViewportImageDescriptorSets()
 
 	for (uint32_t i = 0; i < VK::ImageCount; i++)
 	{
-		m_ViewportImageDescriptorSets.push_back((VkDescriptorSet)ImGui_ImplVulkan_AddTexture(m_Sampler, m_ViewportImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+		m_ViewportImageDescriptorSets.push_back((VkDescriptorSet)ImGui_ImplVulkan_AddTexture(m_ViewportSampler, m_ViewportImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 	}
 }
 

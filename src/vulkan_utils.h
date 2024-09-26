@@ -122,7 +122,7 @@ namespace VK
 	void CreateImage(ImVec2 extent, VkImage& image, VkDeviceMemory& memory);
 	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>& images, std::vector<VkDeviceMemory>& memory);
 
-	void CreateImageView(VkImage& image, VkImageView& view);
+	void CreateImageView(VkImage& image, VkImageView& imageView, VkFormat format);
 	void CreateImageViews(std::vector<VkImage>& images, std::vector<VkImageView>& views);
 
 	void CreateRenderPass(VkRenderPass& renderPass);
@@ -133,7 +133,7 @@ namespace VK
 	void CreateFrameBuffer(std::vector<VkImageView> attachments, VkRenderPass& renderPass, ImVec2 extent, VkFramebuffer& framebuffer);
 	void CreateFrameBuffers(std::vector<VkImageView> attachments, VkRenderPass& renderPass, ImVec2 extent, uint32_t count, std::vector<VkFramebuffer>& framebuffers);
 
-	void CreateSampler(VkSampler* sampler);
+	void CreateViewportSampler(VkSampler* sampler);
 
 	
 	/* === Buffers === */
@@ -147,7 +147,7 @@ namespace VK
 	void CreateVertexBuffer(const std::vector<Vertex> vertices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory);
 	void CreateIndexBuffer(const std::vector<uint32_t> indices, VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory);
 
-	void CreateDescriptorSetLayout(VkDescriptorSetLayoutBinding& layoutBinding, VkDescriptorSetLayout& descriptorSetLayout);
+	void CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding>& layoutBindings, VkDescriptorSetLayout& descriptorSetLayout);
 	void CreateUniformBuffers(VkDeviceSize bufferSize, std::vector<VkBuffer>& uniformBuffers, std::vector<VkDeviceMemory>& uniformBuffersMemory, std::vector<void*>& uniformBuffersMapped);
 	void CreateDescriptorPool(VkDescriptorPool& descriptorPool);
 	void CreateDescriptorSets(VkDescriptorSetLayout& descriptorSetLayout, VkDescriptorPool& descriptorPool, std::vector<VkDescriptorSet>& descriptorSets);
@@ -160,4 +160,6 @@ namespace VK
 	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
 	void CreateTextureImage(std::string filepath, VkImage& textureImage, VkDeviceMemory& textureImageMemory);
+	void CreateTextureImageView(VkImage& textureImage, VkImageView& textureImageView);
+	void CreateTextureSampler(VkSampler& textureSampler);
 }

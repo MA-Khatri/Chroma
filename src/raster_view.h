@@ -64,7 +64,7 @@ private:
 	VkRenderPass m_ViewportRenderPass;
 	VkPipelineLayout m_ViewportPipelineLayout;
 	std::vector<VkFramebuffer> m_ViewportFramebuffers;
-	VkSampler m_Sampler;
+	VkSampler m_ViewportSampler;
 
 	std::map<Pipelines, VkPipeline> m_Pipelines; /* Pipelines with diff. shaders/draw modes */
 	
@@ -87,4 +87,6 @@ private:
 
 	VkImage m_TextureImage;
 	VkDeviceMemory m_TextureImageMemory;
+	VkImageView m_TextureImageView;
+	VkSampler m_TextureSampler;
 };

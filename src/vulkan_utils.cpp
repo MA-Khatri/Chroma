@@ -705,19 +705,20 @@ namespace VK
 		}
 	}
 
-	void CreateImageView(VkImage& image, VkImageView& view)
-	{
-		VkResult err;
 
+	void CreateImageView(VkImage& image, VkImageView& imageView, VkFormat format)
+	{
 		VkImageViewCreateInfo imageViewCreateInfo{};
 		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		imageViewCreateInfo.image = image;
 		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageViewCreateInfo.format = MainWindowData.SurfaceFormat.format;
+		imageViewCreateInfo.format = format;
 		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
 		imageViewCreateInfo.subresourceRange.levelCount = 1;
+		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
 		imageViewCreateInfo.subresourceRange.layerCount = 1;
-		err = vkCreateImageView(Device, &imageViewCreateInfo, nullptr, &view);
+		VkResult err = vkCreateImageView(Device, &imageViewCreateInfo, nullptr, &imageView);
 		check_vk_result(err);
 	}
 
@@ -728,7 +729,7 @@ namespace VK
 
 		for (uint32_t i = 0; i < images.size(); i++)
 		{
-			CreateImageView(images[i], views[i]);
+			CreateImageView(images[i], views[i], MainWindowData.SurfaceFormat.format);
 		}
 	}
 
@@ -964,7 +965,7 @@ namespace VK
 	}
 
 
-	void CreateSampler(VkSampler* sampler)
+	void CreateViewportSampler(VkSampler* sampler)
 	{
 		VkSamplerCreateInfo info = {};
 		info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -1095,12 +1096,12 @@ namespace VK
 	}
 
 
-	void CreateDescriptorSetLayout(VkDescriptorSetLayoutBinding& layoutBinding, VkDescriptorSetLayout& descriptorSetLayout)
+	void CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding>& layoutBindings, VkDescriptorSetLayout& descriptorSetLayout)
 	{
 		VkDescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = 1;
-		layoutInfo.pBindings = &layoutBinding;
+		layoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
+		layoutInfo.pBindings = layoutBindings.data();
 
 		VkResult err = vkCreateDescriptorSetLayout(Device, &layoutInfo, nullptr, &descriptorSetLayout);
 		check_vk_result(err);
@@ -1123,14 +1124,22 @@ namespace VK
 
 	void CreateDescriptorPool(VkDescriptorPool& descriptorPool)
 	{
-		VkDescriptorPoolSize poolSize{};
-		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSize.descriptorCount = static_cast<uint32_t>(ImageCount);
+		std::vector<VkDescriptorPoolSize> poolSizes;
+
+		VkDescriptorPoolSize imagesPoolSize{};
+		imagesPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		imagesPoolSize.descriptorCount = static_cast<uint32_t>(ImageCount);
+		poolSizes.push_back(imagesPoolSize);
+
+		VkDescriptorPoolSize samplerPoolSize{};
+		samplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		samplerPoolSize.descriptorCount = static_cast<uint32_t>(ImageCount);
+		poolSizes.push_back(samplerPoolSize);
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = 1;
-		poolInfo.pPoolSizes = &poolSize;
+		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = static_cast<uint32_t>(ImageCount);
 
 		VkResult err = vkCreateDescriptorPool(Device, &poolInfo, nullptr, &descriptorPool);
@@ -1318,5 +1327,39 @@ namespace VK
 		vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
 		FlushTransferCommandBuffer(commandBuffer);
+	}
+
+
+	void CreateTextureImageView(VkImage& textureImage, VkImageView& textureImageView)
+	{
+		CreateImageView(textureImage, textureImageView, VK_FORMAT_R8G8B8A8_SRGB);
+	}
+
+
+	void CreateTextureSampler(VkSampler& textureSampler)
+	{
+		VkPhysicalDeviceProperties properties{};
+		vkGetPhysicalDeviceProperties(PhysicalDevice, &properties);
+
+		VkSamplerCreateInfo samplerInfo{};
+		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		samplerInfo.magFilter = VK_FILTER_LINEAR;
+		samplerInfo.minFilter = VK_FILTER_LINEAR;
+		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.anisotropyEnable = VK_TRUE;
+		samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy; /* Max available quality, worst performance */
+		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK; /* Only relevant if using a clamp to border addressing mode */
+		samplerInfo.unnormalizedCoordinates = VK_FALSE; /* coordinates accessed in range [0, 1) */
+		samplerInfo.compareEnable = VK_FALSE; /* used for things like percentage-closer filtering */
+		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.mipLodBias = 0.0f;
+		samplerInfo.minLod = 0.0f;
+		samplerInfo.maxLod = 0.0f;
+
+		VkResult err = vkCreateSampler(Device, &samplerInfo, nullptr, &textureSampler);
+		check_vk_result(err);
 	}
 }
