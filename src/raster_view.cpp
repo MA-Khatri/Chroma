@@ -56,8 +56,9 @@ void RasterView::OnUIRender()
 				VkCommandBuffer commandBuffer = m_AppHandle->GetCommandBuffer();
 				RecordCommandBuffer(commandBuffer);
 				m_AppHandle->FlushCommandBuffer(commandBuffer);
-				m_DescriptorSet = (VkDescriptorSet)ImGui_ImplVulkan_AddTexture(m_Sampler, m_ViewportImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-				
+
+				m_DescriptorSet = (VkDescriptorSet)ImGui_ImplVulkan_AddTexture(m_Sampler, m_ViewportImageViews[VK::MainWindowData.FrameIndex], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
 				/* Wait until the descriptor set for the viewport image is created */
 				/* This could be a source of latency later on -- might be better to add multiple images here as well to allow simultaneous rendering/displaying */
 				vkDeviceWaitIdle(VK::Device);
@@ -87,12 +88,10 @@ void RasterView::OnUIRender()
 void RasterView::InitVulkan()
 {
 	/* Set up viewport rendering */
-	VK::CreateImage(m_ViewportSize, m_ViewportImage, m_ViewportImageDeviceMemory);
-	VK::CreateImageView(m_ViewportImage, m_ViewportImageView);
-
 	VK::CreateRenderPass(m_ViewportRenderPass);
-	VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageView}, m_ViewportRenderPass, m_ViewportSize, m_ViewportFramebuffer);
 	VK::CreateSampler(&m_Sampler);
+
+	CreateImagesAndFramebuffers();
 }
 
 
@@ -106,10 +105,9 @@ void RasterView::CleanupVulkan()
 	}
 	vkDestroyDescriptorSetLayout(VK::Device, m_DescriptorSetLayout, nullptr);
 
-
 	vkDestroySampler(VK::Device, m_Sampler, nullptr);
 
-	vkDestroyFramebuffer(VK::Device, m_ViewportFramebuffer, nullptr);
+	DestroyImagesAndFramebuffers();
 
 	auto it = m_Pipelines.begin();
 	while (it != m_Pipelines.end())
@@ -119,10 +117,6 @@ void RasterView::CleanupVulkan()
 
 	vkDestroyPipelineLayout(VK::Device, m_ViewportPipelineLayout, nullptr);
 	vkDestroyRenderPass(VK::Device, m_ViewportRenderPass, nullptr);
-
-	vkDestroyImageView(VK::Device, m_ViewportImageView, nullptr);
-	vkDestroyImage(VK::Device, m_ViewportImage, nullptr);
-	vkFreeMemory(VK::Device, m_ViewportImageDeviceMemory, nullptr);
 }
 
 
@@ -139,16 +133,9 @@ void RasterView::OnResize(ImVec2 newSize)
 	m_ViewportSize = newSize;
 	m_Camera->UpdateProjectionMatrix((int)m_ViewportSize.x, (int)m_ViewportSize.y);
 
-
+	/* Before re-creating the images, we MUST wait for the device to be done using them */
 	vkDeviceWaitIdle(VK::Device);
-
-	vkDestroyFramebuffer(VK::Device, m_ViewportFramebuffer, nullptr);
-	vkDestroyImageView(VK::Device, m_ViewportImageView, nullptr);
-	vkDestroyImage(VK::Device, m_ViewportImage, nullptr);
-	
-	VK::CreateImage(m_ViewportSize, m_ViewportImage, m_ViewportImageDeviceMemory);
-	VK::CreateImageView(m_ViewportImage, m_ViewportImageView);
-	VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageView}, m_ViewportRenderPass, m_ViewportSize, m_ViewportFramebuffer);
+	CreateImagesAndFramebuffers();
 }
 
 
@@ -200,6 +187,39 @@ void RasterView::SceneSetup()
 }
 
 
+void RasterView::CreateImagesAndFramebuffers()
+{
+	VK::CreateImages(VK::ImageCount, m_ViewportSize, m_ViewportImages, m_ViewportImagesDeviceMemory);
+	VK::CreateImageViews(m_ViewportImages, m_ViewportImageViews);
+	m_ViewportFramebuffers.resize(VK::ImageCount);
+	for (uint32_t i = 0; i < VK::ImageCount; i++)
+	{
+		VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageViews[i]}, m_ViewportRenderPass, m_ViewportSize, m_ViewportFramebuffers[i]);
+	}
+}
+
+
+void RasterView::DestroyImagesAndFramebuffers()
+{
+	for (uint32_t i = 0; i < VK::ImageCount; i++)
+	{
+		vkDestroyFramebuffer(VK::Device, m_ViewportFramebuffers[i], nullptr);
+	}
+
+	for (uint32_t i = 0; i < VK::ImageCount; i++)
+	{
+		vkDestroyImageView(VK::Device, m_ViewportImageViews[i], nullptr);
+		vkDestroyImage(VK::Device, m_ViewportImages[i], nullptr);
+		vkFreeMemory(VK::Device, m_ViewportImagesDeviceMemory[i], nullptr);
+	}
+	/* 
+	 * Need to clear the memory vector otherwise we may get errors saying that 
+	 * we are trying to free already freed memory if we call CreateImage() after.
+	 */
+	m_ViewportImagesDeviceMemory.clear();
+}
+
+
 void RasterView::UpdateUniformBuffer(uint32_t currentImage)
 {
 	UniformBufferObject ubo{};
@@ -207,7 +227,7 @@ void RasterView::UpdateUniformBuffer(uint32_t currentImage)
 	ubo.view = m_Camera->view_matrix;
 	ubo.model = glm::scale(glm::vec3(10.0f, 10.0f, 10.0f));
 
-	/* We need to flip y in the proj mat to convert from OpenGL clip coordinate convention to Vulkan convention */
+	/* Need to flip y in the proj mat to convert from OpenGL clip coordinate convention to Vulkan convention */
 	ubo.proj[1][1] *= -1;
 
 	memcpy(m_UniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
@@ -219,7 +239,7 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = m_ViewportRenderPass;
-	renderPassInfo.framebuffer = m_ViewportFramebuffer;
+	renderPassInfo.framebuffer = m_ViewportFramebuffers[VK::MainWindowData.FrameIndex];
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = { (uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y };
 	VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
@@ -227,7 +247,7 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 	renderPassInfo.pClearValues = &clearColor;
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	/* We need to set the viewport and scissor since we said they are dynamic */
+	/* Need to set the viewport and scissor since they are dynamic */
 	VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;

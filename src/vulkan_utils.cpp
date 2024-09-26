@@ -667,7 +667,7 @@ namespace VK
 	}
 
 
-	void CreateImageViews(uint32_t count, std::vector<VkImage> images, std::vector<VkImageView> views)
+	void CreateImageViews(std::vector<VkImage>& images, std::vector<VkImageView>& views)
 	{
 		views.resize(images.size());
 

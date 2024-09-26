@@ -34,6 +34,9 @@ public:
 
 	void RecordCommandBuffer(VkCommandBuffer& commandBuffer);
 
+	void CreateImagesAndFramebuffers();
+	void DestroyImagesAndFramebuffers();
+
 	/* List of pipeline types */
 	enum Pipelines
 	{
@@ -48,13 +51,13 @@ private:
 	bool m_ViewportHovered = false;
 	ImVec2 m_ViewportSize = ImVec2(400.0f, 400.0f);
 
-	VkImage m_ViewportImage;
-	VkDeviceMemory m_ViewportImageDeviceMemory;
-	VkImageView m_ViewportImageView;
+	std::vector<VkImage> m_ViewportImages;
+	std::vector<VkDeviceMemory> m_ViewportImagesDeviceMemory;
+	std::vector<VkImageView> m_ViewportImageViews;
 
 	VkRenderPass m_ViewportRenderPass;
 	VkPipelineLayout m_ViewportPipelineLayout;
-	VkFramebuffer m_ViewportFramebuffer;
+	std::vector<VkFramebuffer> m_ViewportFramebuffers;
 	VkSampler m_Sampler;
 	VkDescriptorSet m_DescriptorSet;
 
@@ -71,7 +74,6 @@ private:
 	};
 
 	VkDescriptorSetLayout m_DescriptorSetLayout;
-
 	std::vector<VkBuffer> m_UniformBuffers;
 	std::vector<VkDeviceMemory> m_UniformBuffersMemory;
 	std::vector<void*> m_UniformBuffersMapped;

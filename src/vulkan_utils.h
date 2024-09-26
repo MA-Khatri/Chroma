@@ -13,7 +13,7 @@
 #include "mesh.h"
 
 
-//#define APP_USE_UNLIMITED_FRAME_RATE
+#define APP_USE_UNLIMITED_FRAME_RATE
 #ifdef _DEBUG
 #define APP_USE_VULKAN_DEBUG_REPORT
 #endif
@@ -107,7 +107,7 @@ namespace VK
 	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>& images, std::vector<VkDeviceMemory>& memory);
 
 	void CreateImageView(VkImage& image, VkImageView& view);
-	void CreateImageViews(uint32_t count, std::vector<VkImage>& images, std::vector<VkImageView>& views);
+	void CreateImageViews(std::vector<VkImage>& images, std::vector<VkImageView>& views);
 
 	void CreateRenderPass(VkRenderPass& renderPass);
 
