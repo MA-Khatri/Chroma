@@ -48,11 +48,6 @@ public:
 	GLFWwindow* GetWindowHandle() const { return m_WindowHandle; }
 	float GetTime();
 
-	static VkCommandBuffer GetCommandBuffer();
-	static void FlushCommandBuffer(VkCommandBuffer commandBuffer);
-
-	static void SubmitResourceFree(std::function<void()>&& func);
-
 private:
 	void Init();
 	void Shutdown();

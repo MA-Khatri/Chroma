@@ -29,6 +29,7 @@ namespace VK
 	extern VkDescriptorPool DescriptorPool;
 	extern VkPipelineCache PipelineCache;
 	extern VkCommandPool TransferCommandPool;
+	extern VkCommandPool GraphicsCommandPool;
 
 	extern ImGui_ImplVulkanH_Window MainWindowData;
 	extern uint32_t MinImageCount; /* >= 2 */
@@ -84,6 +85,10 @@ namespace VK
 
 	VkCommandBuffer GetGraphicsCommandBuffer();
 	void FlushGraphicsCommandBuffer(VkCommandBuffer commandBuffer);
+
+	VkCommandBuffer GetTransferCommandBuffer();
+	void FlushTransferCommandBuffer(VkCommandBuffer commandBuffer);
+
 	void SubmitResourceFree(std::function<void()>&& func);
 
 	uint32_t GetVulkanMemoryType(VkMemoryPropertyFlags properties, uint32_t type_bits);
@@ -99,7 +104,7 @@ namespace VK
 	void GetQueueFamilies();
 	void CreateLogicalDevice();
 	void CreateDescriptorPool();
-	void CreateTransferCommandPool();
+	void CreateTransientCommandPool(uint32_t queueFamily, VkCommandPool& commandPool);
 
 	void CleanupVulkan();
 	void CleanupVulkanWindow();
@@ -134,9 +139,6 @@ namespace VK
 	/* === Buffers === */
 	
 	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-
-	VkCommandBuffer BeginSingleTimeCommands();
-	void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
 	
 	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 

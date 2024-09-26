@@ -16,21 +16,6 @@ From https://github.com/StudioCherno/Walnut/blob/master/Walnut/src/Walnut/Image.
 
 namespace Utils {
 
-	static uint32_t GetVulkanMemoryType(VkMemoryPropertyFlags properties, uint32_t type_bits)
-	{
-		VkPhysicalDeviceMemoryProperties prop;
-		vkGetPhysicalDeviceMemoryProperties(VK::PhysicalDevice, &prop);
-		for (uint32_t i = 0; i < prop.memoryTypeCount; i++)
-		{
-			if ((prop.memoryTypes[i].propertyFlags & properties) == properties && type_bits & (1 << i))
-			{
-				return i;
-			}
-		}
-
-		return 0xffffffff;
-	}
-
 	static uint32_t BytesPerPixel(ImageFormat format)
 	{
 		switch (format)
@@ -137,7 +122,7 @@ void Image::AllocateMemory(uint64_t size)
 		VkMemoryAllocateInfo alloc_info = {};
 		alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		alloc_info.allocationSize = req.size;
-		alloc_info.memoryTypeIndex = Utils::GetVulkanMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
+		alloc_info.memoryTypeIndex = VK::GetVulkanMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
 		err = vkAllocateMemory(device, &alloc_info, nullptr, &m_Memory);
 		VK::check_vk_result(err);
 		
@@ -228,7 +213,7 @@ void Image::SetData(const void* data)
 			VkMemoryAllocateInfo alloc_info = {};
 			alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 			alloc_info.allocationSize = req.size;
-			alloc_info.memoryTypeIndex = Utils::GetVulkanMemoryType(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, req.memoryTypeBits);
+			alloc_info.memoryTypeIndex = VK::GetVulkanMemoryType(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, req.memoryTypeBits);
 			err = vkAllocateMemory(device, &alloc_info, nullptr, &m_StagingBufferMemory);
 			VK::check_vk_result(err);
 			err = vkBindBufferMemory(device, m_StagingBuffer, m_StagingBufferMemory, 0);

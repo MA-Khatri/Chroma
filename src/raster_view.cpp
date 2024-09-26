@@ -53,9 +53,9 @@ void RasterView::OnUIRender()
 					OnResize(newSize);
 				}
 
-				VkCommandBuffer commandBuffer = m_AppHandle->GetCommandBuffer();
+				VkCommandBuffer commandBuffer = VK::GetGraphicsCommandBuffer();
 				RecordCommandBuffer(commandBuffer);
-				m_AppHandle->FlushCommandBuffer(commandBuffer);
+				VK::FlushGraphicsCommandBuffer(commandBuffer);
 
 				/* Wait until the descriptor set for the viewport image is created */
 				/* This could be a source of latency later on -- might be better to add multiple images here as well to allow simultaneous rendering/displaying */
@@ -96,6 +96,9 @@ void RasterView::InitVulkan()
 
 void RasterView::CleanupVulkan()
 {
+	vkDestroyImage(VK::Device, m_TextureImage, nullptr);
+	vkFreeMemory(VK::Device, m_TextureImageMemory, nullptr);
+
 	vkDestroyDescriptorPool(VK::Device, m_DescriptorPool, nullptr);
 	for (size_t i = 0; i < VK::ImageCount; i++)
 	{
@@ -172,6 +175,10 @@ void RasterView::SceneSetup()
 		descriptorWrite.pTexelBufferView = nullptr; /* optional */
 		vkUpdateDescriptorSets(VK::Device, 1, &descriptorWrite, 0, nullptr);
 	}
+
+	/* Textures */
+	VK::CreateTextureImage("res/textures/texture.jpg", m_TextureImage, m_TextureImageMemory);
+
 
 	/* Generate graphics pipelines with different shaders */
 	std::vector<std::string> shadersBasic = { "res/shaders/Basic.vert", "res/shaders/Basic.frag" };

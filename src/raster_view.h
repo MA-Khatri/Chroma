@@ -84,4 +84,7 @@ private:
 	std::vector<void*> m_UniformBuffersMapped;
 	VkDescriptorPool m_DescriptorPool;
 	std::vector<VkDescriptorSet> m_DescriptorSets;
+
+	VkImage m_TextureImage;
+	VkDeviceMemory m_TextureImageMemory;
 };

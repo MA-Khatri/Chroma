@@ -73,6 +73,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\textures\teapot_normal.png" />
+    <Image Include="res\textures\texture.jpg" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{90638171-EF99-44F8-A2E3-28D93A30A9C8}</ProjectGuid>

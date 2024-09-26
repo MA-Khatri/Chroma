@@ -7,7 +7,6 @@
 #include "stb_image.h"
 
 #include "shader.h"
-#include "application.h"
 
 
 namespace VK
@@ -19,6 +18,7 @@ namespace VK
 	extern VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
 	extern VkPipelineCache PipelineCache = VK_NULL_HANDLE;
 	extern VkCommandPool TransferCommandPool = VK_NULL_HANDLE;
+	extern VkCommandPool GraphicsCommandPool = VK_NULL_HANDLE;
 
 	extern ImGui_ImplVulkanH_Window MainWindowData{};
 	extern uint32_t MinImageCount = 2;
@@ -91,56 +91,107 @@ namespace VK
 
 	VkCommandBuffer GetGraphicsCommandBuffer()
 	{
-		ImGui_ImplVulkanH_Window* wd = &MainWindowData;
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = GraphicsCommandPool;
+		allocInfo.commandBufferCount = 1;
 
-		/* Use any command queue */
-		VkCommandPool command_pool = wd->Frames[wd->FrameIndex].CommandPool;
-
-		VkCommandBufferAllocateInfo cmdBufAllocateInfo = {};
-		cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		cmdBufAllocateInfo.commandPool = command_pool;
-		cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		cmdBufAllocateInfo.commandBufferCount = 1;
-
-		VkCommandBuffer& command_buffer = AllocatedGraphicsCommandBuffers[wd->FrameIndex].emplace_back();
-		VkResult err = vkAllocateCommandBuffers(Device, &cmdBufAllocateInfo, &command_buffer);
-
-		VkCommandBufferBeginInfo begin_info = {};
-		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-		err = vkBeginCommandBuffer(command_buffer, &begin_info);
+		VkCommandBuffer commandBuffer;
+		VkResult err = vkAllocateCommandBuffers(Device, &allocInfo, &commandBuffer);
 		check_vk_result(err);
 
-		return command_buffer;
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		err = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		check_vk_result(err);
+
+		return commandBuffer;
 	}
 
 
 	void FlushGraphicsCommandBuffer(VkCommandBuffer commandBuffer)
 	{
-		const uint64_t DEFAULT_FENCE_TIMEOUT = 100000000000;
-
-		VkSubmitInfo end_info = {};
-		end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		end_info.commandBufferCount = 1;
-		end_info.pCommandBuffers = &commandBuffer;
-		auto err = vkEndCommandBuffer(commandBuffer);
+		VkResult err = vkEndCommandBuffer(commandBuffer);
 		check_vk_result(err);
 
+		const uint64_t DEFAULT_FENCE_TIMEOUT = 100000000000;
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
 		/* Create fence to ensure that the command buffer has finished executing */
+		VkFence fence;
 		VkFenceCreateInfo fenceCreateInfo = {};
 		fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceCreateInfo.flags = 0;
-		VkFence fence;
 		err = vkCreateFence(Device, &fenceCreateInfo, nullptr, &fence);
 		check_vk_result(err);
 
-		err = vkQueueSubmit(GraphicsQueue, 1, &end_info, fence);
+		err = vkQueueSubmit(GraphicsQueue, 1, &submitInfo, fence);
 		check_vk_result(err);
 
 		err = vkWaitForFences(Device, 1, &fence, VK_TRUE, DEFAULT_FENCE_TIMEOUT);
 		check_vk_result(err);
 
 		vkDestroyFence(Device, fence, nullptr);
+		vkFreeCommandBuffers(Device, GraphicsCommandPool, 1, &commandBuffer);
+	}
+
+
+	VkCommandBuffer GetTransferCommandBuffer()
+	{
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = TransferCommandPool;
+		allocInfo.commandBufferCount = 1;
+
+		VkCommandBuffer commandBuffer;
+		VkResult err = vkAllocateCommandBuffers(Device, &allocInfo, &commandBuffer);
+		check_vk_result(err);
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		err = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		check_vk_result(err);
+
+		return commandBuffer;
+	}
+
+
+	void FlushTransferCommandBuffer(VkCommandBuffer commandBuffer)
+	{
+		VkResult err = vkEndCommandBuffer(commandBuffer);
+		check_vk_result(err);
+
+		const uint64_t DEFAULT_FENCE_TIMEOUT = 100000000000;
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		/* Create fence to ensure that the command buffer has finished executing */
+		VkFence fence;
+		VkFenceCreateInfo fenceCreateInfo = {};
+		fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceCreateInfo.flags = 0;
+		err = vkCreateFence(Device, &fenceCreateInfo, nullptr, &fence);
+		check_vk_result(err);
+
+		err = vkQueueSubmit(TransferQueue, 1, &submitInfo, fence);
+		check_vk_result(err);
+
+		err = vkWaitForFences(Device, 1, &fence, VK_TRUE, DEFAULT_FENCE_TIMEOUT);
+		check_vk_result(err);
+
+		vkDestroyFence(Device, fence, nullptr);
+		vkFreeCommandBuffers(Device, TransferCommandPool, 1, &commandBuffer);
 	}
 
 
@@ -177,7 +228,8 @@ namespace VK
 		GetQueueFamilies();
 		CreateLogicalDevice();
 		CreateDescriptorPool();
-		CreateTransferCommandPool();
+		CreateTransientCommandPool(TransferQueueFamily, TransferCommandPool);
+		CreateTransientCommandPool(GraphicsQueueFamily, GraphicsCommandPool);
 	}
 
 
@@ -445,15 +497,15 @@ namespace VK
 	}
 
 
-	void CreateTransferCommandPool()
+	void CreateTransientCommandPool(uint32_t queueFamily, VkCommandPool& commandPool)
 	{
-		/* Create a transient command pool for memory transfer operations */
+		/* Create a transient command pool */
 		VkCommandPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-		poolInfo.queueFamilyIndex = TransferQueueFamily;
+		poolInfo.queueFamilyIndex = queueFamily;
 
-		VkResult err = vkCreateCommandPool(Device, &poolInfo, nullptr, &TransferCommandPool);
+		VkResult err = vkCreateCommandPool(Device, &poolInfo, nullptr, &commandPool);
 		check_vk_result(err);
 	}
 
@@ -952,63 +1004,9 @@ namespace VK
 	}
 
 
-	VkCommandBuffer BeginSingleTimeCommands()
-	{
-		/* Create a command buffer with a single vkCmdCopyBuffer to do the memory transfer */
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = TransferCommandPool;
-		allocInfo.commandBufferCount = 1;
-
-		VkCommandBuffer commandBuffer;
-		VkResult err = vkAllocateCommandBuffers(Device, &allocInfo, &commandBuffer);
-		check_vk_result(err);
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-		err = vkBeginCommandBuffer(commandBuffer, &beginInfo);
-		check_vk_result(err);
-
-		return commandBuffer;
-	}
-
-
-	void EndSingleTimeCommands(VkCommandBuffer commandBuffer)
-	{
-		vkEndCommandBuffer(commandBuffer);
-
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
-
-		VkFence transferFence;
-		VkFenceCreateInfo fenceInfo{};
-		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		VkResult err = vkCreateFence(Device, &fenceInfo, nullptr, &transferFence);
-		check_vk_result(err);
-
-		/*
-			* Submit the command buffer then wait for transferFence to be set.
-			* This should let us queue multiple transfers at once then wait for all
-			* transfers to finish instead of waiting between each transfer.
-			* Though, right now, I'm not sure if its exactly right or if we need to store
-			* the fences somewhere... ??
-			*/
-		vkQueueSubmit(TransferQueue, 1, &submitInfo, transferFence);
-		vkWaitForFences(Device, 1, &transferFence, VK_TRUE, UINT64_MAX);
-
-		/* Cleanup */
-		vkDestroyFence(Device, transferFence, nullptr);
-		vkFreeCommandBuffers(Device, TransferCommandPool, 1, &commandBuffer);
-	}
-
-
 	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 	{
-		VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+		VkCommandBuffer commandBuffer = GetTransferCommandBuffer();
 
 		VkBufferCopy copyRegion{};
 		copyRegion.srcOffset = 0; /* optional */
@@ -1016,7 +1014,7 @@ namespace VK
 		copyRegion.size = size;
 		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-		EndSingleTimeCommands(commandBuffer);
+		FlushTransferCommandBuffer(commandBuffer);
 	}
 
 
@@ -1239,7 +1237,7 @@ namespace VK
 
 	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
 	{
-		VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+		VkCommandBuffer commandBuffer = GetGraphicsCommandBuffer();
 
 		/* Create a barrier */
 		VkImageMemoryBarrier barrier{};
@@ -1289,13 +1287,13 @@ namespace VK
 
 		vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-		EndSingleTimeCommands(commandBuffer);
+		FlushGraphicsCommandBuffer(commandBuffer);
 	}
 
 
 	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 	{
-		VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+		VkCommandBuffer commandBuffer = GetTransferCommandBuffer();
 
 		/* Specify which part of the buffer is going to be copied to which part of the image */
 		VkBufferImageCopy region{};
@@ -1319,6 +1317,6 @@ namespace VK
 
 		vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-		EndSingleTimeCommands(commandBuffer);
+		FlushTransferCommandBuffer(commandBuffer);
 	}
 }
