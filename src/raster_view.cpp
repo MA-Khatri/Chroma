@@ -251,7 +251,7 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 	renderPassInfo.renderPass = m_ViewportRenderPass;
 	renderPassInfo.framebuffer = m_ViewportFramebuffers[VK::MainWindowData.FrameIndex];
 	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = { (uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y };
+	renderPassInfo.renderArea.extent = { static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y) };
 	VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
 	renderPassInfo.clearValueCount = 1;
 	renderPassInfo.pClearValues = &clearColor;
@@ -269,7 +269,7 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 
 	VkRect2D scissor{};
 	scissor.offset = { 0, 0 };
-	scissor.extent = { (uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y };
+	scissor.extent = { static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y) };
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 	/* Update uniforms */

@@ -22,6 +22,7 @@
 namespace VK
 {
 	/* === Namespace Globals === */
+	
 	extern VkInstance Instance;
 	extern VkPhysicalDevice PhysicalDevice;
 	extern VkDevice Device;
@@ -57,6 +58,7 @@ namespace VK
 
 
 	/* === Error Handling Utilities === */
+	
 	void glfw_error_callback(int error, const char* description);
 
 	void check_vk_result(VkResult err);
@@ -75,7 +77,9 @@ namespace VK
 #endif /* APP_USE_VULKAN_DEBUG_REPORT */
 
 
+	
 	/* === Vulkan Utility Functions === */
+	
 	bool IsExtensionAvailable(const ImVector<VkExtensionProperties>& properties, const char* extension);
 
 	VkCommandBuffer GetGraphicsCommandBuffer();
@@ -84,7 +88,9 @@ namespace VK
 
 	uint32_t GetVulkanMemoryType(VkMemoryPropertyFlags properties, uint32_t type_bits);
 
+	
 	/* === Vulkan Setup Functions === */
+	
 	void SetupVulkan(ImVector<const char*> instance_extensions);
 	void SetupVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height);
 
@@ -98,11 +104,16 @@ namespace VK
 	void CleanupVulkan();
 	void CleanupVulkanWindow();
 
+	
 	/* === ImGui Utility Functions === */
+	
 	void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data);
 	void FramePresent(ImGui_ImplVulkanH_Window* wd);
 
+	
 	/* === Layer Utility Functions === */
+	
+	/* For creating viewport images */
 	void CreateImage(ImVec2 extent, VkImage& image, VkDeviceMemory& memory);
 	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>& images, std::vector<VkDeviceMemory>& memory);
 
@@ -119,8 +130,14 @@ namespace VK
 
 	void CreateSampler(VkSampler* sampler);
 
+	
 	/* === Buffers === */
+	
 	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
+	VkCommandBuffer BeginSingleTimeCommands();
+	void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
+	
 	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
 	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
@@ -132,4 +149,13 @@ namespace VK
 	void CreateUniformBuffers(VkDeviceSize bufferSize, std::vector<VkBuffer>& uniformBuffers, std::vector<VkDeviceMemory>& uniformBuffersMemory, std::vector<void*>& uniformBuffersMapped);
 	void CreateDescriptorPool(VkDescriptorPool& descriptorPool);
 	void CreateDescriptorSets(VkDescriptorSetLayout& descriptorSetLayout, VkDescriptorPool& descriptorPool, std::vector<VkDescriptorSet>& descriptorSets);
+
+	/* === Textures === */
+
+	/* For creating texture(-like) images*/
+	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory); 
+	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+
+	void CreateTextureImage(std::string filepath, VkImage& textureImage, VkDeviceMemory& textureImageMemory);
 }

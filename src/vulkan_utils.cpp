@@ -4,7 +4,10 @@
 #include <vector>
 #include <fstream>
 
+#include "stb_image.h"
+
 #include "shader.h"
+#include "application.h"
 
 
 namespace VK
@@ -949,7 +952,7 @@ namespace VK
 	}
 
 
-	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+	VkCommandBuffer BeginSingleTimeCommands()
 	{
 		/* Create a command buffer with a single vkCmdCopyBuffer to do the memory transfer */
 		VkCommandBufferAllocateInfo allocInfo{};
@@ -968,12 +971,12 @@ namespace VK
 		err = vkBeginCommandBuffer(commandBuffer, &beginInfo);
 		check_vk_result(err);
 
-		VkBufferCopy copyRegion{};
-		copyRegion.srcOffset = 0; /* optional */
-		copyRegion.dstOffset = 0; /* optional */
-		copyRegion.size = size;
-		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+		return commandBuffer;
+	}
 
+
+	void EndSingleTimeCommands(VkCommandBuffer commandBuffer)
+	{
 		vkEndCommandBuffer(commandBuffer);
 
 		VkSubmitInfo submitInfo{};
@@ -984,22 +987,36 @@ namespace VK
 		VkFence transferFence;
 		VkFenceCreateInfo fenceInfo{};
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		err = vkCreateFence(Device, &fenceInfo, nullptr, &transferFence);
+		VkResult err = vkCreateFence(Device, &fenceInfo, nullptr, &transferFence);
 		check_vk_result(err);
 
-		/* 
-		 * Submit the command buffer then wait for transferFence to be set.
-		 * This should let us queue multiple transfers at once then wait for all 
-		 * transfers to finish instead of waiting between each transfer.
-		 * Though, right now, I'm not sure if its exactly right or if we need to store 
-		 * the fences somewhere... ??
-		 */
+		/*
+			* Submit the command buffer then wait for transferFence to be set.
+			* This should let us queue multiple transfers at once then wait for all
+			* transfers to finish instead of waiting between each transfer.
+			* Though, right now, I'm not sure if its exactly right or if we need to store
+			* the fences somewhere... ??
+			*/
 		vkQueueSubmit(TransferQueue, 1, &submitInfo, transferFence);
 		vkWaitForFences(Device, 1, &transferFence, VK_TRUE, UINT64_MAX);
 
 		/* Cleanup */
 		vkDestroyFence(Device, transferFence, nullptr);
 		vkFreeCommandBuffers(Device, TransferCommandPool, 1, &commandBuffer);
+	}
+
+
+	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+	{
+		VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+
+		VkBufferCopy copyRegion{};
+		copyRegion.srcOffset = 0; /* optional */
+		copyRegion.dstOffset = 0; /* optional */
+		copyRegion.size = size;
+		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+		EndSingleTimeCommands(commandBuffer);
 	}
 
 
@@ -1136,5 +1153,172 @@ namespace VK
 		descriptorSets.resize(ImageCount);
 		VkResult err = vkAllocateDescriptorSets(Device, &allocInfo, descriptorSets.data());
 		check_vk_result(err);
+	}
+
+
+	/* ================ */
+	/* === Textures === */
+	/* ================ */
+
+	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
+	{
+		VkImageCreateInfo imageInfo{};
+		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.extent.width = width;
+		imageInfo.extent.height = height;
+		imageInfo.extent.depth = 1;
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.format = format;
+		imageInfo.tiling = tiling;
+		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageInfo.usage = usage;
+		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.flags = 0; /* optional -- for sparse images */
+
+		VkResult err = vkCreateImage(Device, &imageInfo, nullptr, &image);
+		check_vk_result(err);
+
+		/* Allocate memory for the image and bind */
+		VkMemoryRequirements memRequirements;
+		vkGetImageMemoryRequirements(Device, image, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
+		err = vkAllocateMemory(Device, &allocInfo, nullptr, &imageMemory);
+		check_vk_result(err);
+
+		vkBindImageMemory(Device, image, imageMemory, 0);
+	}
+
+
+	void CreateTextureImage(std::string filepath, VkImage& textureImage, VkDeviceMemory& textureImageMemory)
+	{
+		/* Load the image */
+		int texWidth, texHeight, texChannels;
+		stbi_uc* pixels = stbi_load(filepath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha); /* load image with alpha channel even if it doesn't have one */
+		VkDeviceSize imageSize = texWidth * texHeight * 4; /* 4 for RGBA channels */
+
+		if (!pixels)
+		{
+			std::cerr << "[stb_image Error] Failed to load image " << filepath << " ! " << std::endl;
+			exit(-1);
+		}
+
+		/* Create staging buffer */
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		CreateBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+		/* Copy pixel data to the staging buffer */
+		void* data;
+		vkMapMemory(Device, stagingBufferMemory, 0, imageSize, 0, &data);
+		memcpy(data, pixels, static_cast<size_t>(imageSize));
+		vkUnmapMemory(Device, stagingBufferMemory);
+
+		/* Clean up original image from host side */
+		stbi_image_free(pixels);
+
+		/* Create the texture image */
+		CreateImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+
+		/* Copy the staging buffer to the texture image, adjusting the layouts as we go */
+		TransitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		CopyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+		TransitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		/* Clean up staging buffer */
+		vkDestroyBuffer(Device, stagingBuffer, nullptr);
+		vkFreeMemory(Device, stagingBufferMemory, nullptr);
+	}
+
+
+	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+	{
+		VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+
+		/* Create a barrier */
+		VkImageMemoryBarrier barrier{};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.oldLayout = oldLayout;
+		barrier.newLayout = newLayout;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; /* Set these if you are transfering queue family ownership */
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = image;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+
+		/* Determine access masks */
+		VkPipelineStageFlags sourceStage;
+		VkPipelineStageFlags destinationStage;
+
+		/* Undefined -> transfer: transfer writes that don't need to wait on anything */
+		if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		{
+			barrier.srcAccessMask = 0;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		}
+		/* Transfer destination -> shader reading: shader reads should wait on transfer writes */
+		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		{
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+			sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+			/* 
+			 * May need to change the destination stage if we are using the texture earlier than the 
+			 * fragment shader (e.g., using displacement maps in vertex/tes/geometry shader) 
+			 */
+			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		}
+		else
+		{
+			std::cerr << "TransitionImageLayout(): Unsupported layout transition! Old layout: " << oldLayout << ", new layout: " << newLayout << std::endl;
+			exit(-1);
+		}
+
+		vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+		EndSingleTimeCommands(commandBuffer);
+	}
+
+
+	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
+	{
+		VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+
+		/* Specify which part of the buffer is going to be copied to which part of the image */
+		VkBufferImageCopy region{};
+
+		/* Offset into buffer at which values start */
+		region.bufferOffset = 0;
+
+		/* How pixels are laid out in memory -- 0, 0 indicates they are tightly packed */
+		region.bufferRowLength = 0;
+		region.bufferImageHeight = 0;
+
+		/* I.e., which mip level do we want to copy from? */
+		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.imageSubresource.mipLevel = 0;
+		region.imageSubresource.baseArrayLayer = 0;
+		region.imageSubresource.layerCount = 1;
+
+		/* What portion of the image do we want to copy? */
+		region.imageOffset = { 0, 0, 0 };
+		region.imageExtent = { width, height, 1 };
+
+		vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+		EndSingleTimeCommands(commandBuffer);
 	}
 }
