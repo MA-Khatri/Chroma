@@ -15,7 +15,8 @@ Object::Object(Mesh mesh, VkDescriptorSetLayout& descriptorSetLayout, VkDescript
     m_Pipeline = pipeline;
 
     /* Textures */
-    VK::CreateTextureImage("res/textures/texture.jpg", m_TextureImage, m_TextureImageMemory);
+    //VK::CreateTextureImage("res/textures/texture.jpg", m_TextureImage, m_TextureImageMemory);
+    VK::CreateTextureImage("res/textures/viking_room.png", m_TextureImage, m_TextureImageMemory);
     VK::CreateTextureImageView(m_TextureImage, m_TextureImageView);
     VK::CreateTextureSampler(m_TextureSampler);
 

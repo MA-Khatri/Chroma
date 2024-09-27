@@ -101,17 +101,7 @@ void RasterView::CleanupVulkan()
 	vkDestroyImage(VK::Device, m_DepthImage, nullptr);
 	vkFreeMemory(VK::Device, m_DepthImageMemory, nullptr);
 
-	//vkDestroySampler(VK::Device, m_TextureSampler, nullptr);
-	//vkDestroyImageView(VK::Device, m_TextureImageView, nullptr);
-	//vkDestroyImage(VK::Device, m_TextureImage, nullptr);
-	//vkFreeMemory(VK::Device, m_TextureImageMemory, nullptr);
-
 	vkDestroyDescriptorPool(VK::Device, m_DescriptorPool, nullptr);
-	//for (size_t i = 0; i < VK::ImageCount; i++)
-	//{
-	//	vkDestroyBuffer(VK::Device, m_UniformBuffers[i], nullptr);
-	//	vkFreeMemory(VK::Device, m_UniformBuffersMemory[i], nullptr);
-	//}
 	vkDestroyDescriptorSetLayout(VK::Device, m_DescriptorSetLayout, nullptr);
 
 	vkDestroySampler(VK::Device, m_ViewportSampler, nullptr);
@@ -180,11 +170,15 @@ void RasterView::SceneSetup()
 	m_Pipelines[Basic] = VK::CreateGraphicsPipeline(shadersBasic, m_ViewportSize, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
 
 	/* Create objects that will be drawn */
-	Object* triangle = new Object(CreateHelloTriangle(), m_DescriptorSetLayout, m_DescriptorPool, m_ViewportPipelineLayout, m_Pipelines[Basic]);
-	m_Objects.push_back(triangle);
+	Object* vikingRoom = new Object(LoadMesh("res/meshes/viking_room.obj"), m_DescriptorSetLayout, m_DescriptorPool, m_ViewportPipelineLayout, m_Pipelines[Basic]);
+	vikingRoom->Scale(10.0f);
+	m_Objects.push_back(vikingRoom);
 
-	Object* plane = new Object(CreatePlane(), m_DescriptorSetLayout, m_DescriptorPool, m_ViewportPipelineLayout, m_Pipelines[Basic]);
-	m_Objects.push_back(plane);
+	//Object* triangle = new Object(CreateHelloTriangle(), m_DescriptorSetLayout, m_DescriptorPool, m_ViewportPipelineLayout, m_Pipelines[Basic]);
+	//m_Objects.push_back(triangle);
+
+	//Object* plane = new Object(CreatePlane(), m_DescriptorSetLayout, m_DescriptorPool, m_ViewportPipelineLayout, m_Pipelines[Basic]);
+	//m_Objects.push_back(plane);
 }
 
 

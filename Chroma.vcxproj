@@ -50,8 +50,8 @@
     <ClInclude Include="external\imgui-docking\imstb_rectpack.h" />
     <ClInclude Include="external\imgui-docking\imstb_textedit.h" />
     <ClInclude Include="external\imgui-docking\imstb_truetype.h" />
-    <ClInclude Include="external\OBJ-Loader.h" />
     <ClInclude Include="external\stb_image\stb_image.h" />
+    <ClInclude Include="external\tiny_obj_loader\tiny_obj_loader.h" />
     <ClInclude Include="src\application.h" />
     <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\image.h" />
@@ -74,6 +74,7 @@
   <ItemGroup>
     <Image Include="res\textures\teapot_normal.png" />
     <Image Include="res\textures\texture.jpg" />
+    <Image Include="res\textures\viking_room.png" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{90638171-EF99-44F8-A2E3-28D93A30A9C8}</ProjectGuid>
@@ -113,7 +114,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\GLFW\include;$(SolutionDir)external\imgui-docking;$(SolutionDir)external\glm;$(SolutionDir)external\stb_image;$(SolutionDir)external\shaderc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\GLFW\include;$(SolutionDir)external\imgui-docking;$(SolutionDir)external\glm;$(SolutionDir)external\stb_image;$(SolutionDir)external\tiny_obj_loader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -133,7 +134,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\GLFW\include;$(SolutionDir)external\imgui-docking;$(SolutionDir)external\glm;$(SolutionDir)external\stb_image;$(SolutionDir)external\shaderc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\GLFW\include;$(SolutionDir)external\imgui-docking;$(SolutionDir)external\glm;$(SolutionDir)external\stb_image;$(SolutionDir)external\tiny_obj_loader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
