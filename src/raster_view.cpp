@@ -89,6 +89,7 @@ void RasterView::InitVulkan()
 	VK::CreateRenderPass(m_ViewportRenderPass);
 	VK::CreateViewportSampler(&m_ViewportSampler);
 
+	VK::CreateDepthResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_DepthImage, m_DepthImageMemory, m_DepthImageView);
 	CreateImagesAndFramebuffers();
 	CreateViewportImageDescriptorSets();
 }
@@ -96,6 +97,10 @@ void RasterView::InitVulkan()
 
 void RasterView::CleanupVulkan()
 {
+	vkDestroyImageView(VK::Device, m_DepthImageView, nullptr);
+	vkDestroyImage(VK::Device, m_DepthImage, nullptr);
+	vkFreeMemory(VK::Device, m_DepthImageMemory, nullptr);
+
 	vkDestroySampler(VK::Device, m_ViewportSampler, nullptr);
 	vkDestroyImageView(VK::Device, m_TextureImageView, nullptr);
 	vkDestroyImage(VK::Device, m_TextureImage, nullptr);
@@ -139,6 +144,7 @@ void RasterView::OnResize(ImVec2 newSize)
 
 	/* Before re-creating the images, we MUST wait for the device to be done using them */
 	vkDeviceWaitIdle(VK::Device);
+	VK::CreateDepthResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_DepthImage, m_DepthImageMemory, m_DepthImageView);
 	CreateImagesAndFramebuffers();
 	CreateViewportImageDescriptorSets();
 }
@@ -235,7 +241,7 @@ void RasterView::CreateImagesAndFramebuffers()
 	m_ViewportFramebuffers.resize(VK::ImageCount);
 	for (uint32_t i = 0; i < VK::ImageCount; i++)
 	{
-		VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageViews[i]}, m_ViewportRenderPass, m_ViewportSize, m_ViewportFramebuffers[i]);
+		VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageViews[i], m_DepthImageView}, m_ViewportRenderPass, m_ViewportSize, m_ViewportFramebuffers[i]);
 	}
 }
 
@@ -293,9 +299,13 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 	renderPassInfo.framebuffer = m_ViewportFramebuffers[VK::MainWindowData.FrameIndex];
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = { static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y) };
-	VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
-	renderPassInfo.clearValueCount = 1;
-	renderPassInfo.pClearValues = &clearColor;
+
+	std::array<VkClearValue, 2> clearValues{};
+	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+	clearValues[1].depthStencil = { 1.0f, 0 };
+	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassInfo.pClearValues = clearValues.data();
+	
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 	/* Need to set the viewport and scissor since they are dynamic */

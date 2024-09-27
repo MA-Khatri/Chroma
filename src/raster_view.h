@@ -66,6 +66,10 @@ private:
 	std::vector<VkFramebuffer> m_ViewportFramebuffers;
 	VkSampler m_ViewportSampler;
 
+	VkImage m_DepthImage;
+	VkDeviceMemory m_DepthImageMemory;
+	VkImageView m_DepthImageView;
+	
 	std::map<Pipelines, VkPipeline> m_Pipelines; /* Pipelines with diff. shaders/draw modes */
 	
 	std::vector<Object*> m_Objects; /* Objects to be drawn */

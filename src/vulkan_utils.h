@@ -93,6 +93,9 @@ namespace VK
 
 	uint32_t GetVulkanMemoryType(VkMemoryPropertyFlags properties, uint32_t type_bits);
 
+	VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+	VkFormat FindDepthFormat();
+	bool HasStencilComponent(VkFormat format);
 	
 	/* === Vulkan Setup Functions === */
 	
@@ -122,7 +125,7 @@ namespace VK
 	void CreateImage(ImVec2 extent, VkImage& image, VkDeviceMemory& memory);
 	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>& images, std::vector<VkDeviceMemory>& memory);
 
-	void CreateImageView(VkImage& image, VkImageView& imageView, VkFormat format);
+	void CreateImageView(VkFormat format, VkImageAspectFlags aspectFlags, VkImage& image, VkImageView& imageView);
 	void CreateImageViews(std::vector<VkImage>& images, std::vector<VkImageView>& views);
 
 	void CreateRenderPass(VkRenderPass& renderPass);
@@ -134,6 +137,8 @@ namespace VK
 	void CreateFrameBuffers(std::vector<VkImageView> attachments, VkRenderPass& renderPass, ImVec2 extent, uint32_t count, std::vector<VkFramebuffer>& framebuffers);
 
 	void CreateViewportSampler(VkSampler* sampler);
+
+	void CreateDepthResources(uint32_t width, uint32_t height, VkImage& depthImage, VkDeviceMemory& depthImageMemory, VkImageView& depthImageView);
 
 	
 	/* === Buffers === */
