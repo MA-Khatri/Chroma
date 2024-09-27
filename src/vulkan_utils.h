@@ -154,7 +154,7 @@ namespace VK
 
 	void CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding>& layoutBindings, VkDescriptorSetLayout& descriptorSetLayout);
 	void CreateUniformBuffers(VkDeviceSize bufferSize, std::vector<VkBuffer>& uniformBuffers, std::vector<VkDeviceMemory>& uniformBuffersMemory, std::vector<void*>& uniformBuffersMapped);
-	void CreateDescriptorPool(VkDescriptorPool& descriptorPool);
+	void CreateDescriptorPool(uint32_t nSets, VkDescriptorPool& descriptorPool);
 	void CreateDescriptorSets(VkDescriptorSetLayout& descriptorSetLayout, VkDescriptorPool& descriptorPool, std::vector<VkDescriptorSet>& descriptorSets);
 
 	/* === Textures === */

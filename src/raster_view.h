@@ -36,8 +36,6 @@ private:
 	void CreateImagesAndFramebuffers();
 	void DestroyImagesAndFramebuffers();
 
-	void UpdateUniformBuffer(uint32_t currentImage);
-
 	void RecordCommandBuffer(VkCommandBuffer& commandBuffer);
 
 
@@ -74,23 +72,27 @@ private:
 	
 	std::vector<Object*> m_Objects; /* Objects to be drawn */
 
-
-
-	struct UniformBufferObject {
-		alignas(16) glm::mat4 model = glm::mat4(1.0f);
+	/* We set the camera's view and projection matrices as push constants */
+	struct PushConstants {
 		alignas(16) glm::mat4 view = glm::mat4(1.0f);
 		alignas(16) glm::mat4 proj = glm::mat4(1.0f);
 	};
 
-	VkDescriptorSetLayout m_DescriptorSetLayout;
-	std::vector<VkBuffer> m_UniformBuffers;
-	std::vector<VkDeviceMemory> m_UniformBuffersMemory;
-	std::vector<void*> m_UniformBuffersMapped;
-	VkDescriptorPool m_DescriptorPool;
-	std::vector<VkDescriptorSet> m_DescriptorSets;
+	//struct UniformBufferObject {
+	//	alignas(16) glm::mat4 model = glm::mat4(1.0f);
+	//	alignas(16) glm::mat4 view = glm::mat4(1.0f);
+	//	alignas(16) glm::mat4 proj = glm::mat4(1.0f);
+	//};
 
-	VkImage m_TextureImage;
-	VkDeviceMemory m_TextureImageMemory;
-	VkImageView m_TextureImageView;
-	VkSampler m_TextureSampler;
+	VkDescriptorSetLayout m_DescriptorSetLayout;
+	//std::vector<VkBuffer> m_UniformBuffers;
+	//std::vector<VkDeviceMemory> m_UniformBuffersMemory;
+	//std::vector<void*> m_UniformBuffersMapped;
+	VkDescriptorPool m_DescriptorPool;
+	//std::vector<VkDescriptorSet> m_DescriptorSets;
+
+	//VkImage m_TextureImage;
+	//VkDeviceMemory m_TextureImageMemory;
+	//VkImageView m_TextureImageView;
+	//VkSampler m_TextureSampler;
 };

@@ -11,7 +11,7 @@ void RasterView::OnAttach(Application* app)
 	m_AppHandle = app;
 	m_WindowHandle = app->GetWindowHandle();
 
-	m_Camera = new Camera(100, 100, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), 45.0f);
+	m_Camera = new Camera(100, 100, glm::vec3(0.0f, 10.0f, 5.0f), glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, 1.0), 45.0f);
 
 	InitVulkan();
 	SceneSetup();
@@ -31,7 +31,7 @@ void RasterView::OnUpdate()
 		m_Camera->Inputs(m_WindowHandle);
 	}
 
-	UpdateUniformBuffer(VK::MainWindowData.FrameIndex);
+	//UpdateUniformBuffer(VK::MainWindowData.FrameIndex);
 }
 
 
@@ -101,17 +101,17 @@ void RasterView::CleanupVulkan()
 	vkDestroyImage(VK::Device, m_DepthImage, nullptr);
 	vkFreeMemory(VK::Device, m_DepthImageMemory, nullptr);
 
-	vkDestroySampler(VK::Device, m_ViewportSampler, nullptr);
-	vkDestroyImageView(VK::Device, m_TextureImageView, nullptr);
-	vkDestroyImage(VK::Device, m_TextureImage, nullptr);
-	vkFreeMemory(VK::Device, m_TextureImageMemory, nullptr);
+	//vkDestroySampler(VK::Device, m_TextureSampler, nullptr);
+	//vkDestroyImageView(VK::Device, m_TextureImageView, nullptr);
+	//vkDestroyImage(VK::Device, m_TextureImage, nullptr);
+	//vkFreeMemory(VK::Device, m_TextureImageMemory, nullptr);
 
 	vkDestroyDescriptorPool(VK::Device, m_DescriptorPool, nullptr);
-	for (size_t i = 0; i < VK::ImageCount; i++)
-	{
-		vkDestroyBuffer(VK::Device, m_UniformBuffers[i], nullptr);
-		vkFreeMemory(VK::Device, m_UniformBuffersMemory[i], nullptr);
-	}
+	//for (size_t i = 0; i < VK::ImageCount; i++)
+	//{
+	//	vkDestroyBuffer(VK::Device, m_UniformBuffers[i], nullptr);
+	//	vkFreeMemory(VK::Device, m_UniformBuffersMemory[i], nullptr);
+	//}
 	vkDestroyDescriptorSetLayout(VK::Device, m_DescriptorSetLayout, nullptr);
 
 	vkDestroySampler(VK::Device, m_ViewportSampler, nullptr);
@@ -152,22 +152,16 @@ void RasterView::OnResize(ImVec2 newSize)
 
 void RasterView::SceneSetup()
 {
-	/* Textures */
-	VK::CreateTextureImage("res/textures/texture.jpg", m_TextureImage, m_TextureImageMemory);
-	VK::CreateTextureImageView(m_TextureImage, m_TextureImageView);
-	VK::CreateTextureSampler(m_TextureSampler);
-
-	/* Descriptor sets: uniforms, textures */
+	/* Descriptor set layout creation: uniforms, textures/samplers */
 	std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
 
-	VkDescriptorSetLayoutBinding mvpLayoutBinding{};
-	mvpLayoutBinding.binding = 0;
-	mvpLayoutBinding.descriptorCount = 1;
-	mvpLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	mvpLayoutBinding.pImmutableSamplers = nullptr; /* optional -- for texture samplers */
-	mvpLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	VK::CreateUniformBuffers(sizeof(UniformBufferObject), m_UniformBuffers, m_UniformBuffersMemory, m_UniformBuffersMapped);
-	layoutBindings.push_back(mvpLayoutBinding);
+	VkDescriptorSetLayoutBinding uboLayoutBinding{};
+	uboLayoutBinding.binding = 0;
+	uboLayoutBinding.descriptorCount = 1;
+	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uboLayoutBinding.pImmutableSamplers = nullptr;
+	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	layoutBindings.push_back(uboLayoutBinding);
 	
 	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
 	samplerLayoutBinding.binding = 1;
@@ -178,47 +172,7 @@ void RasterView::SceneSetup()
 	layoutBindings.push_back(samplerLayoutBinding);
 
 	VK::CreateDescriptorSetLayout(layoutBindings, m_DescriptorSetLayout);
-
-	VK::CreateDescriptorPool(m_DescriptorPool);
-	VK::CreateDescriptorSets(m_DescriptorSetLayout, m_DescriptorPool, m_DescriptorSets);
-	for (size_t i = 0; i < VK::ImageCount; i++)
-	{
-		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = m_UniformBuffers[i];
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(UniformBufferObject);
-
-		VkDescriptorImageInfo imageInfo{};
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = m_TextureImageView;
-		imageInfo.sampler = m_TextureSampler;
-
-		std::vector<VkWriteDescriptorSet> descriptorWrites;
-
-		VkWriteDescriptorSet uboWrite{};
-		uboWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		uboWrite.dstSet = m_DescriptorSets[i];
-		uboWrite.dstBinding = 0;
-		uboWrite.dstArrayElement = 0;
-		uboWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		uboWrite.descriptorCount = 1;
-		uboWrite.pBufferInfo = &bufferInfo;
-		uboWrite.pImageInfo = nullptr; /* optional */
-		uboWrite.pTexelBufferView = nullptr; /* optional */
-		descriptorWrites.push_back(uboWrite);
-
-		VkWriteDescriptorSet samplerWrite{};
-		samplerWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		samplerWrite.dstSet = m_DescriptorSets[i];
-		samplerWrite.dstBinding = 1;
-		samplerWrite.dstArrayElement = 0;
-		samplerWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerWrite.descriptorCount = 1;
-		samplerWrite.pImageInfo = &imageInfo;
-		descriptorWrites.push_back(samplerWrite);
-
-		vkUpdateDescriptorSets(VK::Device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-	}
+	VK::CreateDescriptorPool(2, m_DescriptorPool); /* Make sure to update the max number of descriptor sets! */
 
 	/* Generate graphics pipelines with different shaders */
 	std::vector<std::string> shadersBasic = { "res/shaders/Basic.vert", "res/shaders/Basic.frag" };
@@ -226,10 +180,10 @@ void RasterView::SceneSetup()
 	m_Pipelines[Basic] = VK::CreateGraphicsPipeline(shadersBasic, m_ViewportSize, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
 
 	/* Create objects that will be drawn */
-	Object* triangle = new Object(CreateHelloTriangle(), m_Pipelines[Basic]);
+	Object* triangle = new Object(CreateHelloTriangle(), m_DescriptorSetLayout, m_DescriptorPool, m_ViewportPipelineLayout, m_Pipelines[Basic]);
 	m_Objects.push_back(triangle);
 
-	Object* plane = new Object(CreatePlane(), m_Pipelines[Basic]);
+	Object* plane = new Object(CreatePlane(), m_DescriptorSetLayout, m_DescriptorPool, m_ViewportPipelineLayout, m_Pipelines[Basic]);
 	m_Objects.push_back(plane);
 }
 
@@ -277,19 +231,6 @@ void RasterView::CreateViewportImageDescriptorSets()
 	}
 }
 
-void RasterView::UpdateUniformBuffer(uint32_t currentImage)
-{
-	UniformBufferObject ubo{};
-	ubo.proj = m_Camera->projection_matrix;
-	ubo.view = m_Camera->view_matrix;
-	ubo.model = glm::scale(glm::vec3(10.0f, 10.0f, 10.0f));
-
-	/* Need to flip y in the proj mat to convert from OpenGL clip coordinate convention to Vulkan convention */
-	ubo.proj[1][1] *= -1;
-
-	memcpy(m_UniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
-}
-
 
 void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 {
@@ -323,8 +264,12 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 	scissor.extent = { static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y) };
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-	/* Update uniforms */
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_ViewportPipelineLayout, 0, 1, &m_DescriptorSets[VK::MainWindowData.FrameIndex], 0, nullptr);
+	/* Set push constants */
+	PushConstants constants;
+	constants.view = m_Camera->view_matrix;
+	constants.proj = m_Camera->projection_matrix;
+	constants.proj[1][1] *= -1; /* Flip y in proj matrix to match Vulkan convention */
+	vkCmdPushConstants(commandBuffer, m_ViewportPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
 
 	/* Draw the objects */
 	for (auto object : m_Objects)

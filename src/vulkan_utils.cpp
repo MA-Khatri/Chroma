@@ -970,12 +970,19 @@ namespace VK
 
 		/* ====== Pipeline layout ====== */
 		/* what we use to determine uniforms being sent to the shaders */
+
+		/* We can send upto 2 4x4 matrices as push constants (128 bytes) */
+		VkPushConstantRange pushConstant{};
+		pushConstant.offset = 0;
+		pushConstant.size = 2 * sizeof(glm::mat4);
+		pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
-		pipelineLayoutInfo.pushConstantRangeCount = 0; /* optional */
-		pipelineLayoutInfo.pPushConstantRanges = nullptr; /* optional */
+		pipelineLayoutInfo.pushConstantRangeCount = 1; 
+		pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
 		err = vkCreatePipelineLayout(Device, &pipelineLayoutInfo, nullptr, &layout);
 		check_vk_result(err);
 
@@ -1206,25 +1213,25 @@ namespace VK
 	}
 
 
-	void CreateDescriptorPool(VkDescriptorPool& descriptorPool)
+	void CreateDescriptorPool(uint32_t nSets, VkDescriptorPool& descriptorPool)
 	{
 		std::vector<VkDescriptorPoolSize> poolSizes;
 
-		VkDescriptorPoolSize imagesPoolSize{};
-		imagesPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		imagesPoolSize.descriptorCount = static_cast<uint32_t>(ImageCount);
-		poolSizes.push_back(imagesPoolSize);
+		VkDescriptorPoolSize uboPoolSize{};
+		uboPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uboPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
+		poolSizes.push_back(uboPoolSize);
 
 		VkDescriptorPoolSize samplerPoolSize{};
 		samplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerPoolSize.descriptorCount = static_cast<uint32_t>(ImageCount);
+		samplerPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
 		poolSizes.push_back(samplerPoolSize);
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = static_cast<uint32_t>(ImageCount);
+		poolInfo.maxSets = nSets * static_cast<uint32_t>(ImageCount);
 
 		VkResult err = vkCreateDescriptorPool(Device, &poolInfo, nullptr, &descriptorPool);
 		check_vk_result(err);
