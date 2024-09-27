@@ -33,3 +33,65 @@ void Object::Draw(VkCommandBuffer& commandBuffer)
 
     vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_Mesh.indices.size()), 1, 0, 0, 0);
 }
+
+
+/* === Transformations === */
+
+void Object::UpdateModelNormalMatrix()
+{
+    m_ModelNormalMatrix = glm::transpose(glm::inverse(m_ModelMatrix));
+}
+
+
+void Object::SetModelMatrix(glm::mat4x4 matrix)
+{
+    m_ModelMatrix = matrix;
+    UpdateModelNormalMatrix();
+}
+
+
+void Object::UpdateModelMatrix(glm::mat4x4 matrix)
+{
+    m_ModelMatrix *= matrix;
+    UpdateModelNormalMatrix();
+}
+
+
+void Object::Translate(glm::vec3 translate)
+{
+    m_ModelMatrix *= glm::translate(translate);
+    UpdateModelNormalMatrix();
+}
+
+
+void Object::Translate(float x, float y, float z)
+{
+    Translate(glm::vec3(x, y, z));
+}
+
+
+void Object::Rotate(glm::vec3 axis, float deg)
+{
+    m_ModelMatrix *= glm::rotate(glm::radians(deg), axis);
+    UpdateModelNormalMatrix();
+}
+
+
+void Object::Scale(glm::vec3 scale)
+{
+    m_ModelMatrix *= glm::scale(scale);
+    UpdateModelNormalMatrix();
+}
+
+
+void Object::Scale(float scale)
+{
+    Scale(glm::vec3(scale, scale, scale));
+}
+
+
+void Object::Scale(float x, float y, float z)
+{
+    Scale(glm::vec3(x, y, z));
+}
+
