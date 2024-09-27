@@ -1234,9 +1234,13 @@ namespace VK
 		CreateImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
 
 		/* Copy the staging buffer to the texture image, adjusting the layouts as we go */
-		TransitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		CopyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-		TransitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		VkCommandBuffer commandBuffer = GetGraphicsCommandBuffer();
+		{
+			TransitionImageLayout(commandBuffer, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+			CopyBufferToImage(commandBuffer, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+			TransitionImageLayout(commandBuffer, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		}
+		FlushGraphicsCommandBuffer(commandBuffer);
 
 		/* Clean up staging buffer */
 		vkDestroyBuffer(Device, stagingBuffer, nullptr);
@@ -1244,10 +1248,8 @@ namespace VK
 	}
 
 
-	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+	void TransitionImageLayout(VkCommandBuffer& commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
 	{
-		VkCommandBuffer commandBuffer = GetGraphicsCommandBuffer();
-
 		/* Create a barrier */
 		VkImageMemoryBarrier barrier{};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1282,9 +1284,9 @@ namespace VK
 			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
 			sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-			/* 
-			 * May need to change the destination stage if we are using the texture earlier than the 
-			 * fragment shader (e.g., using displacement maps in vertex/tes/geometry shader) 
+			/*
+			 * May need to change the destination stage if we are using the texture earlier than the
+			 * fragment shader (e.g., using displacement maps in vertex/tes/geometry shader)
 			 */
 			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 		}
@@ -1295,15 +1297,19 @@ namespace VK
 		}
 
 		vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+	}
 
+
+	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+	{
+		VkCommandBuffer commandBuffer = GetGraphicsCommandBuffer();
+		TransitionImageLayout(commandBuffer, image, format, oldLayout, newLayout);
 		FlushGraphicsCommandBuffer(commandBuffer);
 	}
 
 
-	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
+	void CopyBufferToImage(VkCommandBuffer& commandBuffer, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 	{
-		VkCommandBuffer commandBuffer = GetTransferCommandBuffer();
-
 		/* Specify which part of the buffer is going to be copied to which part of the image */
 		VkBufferImageCopy region{};
 
@@ -1325,7 +1331,13 @@ namespace VK
 		region.imageExtent = { width, height, 1 };
 
 		vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+	}
 
+
+	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
+	{
+		VkCommandBuffer commandBuffer = GetTransferCommandBuffer();
+		CopyBufferToImage(commandBuffer, buffer, image, width, height);
 		FlushTransferCommandBuffer(commandBuffer);
 	}
 
