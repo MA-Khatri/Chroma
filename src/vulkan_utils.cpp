@@ -1363,9 +1363,12 @@ namespace VK
 		{
 			TransitionImageLayout(commandBuffer, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
 			CopyBufferToImage(commandBuffer, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-			GenerateMipMaps(textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels); /* Note: we transition to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL during mip map generation */
+			/* At this point all mip levels are in format VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL */
 		}
 		FlushGraphicsCommandBuffer(commandBuffer);
+
+		/* Note: we transition to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL during mip map generation */
+		GenerateMipMaps(textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels);
 
 		/* Clean up staging buffer */
 		vkDestroyBuffer(Device, stagingBuffer, nullptr);
@@ -1515,7 +1518,7 @@ namespace VK
 		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		samplerInfo.minLod = 0.0f;
 		samplerInfo.maxLod = static_cast<float>(mipLevels);
-		samplerInfo.mipLodBias = 1.0f;
+		samplerInfo.mipLodBias = 0.0f;
 
 		VkResult err = vkCreateSampler(Device, &samplerInfo, nullptr, &textureSampler);
 		check_vk_result(err);
