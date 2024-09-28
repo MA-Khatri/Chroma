@@ -93,17 +93,21 @@ private:
 	void* m_UniformBufferMapped = nullptr;
 
 	/* Textures */
-	VkSampler m_TextureSampler = VK_NULL_HANDLE;
+	VkImage m_DiffuseTextureImage = VK_NULL_HANDLE;
+	VkDeviceMemory m_DiffuseTextureImageMemory = VK_NULL_HANDLE;
+	VkImageView m_DiffuseTextureImageView = VK_NULL_HANDLE;
+	VkSampler m_DiffuseTextureSampler = VK_NULL_HANDLE;
+	uint32_t m_DiffuseMipLevels = 0;
 
-	VkImage m_DiffuseTextureImage;
-	VkDeviceMemory m_DiffuseTextureImageMemory;
-	VkImageView m_DiffuseTextureImageView;
+	VkImage m_SpecularTextureImage = VK_NULL_HANDLE;
+	VkDeviceMemory m_SpecularTextureImageMemory = VK_NULL_HANDLE;
+	VkImageView m_SpecularTextureImageView = VK_NULL_HANDLE;
+	VkSampler m_SpecularTextureSampler = VK_NULL_HANDLE;
+	uint32_t m_SpecularMipLevels = 0;
 
-	VkImage m_SpecularTextureImage;
-	VkDeviceMemory m_SpecularTextureImageMemory;
-	VkImageView m_SpecularTextureImageView;
-
-	VkImage m_NormalTextureImage;
-	VkDeviceMemory m_NormalTextureImageMemory;
-	VkImageView m_NormalTextureImageView;
+	VkImage m_NormalTextureImage = VK_NULL_HANDLE;
+	VkDeviceMemory m_NormalTextureImageMemory = VK_NULL_HANDLE;
+	VkImageView m_NormalTextureImageView = VK_NULL_HANDLE;
+	VkSampler m_NormalTextureSampler = VK_NULL_HANDLE;
+	uint32_t m_NormalMipLevels = 0;
 };

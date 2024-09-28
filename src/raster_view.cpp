@@ -202,7 +202,7 @@ void RasterView::SceneSetup()
 void RasterView::CreateViewportImagesAndFramebuffers()
 {
 	VK::CreateViewportImages(VK::ImageCount, m_ViewportSize, m_ViewportImages, m_ViewportImagesDeviceMemory);
-	VK::CreateImageViews(m_ViewportImages, m_ViewportImageViews);
+	VK::CreateViewportImageViews(m_ViewportImages, m_ViewportImageViews);
 	m_ViewportFramebuffers.resize(VK::ImageCount);
 	for (uint32_t i = 0; i < VK::ImageCount; i++)
 	{
