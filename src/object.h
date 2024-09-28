@@ -14,10 +14,26 @@
 #include "mesh.h"
 
 
+struct PipelineInfo
+{
+	VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+	VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+	VkPipeline pipeline = VK_NULL_HANDLE;
+};
+
+struct TexturePaths
+{
+	std::string diffuse;
+	std::string specular;
+	std::string normal;
+};
+
+
 class Object
 {
 public:
-	Object(Mesh mesh, VkDescriptorSetLayout& descriptorSetLayout, VkDescriptorPool& descriptorPool, VkPipelineLayout& pipelineLayout, VkPipeline& pipeline);
+	Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelineInfo);
 	~Object();
 
 	/* Adds draw command to the provided command buffer */
@@ -66,16 +82,28 @@ private:
 	VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
 	VkPipeline m_Pipeline = VK_NULL_HANDLE;
 
+	/* Descriptor set info */
 	VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
 	VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
-	std::vector<VkDescriptorSet> m_DescriptorSets;
+	VkDescriptorSet m_DescriptorSet = VK_NULL_HANDLE;
 
-	std::vector<VkBuffer> m_UniformBuffers;
-	std::vector<VkDeviceMemory> m_UniformBuffersMemory;
-	std::vector<void*> m_UniformBuffersMapped;
+	/* Uniform buffer */
+	VkBuffer m_UniformBuffer = VK_NULL_HANDLE;
+	VkDeviceMemory m_UniformBufferMemory = VK_NULL_HANDLE;
+	void* m_UniformBufferMapped = nullptr;
 
-	VkImage m_TextureImage;
-	VkDeviceMemory m_TextureImageMemory;
-	VkImageView m_TextureImageView;
-	VkSampler m_TextureSampler;
+	/* Textures */
+	VkSampler m_TextureSampler = VK_NULL_HANDLE;
+
+	VkImage m_DiffuseTextureImage;
+	VkDeviceMemory m_DiffuseTextureImageMemory;
+	VkImageView m_DiffuseTextureImageView;
+
+	VkImage m_SpecularTextureImage;
+	VkDeviceMemory m_SpecularTextureImageMemory;
+	VkImageView m_SpecularTextureImageView;
+
+	VkImage m_NormalTextureImage;
+	VkDeviceMemory m_NormalTextureImageMemory;
+	VkImageView m_NormalTextureImageView;
 };

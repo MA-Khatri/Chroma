@@ -111,7 +111,7 @@ void RasterView::CleanupVulkan()
 	auto it = m_Pipelines.begin();
 	while (it != m_Pipelines.end())
 	{
-		vkDestroyPipeline(VK::Device, it->second, nullptr);
+		vkDestroyPipeline(VK::Device, it->second.pipeline, nullptr);
 	}
 
 	vkDestroyPipelineLayout(VK::Device, m_ViewportPipelineLayout, nullptr);
@@ -145,6 +145,7 @@ void RasterView::SceneSetup()
 	/* Descriptor set layout creation: uniforms, textures/samplers */
 	std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
 
+	/* We'll have 1 ubo to pass in mesh data like its model & normal matrices */
 	VkDescriptorSetLayoutBinding uboLayoutBinding{};
 	uboLayoutBinding.binding = 0;
 	uboLayoutBinding.descriptorCount = 1;
@@ -153,32 +154,50 @@ void RasterView::SceneSetup()
 	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	layoutBindings.push_back(uboLayoutBinding);
 	
-	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-	samplerLayoutBinding.binding = 1;
-	samplerLayoutBinding.descriptorCount = 1;
-	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	samplerLayoutBinding.pImmutableSamplers = nullptr;
-	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	layoutBindings.push_back(samplerLayoutBinding);
+	/* We'll have 3 samplers for diffuse, specular, and normal textures */
+	VkDescriptorSetLayoutBinding diffuseSamplerLayoutBinding{};
+	diffuseSamplerLayoutBinding.binding = 1;
+	diffuseSamplerLayoutBinding.descriptorCount = 1;
+	diffuseSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	diffuseSamplerLayoutBinding.pImmutableSamplers = nullptr;
+	diffuseSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	layoutBindings.push_back(diffuseSamplerLayoutBinding);
+
+	VkDescriptorSetLayoutBinding specularSamplerLayoutBinding{};
+	specularSamplerLayoutBinding.binding = 2;
+	specularSamplerLayoutBinding.descriptorCount = 1;
+	specularSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	specularSamplerLayoutBinding.pImmutableSamplers = nullptr;
+	specularSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	layoutBindings.push_back(specularSamplerLayoutBinding);
+
+	VkDescriptorSetLayoutBinding normalSamplerLayoutBinding{};
+	normalSamplerLayoutBinding.binding = 3;
+	normalSamplerLayoutBinding.descriptorCount = 1;
+	normalSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	normalSamplerLayoutBinding.pImmutableSamplers = nullptr;
+	normalSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	layoutBindings.push_back(normalSamplerLayoutBinding);
 
 	VK::CreateDescriptorSetLayout(layoutBindings, m_DescriptorSetLayout);
-	VK::CreateDescriptorPool(2, m_DescriptorPool); /* Make sure to update the max number of descriptor sets! */
+	VK::CreateDescriptorPool(1, m_DescriptorPool); /* Note: Make sure to update the max number of descriptor sets according to the number of objects you have! */
 
 	/* Generate graphics pipelines with different shaders */
 	std::vector<std::string> shadersBasic = { "res/shaders/Basic.vert", "res/shaders/Basic.frag" };
-	//std::vector<std::string> shadersBasic = { "res/shaders/Basic.vert.spv", "res/shaders/Basic.frag.spv" };
-	m_Pipelines[Basic] = VK::CreateGraphicsPipeline(shadersBasic, m_ViewportSize, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
+
+	PipelineInfo basic;
+	basic.descriptorPool = m_DescriptorPool;
+	basic.descriptorSetLayout = m_DescriptorSetLayout;
+	basic.pipeline = VK::CreateGraphicsPipeline(shadersBasic, m_ViewportSize, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
+	basic.pipelineLayout = m_ViewportPipelineLayout; /* Note: has to be after pipeline creation bc pipeline layout is created in CreateGraphicsPipeline() */
+	m_Pipelines[Basic] = basic;
 
 	/* Create objects that will be drawn */
-	Object* vikingRoom = new Object(LoadMesh("res/meshes/viking_room.obj"), m_DescriptorSetLayout, m_DescriptorPool, m_ViewportPipelineLayout, m_Pipelines[Basic]);
+	TexturePaths vikingRoomTextures;
+	vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
+	Object* vikingRoom = new Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, m_Pipelines[Basic]);
 	vikingRoom->Scale(10.0f);
 	m_Objects.push_back(vikingRoom);
-
-	//Object* triangle = new Object(CreateHelloTriangle(), m_DescriptorSetLayout, m_DescriptorPool, m_ViewportPipelineLayout, m_Pipelines[Basic]);
-	//m_Objects.push_back(triangle);
-
-	//Object* plane = new Object(CreatePlane(), m_DescriptorSetLayout, m_DescriptorPool, m_ViewportPipelineLayout, m_Pipelines[Basic]);
-	//m_Objects.push_back(plane);
 }
 
 

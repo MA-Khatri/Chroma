@@ -3,66 +3,108 @@
 #include "vulkan_utils.h"
 
 
-Object::Object(Mesh mesh, VkDescriptorSetLayout& descriptorSetLayout, VkDescriptorPool& descriptorPool, VkPipelineLayout& pipelineLayout, VkPipeline& pipeline)
+Object::Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelineInfo)
 {
     m_Mesh = mesh;
     VK::CreateVertexBuffer(m_Mesh.vertices, m_VertexBuffer, m_VertexBufferMemory);
     VK::CreateIndexBuffer(m_Mesh.indices, m_IndexBuffer, m_IndexBufferMemory);
 
-    m_DescriptorSetLayout = descriptorSetLayout;
-    m_DescriptorPool = descriptorPool;
-    m_PipelineLayout = pipelineLayout;
-    m_Pipeline = pipeline;
+    m_DescriptorSetLayout = pipelineInfo.descriptorSetLayout;
+    m_DescriptorPool = pipelineInfo.descriptorPool;
+    m_PipelineLayout = pipelineInfo.pipelineLayout;
+    m_Pipeline = pipelineInfo.pipeline;
 
-    /* Textures */
-    //VK::CreateTextureImage("res/textures/texture.jpg", m_TextureImage, m_TextureImageMemory);
-    VK::CreateTextureImage("res/textures/viking_room.png", m_TextureImage, m_TextureImageMemory);
-    VK::CreateTextureImageView(m_TextureImage, m_TextureImageView);
+    /* Create descriptor set for this object */
+    VK::CreateDescriptorSet(m_DescriptorSetLayout, m_DescriptorPool, m_DescriptorSet);
+    std::vector<VkWriteDescriptorSet> descriptorWrites;
+
+    /* Create buffer and device memory for the uniforms of this object */
+    VK::CreateUniformBuffer(sizeof(UniformBufferObject), m_UniformBuffer, m_UniformBufferMemory, m_UniformBufferMapped);
+
+    VkDescriptorBufferInfo bufferInfo{};
+    bufferInfo.buffer = m_UniformBuffer;
+    bufferInfo.offset = 0;
+    bufferInfo.range = sizeof(UniformBufferObject);
+
+    VkWriteDescriptorSet uboWrite{};
+    uboWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    uboWrite.dstSet = m_DescriptorSet;
+    uboWrite.dstBinding = 0;
+    uboWrite.dstArrayElement = 0;
+    uboWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboWrite.descriptorCount = 1;
+    uboWrite.pBufferInfo = &bufferInfo;
+    uboWrite.pImageInfo = nullptr; /* optional */
+    uboWrite.pTexelBufferView = nullptr; /* optional */
+    descriptorWrites.push_back(uboWrite);
+
+    /* === Textures === */
+    /* We can use the same texture sampler for all our textures */
     VK::CreateTextureSampler(m_TextureSampler);
 
-    /* Create buffers and device memory for the uniforms of this object */
-    VK::CreateUniformBuffers(sizeof(UniformBufferObject), m_UniformBuffers, m_UniformBuffersMemory, m_UniformBuffersMapped);
+    VkDescriptorImageInfo diffImageInfo{};
+    VkDescriptorImageInfo specImageInfo{};
+    VkDescriptorImageInfo normImageInfo{};
 
-    /* Create descriptor sets for this object */
-    VK::CreateDescriptorSets(m_DescriptorSetLayout, m_DescriptorPool, m_DescriptorSets);
-    for (size_t i = 0; i < VK::ImageCount; i++)
+    if (!texturePaths.diffuse.empty())
     {
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = m_UniformBuffers[i];
-        bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(UniformBufferObject);
+        VK::CreateTextureImage(texturePaths.diffuse, m_DiffuseTextureImage, m_DiffuseTextureImageMemory);
+        VK::CreateTextureImageView(m_DiffuseTextureImage, m_DiffuseTextureImageView);
 
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = m_TextureImageView;
-        imageInfo.sampler = m_TextureSampler;
-
-        std::vector<VkWriteDescriptorSet> descriptorWrites;
-
-        VkWriteDescriptorSet uboWrite{};
-        uboWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        uboWrite.dstSet = m_DescriptorSets[i];
-        uboWrite.dstBinding = 0;
-        uboWrite.dstArrayElement = 0;
-        uboWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uboWrite.descriptorCount = 1;
-        uboWrite.pBufferInfo = &bufferInfo;
-        uboWrite.pImageInfo = nullptr; /* optional */
-        uboWrite.pTexelBufferView = nullptr; /* optional */
-        descriptorWrites.push_back(uboWrite);
+        diffImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        diffImageInfo.imageView = m_DiffuseTextureImageView;
+        diffImageInfo.sampler = m_TextureSampler;
 
         VkWriteDescriptorSet samplerWrite{};
         samplerWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        samplerWrite.dstSet = m_DescriptorSets[i];
+        samplerWrite.dstSet = m_DescriptorSet;
         samplerWrite.dstBinding = 1;
         samplerWrite.dstArrayElement = 0;
         samplerWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         samplerWrite.descriptorCount = 1;
-        samplerWrite.pImageInfo = &imageInfo;
+        samplerWrite.pImageInfo = &diffImageInfo;
         descriptorWrites.push_back(samplerWrite);
-
-        vkUpdateDescriptorSets(VK::Device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
+    if (!texturePaths.specular.empty())
+    {
+        VK::CreateTextureImage(texturePaths.specular, m_SpecularTextureImage, m_SpecularTextureImageMemory);
+        VK::CreateTextureImageView(m_SpecularTextureImage, m_SpecularTextureImageView);
+
+        specImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        specImageInfo.imageView = m_SpecularTextureImageView;
+        specImageInfo.sampler = m_TextureSampler;
+
+        VkWriteDescriptorSet samplerWrite{};
+        samplerWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        samplerWrite.dstSet = m_DescriptorSet;
+        samplerWrite.dstBinding = 2;
+        samplerWrite.dstArrayElement = 0;
+        samplerWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        samplerWrite.descriptorCount = 1;
+        samplerWrite.pImageInfo = &specImageInfo;
+        descriptorWrites.push_back(samplerWrite);
+    }
+    if (!texturePaths.normal.empty())
+    {
+        VK::CreateTextureImage(texturePaths.normal, m_NormalTextureImage, m_NormalTextureImageMemory);
+        VK::CreateTextureImageView(m_NormalTextureImage, m_NormalTextureImageView);
+
+        normImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        normImageInfo.imageView = m_NormalTextureImageView;
+        normImageInfo.sampler = m_TextureSampler;
+
+        VkWriteDescriptorSet samplerWrite{};
+        samplerWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        samplerWrite.dstSet = m_DescriptorSet;
+        samplerWrite.dstBinding = 3;
+        samplerWrite.dstArrayElement = 0;
+        samplerWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        samplerWrite.descriptorCount = 1;
+        samplerWrite.pImageInfo = &normImageInfo;
+        descriptorWrites.push_back(samplerWrite);
+    }
+
+    vkUpdateDescriptorSets(VK::Device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }
 
 
@@ -74,16 +116,22 @@ Object::~Object()
     vkDestroyBuffer(VK::Device, m_VertexBuffer, nullptr);
     vkFreeMemory(VK::Device, m_VertexBufferMemory, nullptr);
 
-    for (size_t i = 0; i < VK::ImageCount; i++)
-    {
-        vkDestroyBuffer(VK::Device, m_UniformBuffers[i], nullptr);
-        vkFreeMemory(VK::Device, m_UniformBuffersMemory[i], nullptr);
-    }
+    vkDestroyBuffer(VK::Device, m_UniformBuffer, nullptr);
+    vkFreeMemory(VK::Device, m_UniformBufferMemory, nullptr);
 
     vkDestroySampler(VK::Device, m_TextureSampler, nullptr);
-    vkDestroyImageView(VK::Device, m_TextureImageView, nullptr);
-    vkDestroyImage(VK::Device, m_TextureImage, nullptr);
-    vkFreeMemory(VK::Device, m_TextureImageMemory, nullptr);
+
+    vkDestroyImageView(VK::Device, m_DiffuseTextureImageView, nullptr);
+    vkDestroyImage(VK::Device, m_DiffuseTextureImage, nullptr);
+    vkFreeMemory(VK::Device, m_DiffuseTextureImageMemory, nullptr);
+
+    vkDestroyImageView(VK::Device, m_SpecularTextureImageView, nullptr);
+    vkDestroyImage(VK::Device, m_SpecularTextureImage, nullptr);
+    vkFreeMemory(VK::Device, m_SpecularTextureImageMemory, nullptr);
+
+    vkDestroyImageView(VK::Device, m_NormalTextureImageView, nullptr);
+    vkDestroyImage(VK::Device, m_NormalTextureImage, nullptr);
+    vkFreeMemory(VK::Device, m_NormalTextureImageMemory, nullptr);
 }
 
 
@@ -91,7 +139,7 @@ void Object::Draw(VkCommandBuffer& commandBuffer)
 {
     UpdateUniformBuffer();
 
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSets[VK::MainWindowData.FrameIndex], 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 
@@ -101,6 +149,16 @@ void Object::Draw(VkCommandBuffer& commandBuffer)
     vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
     vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_Mesh.indices.size()), 1, 0, 0, 0);
+}
+
+
+void Object::UpdateUniformBuffer()
+{
+    UniformBufferObject ubo{};
+    ubo.modelMatrix = m_ModelMatrix;
+    ubo.normalMatrix = m_ModelNormalMatrix;
+
+    memcpy(m_UniformBufferMapped, &ubo, sizeof(ubo));
 }
 
 
@@ -165,14 +223,4 @@ void Object::Scale(float scale)
 void Object::Scale(float x, float y, float z)
 {
     Scale(glm::vec3(x, y, z), true);
-}
-
-
-void Object::UpdateUniformBuffer()
-{
-    UniformBufferObject ubo{};
-    ubo.modelMatrix = m_ModelMatrix;
-    ubo.normalMatrix = m_ModelNormalMatrix;
-
-    memcpy(m_UniformBuffersMapped[VK::MainWindowData.FrameIndex], &ubo, sizeof(ubo));
 }

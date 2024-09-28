@@ -832,7 +832,7 @@ namespace VK
 	}
 
 
-	void CreateGraphicsPipeline(std::vector<std::string> shaderFiles , ImVec2 extent, VkRenderPass& renderPass, VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout, VkPipeline& pipeline)
+	void CreateGraphicsPipeline(std::vector<std::string> shaderFiles , ImVec2 extent, const VkRenderPass& renderPass, const VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout, VkPipeline& pipeline)
 	{
 		VkResult err;
 
@@ -853,8 +853,8 @@ namespace VK
 		/* This is where we state the bindings and attribute layout of input data */
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 
-		auto bindingDescription = Vertex::getBindingDescription();
-		auto attributeDescriptions = Vertex::getAttributeDescriptions();
+		auto bindingDescription = Vertex::GetBindingDescription();
+		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
 
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 		vertexInputInfo.vertexBindingDescriptionCount = 1;
@@ -969,7 +969,7 @@ namespace VK
 
 
 		/* ====== Pipeline layout ====== */
-		/* what we use to determine uniforms being sent to the shaders */
+		/* what we use to determine push constants/uniforms being sent to the shaders */
 
 		/* We can send upto 2 4x4 matrices as push constants (128 bytes) */
 		VkPushConstantRange pushConstant{};
@@ -1013,7 +1013,7 @@ namespace VK
 	}
 
 
-	VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, VkRenderPass& renderPass, VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout)
+	VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, const VkRenderPass& renderPass, const VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout)
 	{
 		VkPipeline pipeline;
 		CreateGraphicsPipeline(shaderFiles, extent, renderPass, descriptorSetLayout, layout, pipeline);
@@ -1199,6 +1199,13 @@ namespace VK
 	}
 
 
+	void CreateUniformBuffer(VkDeviceSize bufferSize, VkBuffer& uniformBuffer, VkDeviceMemory& uniformBufferMemory, void*& uniformBufferMapped)
+	{
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffer, uniformBufferMemory);
+		vkMapMemory(Device, uniformBufferMemory, 0, bufferSize, 0, &uniformBufferMapped);
+	}
+
+
 	void CreateUniformBuffers(VkDeviceSize bufferSize, std::vector<VkBuffer>& uniformBuffers, std::vector<VkDeviceMemory>& uniformBuffersMemory, std::vector<void*>& uniformBuffersMapped)
 	{
 		uniformBuffers.resize(ImageCount);
@@ -1207,8 +1214,7 @@ namespace VK
 
 		for (size_t i = 0; i < ImageCount; i++)
 		{
-			CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
-			vkMapMemory(Device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
+			CreateUniformBuffer(bufferSize, uniformBuffers[i], uniformBuffersMemory[i], uniformBuffersMapped[i]);
 		}
 	}
 
@@ -1217,16 +1223,29 @@ namespace VK
 	{
 		std::vector<VkDescriptorPoolSize> poolSizes;
 
+		/* Uniform buffer */
 		VkDescriptorPoolSize uboPoolSize{};
 		uboPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		uboPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
 		poolSizes.push_back(uboPoolSize);
 
-		VkDescriptorPoolSize samplerPoolSize{};
-		samplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
-		poolSizes.push_back(samplerPoolSize);
+		/* Texture samplers (diffuse, specular, normal) */
+		VkDescriptorPoolSize diffuseSamplerPoolSize{};
+		diffuseSamplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		diffuseSamplerPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
+		poolSizes.push_back(diffuseSamplerPoolSize);
 
+		VkDescriptorPoolSize specularSamplerPoolSize{};
+		specularSamplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		specularSamplerPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
+		poolSizes.push_back(specularSamplerPoolSize);
+
+		VkDescriptorPoolSize normalSamplerPoolSize{};
+		normalSamplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		normalSamplerPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
+		poolSizes.push_back(normalSamplerPoolSize);
+
+		/* Descriptor pool create info */
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
@@ -1234,6 +1253,19 @@ namespace VK
 		poolInfo.maxSets = nSets * static_cast<uint32_t>(ImageCount);
 
 		VkResult err = vkCreateDescriptorPool(Device, &poolInfo, nullptr, &descriptorPool);
+		check_vk_result(err);
+	}
+
+
+	void CreateDescriptorSet(VkDescriptorSetLayout& descriptorSetLayout, VkDescriptorPool& descriptorPool, VkDescriptorSet& descriptorSet)
+	{
+		VkDescriptorSetAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = descriptorPool;
+		allocInfo.descriptorSetCount = 1;
+		allocInfo.pSetLayouts = &descriptorSetLayout;
+
+		VkResult err = vkAllocateDescriptorSets(Device, &allocInfo, &descriptorSet);
 		check_vk_result(err);
 	}
 
