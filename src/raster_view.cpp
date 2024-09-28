@@ -83,11 +83,14 @@ void RasterView::OnUIRender()
 
 void RasterView::InitVulkan()
 {
+	m_MSAASampleCount = VK::MaxMSAASamples;
+
 	/* Set up viewport rendering */
-	VK::CreateRenderPass(m_ViewportRenderPass);
+	VK::CreateRenderPass(m_MSAASampleCount, m_ViewportRenderPass);
 	VK::CreateViewportSampler(&m_ViewportSampler);
 
-	VK::CreateDepthResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_DepthImage, m_DepthImageMemory, m_DepthImageView);
+	VK::CreateColorResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount, m_ColorImage, m_ColorImageMemory, m_ColorImageView);
+	VK::CreateDepthResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount, m_DepthImage, m_DepthImageMemory, m_DepthImageView);
 	CreateViewportImagesAndFramebuffers();
 	CreateViewportImageDescriptorSets();
 }
@@ -95,6 +98,10 @@ void RasterView::InitVulkan()
 
 void RasterView::CleanupVulkan()
 {
+	vkDestroyImageView(VK::Device, m_ColorImageView, nullptr);
+	vkDestroyImage(VK::Device, m_ColorImage, nullptr);
+	vkFreeMemory(VK::Device, m_ColorImageMemory, nullptr);
+
 	vkDestroyImageView(VK::Device, m_DepthImageView, nullptr);
 	vkDestroyImage(VK::Device, m_DepthImage, nullptr);
 	vkFreeMemory(VK::Device, m_DepthImageMemory, nullptr);
@@ -132,7 +139,9 @@ void RasterView::OnResize(ImVec2 newSize)
 
 	/* Before re-creating the images, we MUST wait for the device to be done using them */
 	vkDeviceWaitIdle(VK::Device);
-	VK::CreateDepthResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_DepthImage, m_DepthImageMemory, m_DepthImageView);
+
+	VK::CreateColorResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount, m_ColorImage, m_ColorImageMemory, m_ColorImageView);
+	VK::CreateDepthResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount, m_DepthImage, m_DepthImageMemory, m_DepthImageView);
 	CreateViewportImagesAndFramebuffers();
 	CreateViewportImageDescriptorSets();
 }
@@ -186,7 +195,7 @@ void RasterView::SceneSetup()
 	PipelineInfo basic;
 	basic.descriptorPool = m_DescriptorPool;
 	basic.descriptorSetLayout = m_DescriptorSetLayout;
-	basic.pipeline = VK::CreateGraphicsPipeline(shadersBasic, m_ViewportSize, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
+	basic.pipeline = VK::CreateGraphicsPipeline(shadersBasic, m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
 	basic.pipelineLayout = m_ViewportPipelineLayout; /* Note: has to be after pipeline creation bc pipeline layout is created in CreateGraphicsPipeline() */
 	m_Pipelines[Basic] = basic;
 
@@ -206,7 +215,7 @@ void RasterView::CreateViewportImagesAndFramebuffers()
 	m_ViewportFramebuffers.resize(VK::ImageCount);
 	for (uint32_t i = 0; i < VK::ImageCount; i++)
 	{
-		VK::CreateFrameBuffer(std::vector<VkImageView>{m_ViewportImageViews[i], m_DepthImageView}, m_ViewportRenderPass, m_ViewportSize, m_ViewportFramebuffers[i]);
+		VK::CreateFrameBuffer(std::vector<VkImageView>{m_ColorImageView, m_DepthImageView, m_ViewportImageViews[i]}, m_ViewportRenderPass, m_ViewportSize, m_ViewportFramebuffers[i]);
 	}
 }
 

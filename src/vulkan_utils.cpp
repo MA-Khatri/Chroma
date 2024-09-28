@@ -25,6 +25,8 @@ namespace VK
 	extern uint32_t ImageCount = MinImageCount;
 	extern bool SwapChainRebuild = false;
 
+	extern VkSampleCountFlagBits MaxMSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
 	extern uint32_t GraphicsQueueFamily = (uint32_t)-1;
 	extern uint32_t ComputeQueueFamily = (uint32_t)-1;
 	extern uint32_t TransferQueueFamily = (uint32_t)-1;
@@ -394,6 +396,7 @@ namespace VK
 			if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
 			{
 				PhysicalDevice = device;
+				MaxMSAASamples = GetMaxUsableSampleCount();
 				return;
 			}
 		}
@@ -546,6 +549,23 @@ namespace VK
 
 		VkResult err = vkCreateCommandPool(Device, &poolInfo, nullptr, &commandPool);
 		check_vk_result(err);
+	}
+
+
+	VkSampleCountFlagBits GetMaxUsableSampleCount()
+	{
+		VkPhysicalDeviceProperties physicalDeviceProperties;
+		vkGetPhysicalDeviceProperties(PhysicalDevice, &physicalDeviceProperties);
+
+		VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+		if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
+		if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
+		if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
+		if (counts & VK_SAMPLE_COUNT_8_BIT) { return VK_SAMPLE_COUNT_8_BIT; }
+		if (counts & VK_SAMPLE_COUNT_4_BIT) { return VK_SAMPLE_COUNT_4_BIT; }
+		if (counts & VK_SAMPLE_COUNT_2_BIT) { return VK_SAMPLE_COUNT_2_BIT; }
+
+		return VK_SAMPLE_COUNT_1_BIT;
 	}
 
 
@@ -773,19 +793,17 @@ namespace VK
 	}
 
 
-	void CreateRenderPass(VkRenderPass& renderPass)
+	void CreateRenderPass(VkSampleCountFlagBits msaaSamples, VkRenderPass& renderPass)
 	{
-		/* THIS FUNCTION SHOULD HAVE MORE OPTIONS TO SETUP THE RENDER PASS?? */
-
 		VkAttachmentDescription colorAttachment{};
 		colorAttachment.format = MainWindowData.SurfaceFormat.format;
-		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAttachment.samples = msaaSamples;
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; /* we clear the color attachment with constants */
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentReference colorAttachmentRef{};
 		colorAttachmentRef.attachment = 0; /* index to attachment, e.g. "layout(location = 0) out vec4 outColor;" in frag shader code */
@@ -793,7 +811,7 @@ namespace VK
 
 		VkAttachmentDescription depthAttachment{};
 		depthAttachment.format = FindDepthFormat();
-		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthAttachment.samples = msaaSamples;
 		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; /* Don't care bc it won't be used after drawing is complete */
 		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -805,11 +823,27 @@ namespace VK
 		depthAttachmentRef.attachment = 1;
 		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+		/* Resolve multisampled color attachment to presentable attachment */
+		VkAttachmentDescription colorAttachmentResolve{};
+		colorAttachmentResolve.format = MainWindowData.SurfaceFormat.format;
+		colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		VkAttachmentReference colorAttachmentResolveRef{};
+		colorAttachmentResolveRef.attachment = 2;
+		colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
 		VkSubpassDescription subpass{};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &colorAttachmentRef;
 		subpass.pDepthStencilAttachment = &depthAttachmentRef;
+		subpass.pResolveAttachments = &colorAttachmentResolveRef;
 
 		VkSubpassDependency dependency{};
 		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
@@ -817,7 +851,7 @@ namespace VK
 		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 		dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-		std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
+		std::array<VkAttachmentDescription, 3> attachments = { colorAttachment, depthAttachment, colorAttachmentResolve };
 		VkRenderPassCreateInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
@@ -832,7 +866,7 @@ namespace VK
 	}
 
 
-	void CreateGraphicsPipeline(std::vector<std::string> shaderFiles , ImVec2 extent, const VkRenderPass& renderPass, const VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout, VkPipeline& pipeline)
+	void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, VkSampleCountFlagBits msaaSamples, const VkRenderPass& renderPass, const VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout, VkPipeline& pipeline)
 	{
 		VkResult err;
 
@@ -906,9 +940,9 @@ namespace VK
 		/* We'll get back to this later? For now, disabled. */
 		VkPipelineMultisampleStateCreateInfo multisampling{};
 		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		multisampling.sampleShadingEnable = VK_FALSE;
-		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-		multisampling.minSampleShading = 1.0f; /* optional */
+		multisampling.sampleShadingEnable = VK_TRUE;
+		multisampling.minSampleShading = 1.0f;
+		multisampling.rasterizationSamples = msaaSamples;
 		multisampling.pSampleMask = nullptr; /* optional */
 		multisampling.alphaToCoverageEnable = VK_FALSE; /* optional */
 		multisampling.alphaToOneEnable = VK_FALSE; /* optional */
@@ -1013,10 +1047,10 @@ namespace VK
 	}
 
 
-	VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, const VkRenderPass& renderPass, const VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout)
+	VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, VkSampleCountFlagBits msaaSamples, const VkRenderPass& renderPass, const VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout)
 	{
 		VkPipeline pipeline;
-		CreateGraphicsPipeline(shaderFiles, extent, renderPass, descriptorSetLayout, layout, pipeline);
+		CreateGraphicsPipeline(shaderFiles, extent, msaaSamples, renderPass, descriptorSetLayout, layout, pipeline);
 		return pipeline;
 	}
 
@@ -1065,10 +1099,19 @@ namespace VK
 	}
 
 
-	void CreateDepthResources(uint32_t width, uint32_t height, VkImage& depthImage, VkDeviceMemory& depthImageMemory, VkImageView& depthImageView)
+	void CreateColorResources(uint32_t width, uint32_t height, VkSampleCountFlagBits msaaSamples, VkImage& colorImage, VkDeviceMemory& colorImageMemory, VkImageView& colorImageView)
+	{
+		VkFormat colorFormat = MainWindowData.SurfaceFormat.format;
+
+		CreateImage(width, height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage, colorImageMemory);
+		CreateImageView(colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1, colorImage, colorImageView);
+	}
+
+
+	void CreateDepthResources(uint32_t width, uint32_t height, VkSampleCountFlagBits msaaSamples, VkImage& depthImage, VkDeviceMemory& depthImageMemory, VkImageView& depthImageView)
 	{
 		VkFormat depthFormat = FindDepthFormat();
-		CreateImage(width, height, 1, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
+		CreateImage(width, height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
 		CreateImageView(depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1, depthImage, depthImageView);
 		TransitionImageLayout(depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 	}
@@ -1290,7 +1333,7 @@ namespace VK
 	/* === Textures === */
 	/* ================ */
 
-	void CreateImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
+	void CreateImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSample, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
 	{
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1305,7 +1348,7 @@ namespace VK
 		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageInfo.usage = usage;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.samples = numSample;
 		imageInfo.flags = 0; /* optional -- for sparse images */
 
 		VkResult err = vkCreateImage(Device, &imageInfo, nullptr, &image);
@@ -1356,7 +1399,7 @@ namespace VK
 		stbi_image_free(pixels);
 
 		/* Create the texture image */
-		CreateImage(texWidth, texHeight, mipLevels, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+		CreateImage(texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
 
 		/* Copy the staging buffer to the texture image, adjusting the layouts as we go */
 		VkCommandBuffer commandBuffer = GetGraphicsCommandBuffer();

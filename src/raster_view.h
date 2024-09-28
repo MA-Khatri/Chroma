@@ -59,6 +59,11 @@ private:
 	std::vector<VkImageView> m_ViewportImageViews;
 	std::vector<VkDescriptorSet> m_ViewportImageDescriptorSets;
 
+	VkSampleCountFlagBits m_MSAASampleCount = VK_SAMPLE_COUNT_1_BIT;
+	VkImage m_ColorImage; /* for MSAA */
+	VkDeviceMemory m_ColorImageMemory;
+	VkImageView m_ColorImageView;
+
 	VkRenderPass m_ViewportRenderPass;
 	VkPipelineLayout m_ViewportPipelineLayout;
 	std::vector<VkFramebuffer> m_ViewportFramebuffers;

@@ -36,6 +36,8 @@ namespace VK
 	extern uint32_t ImageCount; /* >= MinImageCount */
 	extern bool SwapChainRebuild;
 
+	extern VkSampleCountFlagBits MaxMSAASamples;
+
 	extern uint32_t GraphicsQueueFamily;
 	extern uint32_t ComputeQueueFamily;
 	extern uint32_t TransferQueueFamily;
@@ -109,6 +111,8 @@ namespace VK
 	void CreateDescriptorPool();
 	void CreateTransientCommandPool(uint32_t queueFamily, VkCommandPool& commandPool);
 
+	VkSampleCountFlagBits GetMaxUsableSampleCount();
+
 	void CleanupVulkan();
 	void CleanupVulkanWindow();
 
@@ -128,19 +132,20 @@ namespace VK
 	void CreateImageView(VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels, VkImage& image, VkImageView& imageView);
 	void CreateViewportImageViews(std::vector<VkImage>& images, std::vector<VkImageView>& views);
 
-	void CreateRenderPass(VkRenderPass& renderPass);
+	void CreateRenderPass(VkSampleCountFlagBits msaaSamples, VkRenderPass& renderPass);
 
-	void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, const VkRenderPass& renderPass, const VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout, VkPipeline& pipeline);
-	VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, const VkRenderPass& renderPass, const VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout);
+	void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, VkSampleCountFlagBits msaaSamples, const VkRenderPass& renderPass, const VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout, VkPipeline& pipeline);
+	VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, VkSampleCountFlagBits msaaSamples, const VkRenderPass& renderPass, const VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout);
 
 	void CreateFrameBuffer(std::vector<VkImageView> attachments, VkRenderPass& renderPass, ImVec2 extent, VkFramebuffer& framebuffer);
 	void CreateFrameBuffers(std::vector<VkImageView> attachments, VkRenderPass& renderPass, ImVec2 extent, uint32_t count, std::vector<VkFramebuffer>& framebuffers);
 
 	void CreateViewportSampler(VkSampler* sampler);
 
-	void CreateDepthResources(uint32_t width, uint32_t height, VkImage& depthImage, VkDeviceMemory& depthImageMemory, VkImageView& depthImageView);
+	void CreateColorResources(uint32_t width, uint32_t height, VkSampleCountFlagBits msaaSamples, VkImage& colorImage, VkDeviceMemory& colorImageMemory, VkImageView& colorImageView);
 
-	
+	void CreateDepthResources(uint32_t width, uint32_t height, VkSampleCountFlagBits msaaSamples, VkImage& depthImage, VkDeviceMemory& depthImageMemory, VkImageView& depthImageView);
+
 	/* === Buffers === */
 	
 	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
@@ -162,7 +167,7 @@ namespace VK
 	/* === Textures === */
 
 	/* For creating texture(-like) images*/
-	void CreateImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+	void CreateImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSample, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
 	void TransitionImageLayout(VkCommandBuffer& commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
 	void CopyBufferToImage(VkCommandBuffer& commandBuffer, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
