@@ -692,7 +692,7 @@ namespace VK
 	/* === Layer Utility Functions === */
 	/* =============================== */
 
-	void CreateImage(ImVec2 extent, VkImage& image, VkDeviceMemory& memory)
+	void CreateViewportImage(ImVec2 extent, VkImage& image, VkDeviceMemory& memory)
 	{
 		VkResult err;
 
@@ -733,14 +733,14 @@ namespace VK
 	}
 
 
-	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>& images, std::vector<VkDeviceMemory>& memory)
+	void CreateViewportImages(uint32_t count, ImVec2 extent, std::vector<VkImage>& images, std::vector<VkDeviceMemory>& memory)
 	{
 		images.resize(count);
 		memory.resize(count);
 
 		for (uint32_t i = 0; i < count; i++)
 		{
-			CreateImage(extent, images[i], memory[i]);
+			CreateViewportImage(extent, images[i], memory[i]);
 		}
 	}
 

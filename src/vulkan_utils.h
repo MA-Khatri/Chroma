@@ -122,8 +122,8 @@ namespace VK
 	/* === Layer Utility Functions === */
 	
 	/* For creating viewport images */
-	void CreateImage(ImVec2 extent, VkImage& image, VkDeviceMemory& memory);
-	void CreateImages(uint32_t count, ImVec2 extent, std::vector<VkImage>& images, std::vector<VkDeviceMemory>& memory);
+	void CreateViewportImage(ImVec2 extent, VkImage& image, VkDeviceMemory& memory);
+	void CreateViewportImages(uint32_t count, ImVec2 extent, std::vector<VkImage>& images, std::vector<VkDeviceMemory>& memory);
 
 	void CreateImageView(VkFormat format, VkImageAspectFlags aspectFlags, VkImage& image, VkImageView& imageView);
 	void CreateImageViews(std::vector<VkImage>& images, std::vector<VkImageView>& views);

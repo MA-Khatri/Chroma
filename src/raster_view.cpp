@@ -30,8 +30,6 @@ void RasterView::OnUpdate()
 	{
 		m_Camera->Inputs(m_WindowHandle);
 	}
-
-	//UpdateUniformBuffer(VK::MainWindowData.FrameIndex);
 }
 
 
@@ -90,7 +88,7 @@ void RasterView::InitVulkan()
 	VK::CreateViewportSampler(&m_ViewportSampler);
 
 	VK::CreateDepthResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_DepthImage, m_DepthImageMemory, m_DepthImageView);
-	CreateImagesAndFramebuffers();
+	CreateViewportImagesAndFramebuffers();
 	CreateViewportImageDescriptorSets();
 }
 
@@ -106,7 +104,7 @@ void RasterView::CleanupVulkan()
 
 	vkDestroySampler(VK::Device, m_ViewportSampler, nullptr);
 
-	DestroyImagesAndFramebuffers();
+	DestroyViewportImagesAndFramebuffers();
 
 	auto it = m_Pipelines.begin();
 	while (it != m_Pipelines.end())
@@ -135,7 +133,7 @@ void RasterView::OnResize(ImVec2 newSize)
 	/* Before re-creating the images, we MUST wait for the device to be done using them */
 	vkDeviceWaitIdle(VK::Device);
 	VK::CreateDepthResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_DepthImage, m_DepthImageMemory, m_DepthImageView);
-	CreateImagesAndFramebuffers();
+	CreateViewportImagesAndFramebuffers();
 	CreateViewportImageDescriptorSets();
 }
 
@@ -196,14 +194,14 @@ void RasterView::SceneSetup()
 	TexturePaths vikingRoomTextures;
 	vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
 	Object* vikingRoom = new Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, m_Pipelines[Basic]);
-	vikingRoom->Scale(10.0f);
+	vikingRoom->Scale(5.0f);
 	m_Objects.push_back(vikingRoom);
 }
 
 
-void RasterView::CreateImagesAndFramebuffers()
+void RasterView::CreateViewportImagesAndFramebuffers()
 {
-	VK::CreateImages(VK::ImageCount, m_ViewportSize, m_ViewportImages, m_ViewportImagesDeviceMemory);
+	VK::CreateViewportImages(VK::ImageCount, m_ViewportSize, m_ViewportImages, m_ViewportImagesDeviceMemory);
 	VK::CreateImageViews(m_ViewportImages, m_ViewportImageViews);
 	m_ViewportFramebuffers.resize(VK::ImageCount);
 	for (uint32_t i = 0; i < VK::ImageCount; i++)
@@ -213,7 +211,7 @@ void RasterView::CreateImagesAndFramebuffers()
 }
 
 
-void RasterView::DestroyImagesAndFramebuffers()
+void RasterView::DestroyViewportImagesAndFramebuffers()
 {
 	for (uint32_t i = 0; i < VK::ImageCount; i++)
 	{

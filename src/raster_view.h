@@ -33,8 +33,8 @@ private:
 
 	void SceneSetup();
 	void CreateViewportImageDescriptorSets();
-	void CreateImagesAndFramebuffers();
-	void DestroyImagesAndFramebuffers();
+	void CreateViewportImagesAndFramebuffers();
+	void DestroyViewportImagesAndFramebuffers();
 
 	void RecordCommandBuffer(VkCommandBuffer& commandBuffer);
 
