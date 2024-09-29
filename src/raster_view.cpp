@@ -98,19 +98,15 @@ void RasterView::InitVulkan()
 
 void RasterView::CleanupVulkan()
 {
-	vkDestroyImageView(VK::Device, m_ColorImageView, nullptr);
-	vkDestroyImage(VK::Device, m_ColorImage, nullptr);
-	vkFreeMemory(VK::Device, m_ColorImageMemory, nullptr);
+	vkDestroySampler(VK::Device, m_ViewportSampler, nullptr);
 
-	vkDestroyImageView(VK::Device, m_DepthImageView, nullptr);
-	vkDestroyImage(VK::Device, m_DepthImage, nullptr);
-	vkFreeMemory(VK::Device, m_DepthImageMemory, nullptr);
+	DestroyColorResources();
+	DestroyDepthResources();
 
 	vkDestroyDescriptorPool(VK::Device, m_DescriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(VK::Device, m_DescriptorSetLayout, nullptr);
 
-	vkDestroySampler(VK::Device, m_ViewportSampler, nullptr);
-
+	DestroyViewportImageDescriptorSets();
 	DestroyViewportImagesAndFramebuffers();
 
 	auto it = m_Pipelines.begin();
@@ -140,6 +136,13 @@ void RasterView::OnResize(ImVec2 newSize)
 	/* Before re-creating the images, we MUST wait for the device to be done using them */
 	vkDeviceWaitIdle(VK::Device);
 
+	/* Cleanup previous */
+	DestroyColorResources();
+	DestroyDepthResources();
+	DestroyViewportImagesAndFramebuffers();
+	DestroyViewportImageDescriptorSets();
+
+	/* Recreate new */
 	VK::CreateColorResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount, m_ColorImage, m_ColorImageMemory, m_ColorImageView);
 	VK::CreateDepthResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount, m_DepthImage, m_DepthImageMemory, m_DepthImageView);
 	CreateViewportImagesAndFramebuffers();
@@ -243,12 +246,37 @@ void RasterView::DestroyViewportImagesAndFramebuffers()
 
 void RasterView::CreateViewportImageDescriptorSets()
 {
-	m_ViewportImageDescriptorSets.clear();
-
 	for (uint32_t i = 0; i < VK::ImageCount; i++)
 	{
 		m_ViewportImageDescriptorSets.push_back((VkDescriptorSet)ImGui_ImplVulkan_AddTexture(m_ViewportSampler, m_ViewportImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 	}
+}
+
+
+void RasterView::DestroyViewportImageDescriptorSets()
+{
+	for (auto& descriptorSet : m_ViewportImageDescriptorSets)
+	{
+		ImGui_ImplVulkan_RemoveTexture(descriptorSet);
+	}
+
+	m_ViewportImageDescriptorSets.clear();
+}
+
+
+void RasterView::DestroyColorResources()
+{
+	vkDestroyImageView(VK::Device, m_ColorImageView, nullptr);
+	vkDestroyImage(VK::Device, m_ColorImage, nullptr);
+	vkFreeMemory(VK::Device, m_ColorImageMemory, nullptr);
+}
+
+
+void RasterView::DestroyDepthResources()
+{
+	vkDestroyImageView(VK::Device, m_DepthImageView, nullptr);
+	vkDestroyImage(VK::Device, m_DepthImage, nullptr);
+	vkFreeMemory(VK::Device, m_DepthImageMemory, nullptr);
 }
 
 
