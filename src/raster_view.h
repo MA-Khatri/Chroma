@@ -49,6 +49,7 @@ private:
 	enum Pipelines
 	{
 		Basic,
+		Solid
 	};
 
 	Application* m_AppHandle;

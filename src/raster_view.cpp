@@ -193,14 +193,18 @@ void RasterView::SceneSetup()
 	VK::CreateDescriptorPool(1, m_DescriptorPool); /* Note: Make sure to update the max number of descriptor sets according to the number of objects you have! */
 
 	/* Generate graphics pipelines with different shaders */
-	std::vector<std::string> shadersBasic = { "res/shaders/Basic.vert", "res/shaders/Basic.frag" };
+	PipelineInfo pInfo;
+	pInfo.descriptorPool = m_DescriptorPool;
+	pInfo.descriptorSetLayout = m_DescriptorSetLayout;
 
-	PipelineInfo basic;
-	basic.descriptorPool = m_DescriptorPool;
-	basic.descriptorSetLayout = m_DescriptorSetLayout;
-	basic.pipeline = VK::CreateGraphicsPipeline(shadersBasic, m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
-	basic.pipelineLayout = m_ViewportPipelineLayout; /* Note: has to be after pipeline creation bc pipeline layout is created in CreateGraphicsPipeline() */
-	m_Pipelines[Basic] = basic;
+	std::vector<std::string> shadersBasic = { "res/shaders/Basic.vert", "res/shaders/Basic.frag" };
+	pInfo.pipeline = VK::CreateGraphicsPipeline(shadersBasic, m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
+	pInfo.pipelineLayout = m_ViewportPipelineLayout; /* Note: has to be after pipeline creation bc pipeline layout is created in CreateGraphicsPipeline() */
+	m_Pipelines[Basic] = pInfo;
+
+	std::vector<std::string> shadersSolid = { "res/shaders/Solid.vert", "res/shaders/Solid.frag" };
+	pInfo.pipeline = VK::CreateGraphicsPipeline(shadersSolid, m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
+	m_Pipelines[Solid] = pInfo;
 
 	/* Create objects that will be drawn */
 	TexturePaths vikingRoomTextures;
@@ -208,6 +212,13 @@ void RasterView::SceneSetup()
 	Object* vikingRoom = new Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, m_Pipelines[Basic]);
 	vikingRoom->Scale(5.0f);
 	m_Objects.push_back(vikingRoom);
+
+	TexturePaths noTextures;
+	Object* dragon = new Object(LoadMesh("res/meshes/dragon.obj"), noTextures, m_Pipelines[Solid]);
+	dragon->Translate(0.0f, 10.0f, 0.0f);
+	dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 90.0f);
+	dragon->Scale(5.0f);
+	m_Objects.push_back(dragon);
 }
 
 

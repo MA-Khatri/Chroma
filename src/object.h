@@ -65,7 +65,7 @@ public:
 	/* Uniform buffer contains all necessary drawing info for this object */
 	struct UniformBufferObject {
 		alignas(16) glm::mat4 modelMatrix;
-		alignas(16) glm::mat3 normalMatrix;
+		alignas(16) glm::mat4 normalMatrix; /* We pass in the normal matrix as a mat4 to avoid alignment issues */
 	};
 
 

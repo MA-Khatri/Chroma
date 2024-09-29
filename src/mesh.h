@@ -74,7 +74,7 @@ struct Mesh
 {
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
-	int drawMode; /* index into enum VkPrimitiveTopology */
+	VkPrimitiveTopology drawMode = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 };
 
 

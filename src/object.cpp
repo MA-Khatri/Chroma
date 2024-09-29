@@ -138,8 +138,6 @@ Object::~Object()
 
 void Object::Draw(VkCommandBuffer& commandBuffer)
 {
-    UpdateUniformBuffer();
-
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
@@ -157,7 +155,12 @@ void Object::UpdateUniformBuffer()
 {
     UniformBufferObject ubo{};
     ubo.modelMatrix = m_ModelMatrix;
-    ubo.normalMatrix = m_ModelNormalMatrix;
+    ubo.normalMatrix = glm::mat4(m_ModelNormalMatrix);
+
+    //std::cout << ubo.normalMatrix[0][0] << " " << ubo.normalMatrix[1][0] << " " << ubo.normalMatrix[2][0] << std::endl;
+    //std::cout << ubo.normalMatrix[0][1] << " " << ubo.normalMatrix[1][1] << " " << ubo.normalMatrix[2][1] << std::endl;
+    //std::cout << ubo.normalMatrix[0][2] << " " << ubo.normalMatrix[1][2] << " " << ubo.normalMatrix[2][2] << std::endl;
+    //std::cout << std::endl;
 
     memcpy(m_UniformBufferMapped, &ubo, sizeof(ubo));
 }
@@ -176,6 +179,7 @@ void Object::SetModelMatrix(glm::mat4 matrix)
 {
     m_ModelMatrix = matrix;
     UpdateModelNormalMatrix();
+    UpdateUniformBuffer();
 }
 
 
@@ -183,12 +187,14 @@ void Object::UpdateModelMatrix(glm::mat4 matrix)
 {
     m_ModelMatrix *= matrix;
     UpdateModelNormalMatrix();
+    UpdateUniformBuffer();
 }
 
 
 void Object::Translate(glm::vec3 translate)
 {
     m_ModelMatrix *= glm::translate(translate);
+    UpdateUniformBuffer();
 }
 
 
@@ -202,6 +208,7 @@ void Object::Rotate(glm::vec3 axis, float deg)
 {
     m_ModelMatrix *= glm::rotate(glm::radians(deg), axis);
     UpdateModelNormalMatrix();
+    UpdateUniformBuffer();
 }
 
 
@@ -212,6 +219,7 @@ void Object::Scale(glm::vec3 scale, bool updateNormal /* = true */)
     {
         UpdateModelNormalMatrix();
     }
+    UpdateUniformBuffer();
 }
 
 

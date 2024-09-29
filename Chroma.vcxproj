@@ -36,8 +36,11 @@
     <None Include="README.md" />
     <None Include="res\shaders\Basic.frag" />
     <None Include="res\shaders\Basic.vert" />
+    <None Include="res\shaders\BasicWithSpecular.frag" />
     <None Include="res\shaders\HelloTriangle.frag" />
     <None Include="res\shaders\HelloTriangle.vert" />
+    <None Include="res\shaders\Solid.frag" />
+    <None Include="res\shaders\Solid.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\imgui-docking\imconfig.h" />
