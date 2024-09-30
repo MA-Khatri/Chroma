@@ -19,7 +19,7 @@
 #endif
 
 
-namespace VK
+namespace vk
 {
 	/* === Namespace Globals === */
 	

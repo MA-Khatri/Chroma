@@ -6,8 +6,8 @@
 Object::Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelineInfo)
 {
     m_Mesh = mesh;
-    VK::CreateVertexBuffer(m_Mesh.vertices, m_VertexBuffer, m_VertexBufferMemory);
-    VK::CreateIndexBuffer(m_Mesh.indices, m_IndexBuffer, m_IndexBufferMemory);
+    vk::CreateVertexBuffer(m_Mesh.vertices, m_VertexBuffer, m_VertexBufferMemory);
+    vk::CreateIndexBuffer(m_Mesh.indices, m_IndexBuffer, m_IndexBufferMemory);
 
     m_DescriptorSetLayout = pipelineInfo.descriptorSetLayout;
     m_DescriptorPool = pipelineInfo.descriptorPool;
@@ -15,11 +15,11 @@ Object::Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelin
     m_Pipeline = pipelineInfo.pipeline;
 
     /* Create descriptor set for this object */
-    VK::CreateDescriptorSet(m_DescriptorSetLayout, m_DescriptorPool, m_DescriptorSet);
+    vk::CreateDescriptorSet(m_DescriptorSetLayout, m_DescriptorPool, m_DescriptorSet);
     std::vector<VkWriteDescriptorSet> descriptorWrites;
 
     /* Create buffer and device memory for the uniforms of this object */
-    VK::CreateUniformBuffer(sizeof(UniformBufferObject), m_UniformBuffer, m_UniformBufferMemory, m_UniformBufferMapped);
+    vk::CreateUniformBuffer(sizeof(UniformBufferObject), m_UniformBuffer, m_UniformBufferMemory, m_UniformBufferMapped);
 
     VkDescriptorBufferInfo bufferInfo{};
     bufferInfo.buffer = m_UniformBuffer;
@@ -45,9 +45,9 @@ Object::Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelin
 
     if (!texturePaths.diffuse.empty())
     {
-        VK::CreateTextureImage(texturePaths.diffuse, m_DiffuseMipLevels, m_DiffuseTextureImage, m_DiffuseTextureImageMemory);
-        VK::CreateTextureImageView(m_DiffuseMipLevels, m_DiffuseTextureImage, m_DiffuseTextureImageView);
-        VK::CreateTextureSampler(m_DiffuseMipLevels, m_DiffuseTextureSampler);
+        vk::CreateTextureImage(texturePaths.diffuse, m_DiffuseMipLevels, m_DiffuseTextureImage, m_DiffuseTextureImageMemory);
+        vk::CreateTextureImageView(m_DiffuseMipLevels, m_DiffuseTextureImage, m_DiffuseTextureImageView);
+        vk::CreateTextureSampler(m_DiffuseMipLevels, m_DiffuseTextureSampler);
 
         diffImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         diffImageInfo.imageView = m_DiffuseTextureImageView;
@@ -65,9 +65,9 @@ Object::Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelin
     }
     if (!texturePaths.specular.empty())
     {
-        VK::CreateTextureImage(texturePaths.specular, m_SpecularMipLevels, m_SpecularTextureImage, m_SpecularTextureImageMemory);
-        VK::CreateTextureImageView(m_SpecularMipLevels, m_SpecularTextureImage, m_SpecularTextureImageView);
-        VK::CreateTextureSampler(m_SpecularMipLevels, m_SpecularTextureSampler);
+        vk::CreateTextureImage(texturePaths.specular, m_SpecularMipLevels, m_SpecularTextureImage, m_SpecularTextureImageMemory);
+        vk::CreateTextureImageView(m_SpecularMipLevels, m_SpecularTextureImage, m_SpecularTextureImageView);
+        vk::CreateTextureSampler(m_SpecularMipLevels, m_SpecularTextureSampler);
 
         specImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         specImageInfo.imageView = m_SpecularTextureImageView;
@@ -85,9 +85,9 @@ Object::Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelin
     }
     if (!texturePaths.normal.empty())
     {
-        VK::CreateTextureImage(texturePaths.normal, m_NormalMipLevels, m_NormalTextureImage, m_NormalTextureImageMemory);
-        VK::CreateTextureImageView(m_NormalMipLevels, m_NormalTextureImage, m_NormalTextureImageView);
-        VK::CreateTextureSampler(m_NormalMipLevels, m_NormalTextureSampler);
+        vk::CreateTextureImage(texturePaths.normal, m_NormalMipLevels, m_NormalTextureImage, m_NormalTextureImageMemory);
+        vk::CreateTextureImageView(m_NormalMipLevels, m_NormalTextureImage, m_NormalTextureImageView);
+        vk::CreateTextureSampler(m_NormalMipLevels, m_NormalTextureSampler);
 
         normImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         normImageInfo.imageView = m_NormalTextureImageView;
@@ -104,35 +104,35 @@ Object::Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelin
         descriptorWrites.push_back(samplerWrite);
     }
 
-    vkUpdateDescriptorSets(VK::Device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+    vkUpdateDescriptorSets(vk::Device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }
 
 
 Object::~Object()
 {
-    vkDestroyBuffer(VK::Device, m_IndexBuffer, nullptr);
-    vkFreeMemory(VK::Device, m_IndexBufferMemory, nullptr);
+    vkDestroyBuffer(vk::Device, m_IndexBuffer, nullptr);
+    vkFreeMemory(vk::Device, m_IndexBufferMemory, nullptr);
 
-    vkDestroyBuffer(VK::Device, m_VertexBuffer, nullptr);
-    vkFreeMemory(VK::Device, m_VertexBufferMemory, nullptr);
+    vkDestroyBuffer(vk::Device, m_VertexBuffer, nullptr);
+    vkFreeMemory(vk::Device, m_VertexBufferMemory, nullptr);
 
-    vkDestroyBuffer(VK::Device, m_UniformBuffer, nullptr);
-    vkFreeMemory(VK::Device, m_UniformBufferMemory, nullptr);
+    vkDestroyBuffer(vk::Device, m_UniformBuffer, nullptr);
+    vkFreeMemory(vk::Device, m_UniformBufferMemory, nullptr);
 
-    vkDestroyImageView(VK::Device, m_DiffuseTextureImageView, nullptr);
-    vkDestroyImage(VK::Device, m_DiffuseTextureImage, nullptr);
-    vkFreeMemory(VK::Device, m_DiffuseTextureImageMemory, nullptr);
-    vkDestroySampler(VK::Device, m_DiffuseTextureSampler, nullptr);
+    vkDestroyImageView(vk::Device, m_DiffuseTextureImageView, nullptr);
+    vkDestroyImage(vk::Device, m_DiffuseTextureImage, nullptr);
+    vkFreeMemory(vk::Device, m_DiffuseTextureImageMemory, nullptr);
+    vkDestroySampler(vk::Device, m_DiffuseTextureSampler, nullptr);
 
-    vkDestroyImageView(VK::Device, m_SpecularTextureImageView, nullptr);
-    vkDestroyImage(VK::Device, m_SpecularTextureImage, nullptr);
-    vkFreeMemory(VK::Device, m_SpecularTextureImageMemory, nullptr);
-    vkDestroySampler(VK::Device, m_SpecularTextureSampler, nullptr);
+    vkDestroyImageView(vk::Device, m_SpecularTextureImageView, nullptr);
+    vkDestroyImage(vk::Device, m_SpecularTextureImage, nullptr);
+    vkFreeMemory(vk::Device, m_SpecularTextureImageMemory, nullptr);
+    vkDestroySampler(vk::Device, m_SpecularTextureSampler, nullptr);
 
-    vkDestroyImageView(VK::Device, m_NormalTextureImageView, nullptr);
-    vkDestroyImage(VK::Device, m_NormalTextureImage, nullptr);
-    vkFreeMemory(VK::Device, m_NormalTextureImageMemory, nullptr);
-    vkDestroySampler(VK::Device, m_NormalTextureSampler, nullptr);
+    vkDestroyImageView(vk::Device, m_NormalTextureImageView, nullptr);
+    vkDestroyImage(vk::Device, m_NormalTextureImage, nullptr);
+    vkFreeMemory(vk::Device, m_NormalTextureImageMemory, nullptr);
+    vkDestroySampler(vk::Device, m_NormalTextureSampler, nullptr);
 }
 
 

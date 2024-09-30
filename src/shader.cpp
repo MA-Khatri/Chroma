@@ -11,7 +11,7 @@ bool print_glsl_code = false;
 bool print_spirv_code = false;
 
 
-namespace VK
+namespace vk
 {
 	std::string ParseShaderFile(std::string filename)
 	{
@@ -35,7 +35,7 @@ namespace VK
 		std::string parsedFile = ParseShaderFile(info.fileName);
 		info.source = std::vector<char>(parsedFile.begin(), parsedFile.end());
 
-		/* Figure out the kind of shader by looking at the file extension */
+		/* Figure out the kind of shader by looking at the file extension (last 4 characters) */
 		std::string l4c = info.fileName.substr(info.fileName.size() - 4);
 
 		if (l4c == "vert") 
@@ -222,10 +222,11 @@ namespace VK
 	std::vector<ShaderModule> CreateShaderModules(std::vector<std::string> filenames)
 	{
 		std::vector<ShaderModule> modules;
+		modules.reserve(filenames.size());
 
 		for (auto& file : filenames)
 		{
-			modules.push_back(CreateShaderModule(file));
+			modules.emplace_back(CreateShaderModule(file));
 		}
 
 		return modules;

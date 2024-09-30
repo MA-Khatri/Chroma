@@ -6,7 +6,7 @@
 #include <vector>
 
 
-namespace VK
+namespace vk
 {
 	/* Compilation info used in preprocess and compilation */
 	struct CompilationInfo

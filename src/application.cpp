@@ -60,23 +60,23 @@ void Application::Init()
 	{
 		extensions.push_back(glfw_extensions[i]);
 	}
-	VK::SetupVulkan(extensions);
+	vk::SetupVulkan(extensions);
 
 
 	/* Create Window Surface */
 	VkSurfaceKHR surface;
-	VkResult err = glfwCreateWindowSurface(VK::Instance, m_WindowHandle, VK::Allocator, &surface);
-	VK::check_vk_result(err);
+	VkResult err = glfwCreateWindowSurface(vk::Instance, m_WindowHandle, vk::Allocator, &surface);
+	vk::check_vk_result(err);
 
 	/* Create Framebuffers */
 	int w, h;
 	glfwGetFramebufferSize(m_WindowHandle, &w, &h);
-	ImGui_ImplVulkanH_Window* wd = &VK::MainWindowData;
-	VK::SetupVulkanWindow(wd, surface, w, h);
+	ImGui_ImplVulkanH_Window* wd = &vk::MainWindowData;
+	vk::SetupVulkanWindow(wd, surface, w, h);
 
 
-	VK::AllocatedGraphicsCommandBuffers.resize(wd->ImageCount);
-	VK::ResourceFreeQueue.resize(wd->ImageCount);
+	vk::AllocatedGraphicsCommandBuffers.resize(wd->ImageCount);
+	vk::ResourceFreeQueue.resize(wd->ImageCount);
 
 	/* Setup Dear ImGui context */
 	IMGUI_CHECKVERSION();
@@ -105,20 +105,20 @@ void Application::Init()
 	/* Setup Platform/Renderer backends */
 	ImGui_ImplGlfw_InitForVulkan(m_WindowHandle, true);
 	ImGui_ImplVulkan_InitInfo init_info = {};
-	init_info.Instance = VK::Instance;
-	init_info.PhysicalDevice = VK::PhysicalDevice;
-	init_info.Device = VK::Device;
-	init_info.QueueFamily = VK::GraphicsQueueFamily;
-	init_info.Queue = VK::GraphicsQueue;
-	init_info.PipelineCache = VK::PipelineCache;
-	init_info.DescriptorPool = VK::DescriptorPool;
+	init_info.Instance = vk::Instance;
+	init_info.PhysicalDevice = vk::PhysicalDevice;
+	init_info.Device = vk::Device;
+	init_info.QueueFamily = vk::GraphicsQueueFamily;
+	init_info.Queue = vk::GraphicsQueue;
+	init_info.PipelineCache = vk::PipelineCache;
+	init_info.DescriptorPool = vk::DescriptorPool;
 	init_info.RenderPass = wd->RenderPass;
 	init_info.Subpass = 0;
-	init_info.MinImageCount = VK::MinImageCount;
+	init_info.MinImageCount = vk::MinImageCount;
 	init_info.ImageCount = wd->ImageCount;
 	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-	init_info.Allocator = VK::Allocator;
-	init_info.CheckVkResultFn = VK::check_vk_result;
+	init_info.Allocator = vk::Allocator;
+	init_info.CheckVkResultFn = vk::check_vk_result;
 	ImGui_ImplVulkan_Init(&init_info);
 
 	/* Change default font */
@@ -150,7 +150,7 @@ void Application::Close()
 
 void Application::NextFrame()
 {
-	ImGui_ImplVulkanH_Window* wd = &VK::MainWindowData;
+	ImGui_ImplVulkanH_Window* wd = &vk::MainWindowData;
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 	ImGuiIO& io = ImGui::GetIO();
 
@@ -164,21 +164,21 @@ void Application::NextFrame()
 	}
 
 	/* Resize swapchain? */
-	if (VK::SwapChainRebuild)
+	if (vk::SwapChainRebuild)
 	{
 		int width, height;
 		glfwGetFramebufferSize(m_WindowHandle, &width, &height);
 		if (width > 0 && height > 0)
 		{
-			ImGui_ImplVulkan_SetMinImageCount(VK::MinImageCount);
-			ImGui_ImplVulkanH_CreateOrResizeWindow(VK::Instance, VK::PhysicalDevice, VK::Device, &VK::MainWindowData, VK::GraphicsQueueFamily, VK::Allocator, width, height, VK::MinImageCount);
-			VK::MainWindowData.FrameIndex = 0;
+			ImGui_ImplVulkan_SetMinImageCount(vk::MinImageCount);
+			ImGui_ImplVulkanH_CreateOrResizeWindow(vk::Instance, vk::PhysicalDevice, vk::Device, &vk::MainWindowData, vk::GraphicsQueueFamily, vk::Allocator, width, height, vk::MinImageCount);
+			vk::MainWindowData.FrameIndex = 0;
 
 			/* Clear allocated command buffers from here since entire pool is destroyed */
-			VK::AllocatedGraphicsCommandBuffers.clear();
-			VK::AllocatedGraphicsCommandBuffers.resize(VK::MainWindowData.ImageCount);
+			vk::AllocatedGraphicsCommandBuffers.clear();
+			vk::AllocatedGraphicsCommandBuffers.resize(vk::MainWindowData.ImageCount);
 
-			VK::SwapChainRebuild = false;
+			vk::SwapChainRebuild = false;
 		}
 	}
 
@@ -269,7 +269,7 @@ void Application::NextFrame()
 	wd->ClearValue.color.float32[3] = clear_color.w;
 	if (!main_is_minimized)
 	{
-		VK::FrameRender(wd, main_draw_data);
+		vk::FrameRender(wd, main_draw_data);
 	}
 
 	/* Update and render additional platform windows */
@@ -282,7 +282,7 @@ void Application::NextFrame()
 	/* Present main platform window */
 	if (!main_is_minimized)
 	{
-		VK::FramePresent(wd);
+		vk::FramePresent(wd);
 	}
 
 	float time = GetTime();
@@ -301,15 +301,15 @@ void Application::Shutdown()
 
 	VkResult err;
 
-	err = vkDeviceWaitIdle(VK::Device);
-	VK::check_vk_result(err);
+	err = vkDeviceWaitIdle(vk::Device);
+	vk::check_vk_result(err);
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImPlot::DestroyContext();
 	ImGui::DestroyContext();
 
-	VK::CleanupVulkanWindow();
-	VK::CleanupVulkan();
+	vk::CleanupVulkanWindow();
+	vk::CleanupVulkan();
 
 	glfwDestroyWindow(m_WindowHandle);
 	glfwTerminate();

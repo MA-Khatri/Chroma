@@ -51,14 +51,14 @@ void RasterView::OnUIRender()
 					OnResize(newSize);
 				}
 
-				VkCommandBuffer commandBuffer = VK::GetGraphicsCommandBuffer();
+				VkCommandBuffer commandBuffer = vk::GetGraphicsCommandBuffer();
 				RecordCommandBuffer(commandBuffer);
-				VK::FlushGraphicsCommandBuffer(commandBuffer);
+				vk::FlushGraphicsCommandBuffer(commandBuffer);
 
 				/* Wait until the descriptor set for the viewport image is created */
 				/* This could be a source of latency later on -- might be better to add multiple images here as well to allow simultaneous rendering/displaying */
-				vkDeviceWaitIdle(VK::Device);
-				ImGui::Image(m_ViewportImageDescriptorSets[VK::MainWindowData.FrameIndex], m_ViewportSize);
+				vkDeviceWaitIdle(vk::Device);
+				ImGui::Image(m_ViewportImageDescriptorSets[vk::MainWindowData.FrameIndex], m_ViewportSize);
 			}
 			ImGui::EndChild();
 		}
@@ -83,14 +83,14 @@ void RasterView::OnUIRender()
 
 void RasterView::InitVulkan()
 {
-	m_MSAASampleCount = VK::MaxMSAASamples;
+	m_MSAASampleCount = vk::MaxMSAASamples;
 
 	/* Set up viewport rendering */
-	VK::CreateRenderPass(m_MSAASampleCount, m_ViewportRenderPass);
-	VK::CreateViewportSampler(&m_ViewportSampler);
+	vk::CreateRenderPass(m_MSAASampleCount, m_ViewportRenderPass);
+	vk::CreateViewportSampler(&m_ViewportSampler);
 
-	VK::CreateColorResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount, m_ColorImage, m_ColorImageMemory, m_ColorImageView);
-	VK::CreateDepthResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount, m_DepthImage, m_DepthImageMemory, m_DepthImageView);
+	vk::CreateColorResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount, m_ColorImage, m_ColorImageMemory, m_ColorImageView);
+	vk::CreateDepthResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount, m_DepthImage, m_DepthImageMemory, m_DepthImageView);
 	CreateViewportImagesAndFramebuffers();
 	CreateViewportImageDescriptorSets();
 }
@@ -98,13 +98,13 @@ void RasterView::InitVulkan()
 
 void RasterView::CleanupVulkan()
 {
-	vkDestroySampler(VK::Device, m_ViewportSampler, nullptr);
+	vkDestroySampler(vk::Device, m_ViewportSampler, nullptr);
 
 	DestroyColorResources();
 	DestroyDepthResources();
 
-	vkDestroyDescriptorPool(VK::Device, m_DescriptorPool, nullptr);
-	vkDestroyDescriptorSetLayout(VK::Device, m_DescriptorSetLayout, nullptr);
+	vkDestroyDescriptorPool(vk::Device, m_DescriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(vk::Device, m_DescriptorSetLayout, nullptr);
 
 	DestroyViewportImageDescriptorSets();
 	DestroyViewportImagesAndFramebuffers();
@@ -112,11 +112,11 @@ void RasterView::CleanupVulkan()
 	auto it = m_Pipelines.begin();
 	while (it != m_Pipelines.end())
 	{
-		vkDestroyPipeline(VK::Device, it->second.pipeline, nullptr);
+		vkDestroyPipeline(vk::Device, it->second.pipeline, nullptr);
 	}
 
-	vkDestroyPipelineLayout(VK::Device, m_ViewportPipelineLayout, nullptr);
-	vkDestroyRenderPass(VK::Device, m_ViewportRenderPass, nullptr);
+	vkDestroyPipelineLayout(vk::Device, m_ViewportPipelineLayout, nullptr);
+	vkDestroyRenderPass(vk::Device, m_ViewportRenderPass, nullptr);
 }
 
 
@@ -134,7 +134,7 @@ void RasterView::OnResize(ImVec2 newSize)
 	m_Camera->UpdateProjectionMatrix((int)m_ViewportSize.x, (int)m_ViewportSize.y);
 
 	/* Before re-creating the images, we MUST wait for the device to be done using them */
-	vkDeviceWaitIdle(VK::Device);
+	vkDeviceWaitIdle(vk::Device);
 
 	/* Cleanup previous */
 	DestroyColorResources();
@@ -143,8 +143,8 @@ void RasterView::OnResize(ImVec2 newSize)
 	DestroyViewportImageDescriptorSets();
 
 	/* Recreate new */
-	VK::CreateColorResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount, m_ColorImage, m_ColorImageMemory, m_ColorImageView);
-	VK::CreateDepthResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount, m_DepthImage, m_DepthImageMemory, m_DepthImageView);
+	vk::CreateColorResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount, m_ColorImage, m_ColorImageMemory, m_ColorImageView);
+	vk::CreateDepthResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount, m_DepthImage, m_DepthImageMemory, m_DepthImageView);
 	CreateViewportImagesAndFramebuffers();
 	CreateViewportImageDescriptorSets();
 }
@@ -189,8 +189,8 @@ void RasterView::SceneSetup()
 	normalSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	layoutBindings.push_back(normalSamplerLayoutBinding);
 
-	VK::CreateDescriptorSetLayout(layoutBindings, m_DescriptorSetLayout);
-	VK::CreateDescriptorPool(1, m_DescriptorPool); /* Note: Make sure to update the max number of descriptor sets according to the number of objects you have! */
+	vk::CreateDescriptorSetLayout(layoutBindings, m_DescriptorSetLayout);
+	vk::CreateDescriptorPool(1, m_DescriptorPool); /* Note: Make sure to update the max number of descriptor sets according to the number of objects you have! */
 
 	/* Generate graphics pipelines with different shaders */
 	PipelineInfo pInfo;
@@ -198,12 +198,12 @@ void RasterView::SceneSetup()
 	pInfo.descriptorSetLayout = m_DescriptorSetLayout;
 
 	std::vector<std::string> shadersBasic = { "res/shaders/Basic.vert", "res/shaders/Basic.frag" };
-	pInfo.pipeline = VK::CreateGraphicsPipeline(shadersBasic, m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
+	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersBasic, m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
 	pInfo.pipelineLayout = m_ViewportPipelineLayout; /* Note: has to be after pipeline creation bc pipeline layout is created in CreateGraphicsPipeline() */
 	m_Pipelines[Basic] = pInfo;
 
 	std::vector<std::string> shadersSolid = { "res/shaders/Solid.vert", "res/shaders/Solid.frag" };
-	pInfo.pipeline = VK::CreateGraphicsPipeline(shadersSolid, m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
+	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersSolid, m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
 	m_Pipelines[Solid] = pInfo;
 
 	/* Create objects that will be drawn */
@@ -224,28 +224,28 @@ void RasterView::SceneSetup()
 
 void RasterView::CreateViewportImagesAndFramebuffers()
 {
-	VK::CreateViewportImages(VK::ImageCount, m_ViewportSize, m_ViewportImages, m_ViewportImagesDeviceMemory);
-	VK::CreateViewportImageViews(m_ViewportImages, m_ViewportImageViews);
-	m_ViewportFramebuffers.resize(VK::ImageCount);
-	for (uint32_t i = 0; i < VK::ImageCount; i++)
+	vk::CreateViewportImages(vk::ImageCount, m_ViewportSize, m_ViewportImages, m_ViewportImagesDeviceMemory);
+	vk::CreateViewportImageViews(m_ViewportImages, m_ViewportImageViews);
+	m_ViewportFramebuffers.resize(vk::ImageCount);
+	for (uint32_t i = 0; i < vk::ImageCount; i++)
 	{
-		VK::CreateFrameBuffer(std::vector<VkImageView>{m_ColorImageView, m_DepthImageView, m_ViewportImageViews[i]}, m_ViewportRenderPass, m_ViewportSize, m_ViewportFramebuffers[i]);
+		vk::CreateFrameBuffer(std::vector<VkImageView>{m_ColorImageView, m_DepthImageView, m_ViewportImageViews[i]}, m_ViewportRenderPass, m_ViewportSize, m_ViewportFramebuffers[i]);
 	}
 }
 
 
 void RasterView::DestroyViewportImagesAndFramebuffers()
 {
-	for (uint32_t i = 0; i < VK::ImageCount; i++)
+	for (uint32_t i = 0; i < vk::ImageCount; i++)
 	{
-		vkDestroyFramebuffer(VK::Device, m_ViewportFramebuffers[i], nullptr);
+		vkDestroyFramebuffer(vk::Device, m_ViewportFramebuffers[i], nullptr);
 	}
 
-	for (uint32_t i = 0; i < VK::ImageCount; i++)
+	for (uint32_t i = 0; i < vk::ImageCount; i++)
 	{
-		vkDestroyImageView(VK::Device, m_ViewportImageViews[i], nullptr);
-		vkDestroyImage(VK::Device, m_ViewportImages[i], nullptr);
-		vkFreeMemory(VK::Device, m_ViewportImagesDeviceMemory[i], nullptr);
+		vkDestroyImageView(vk::Device, m_ViewportImageViews[i], nullptr);
+		vkDestroyImage(vk::Device, m_ViewportImages[i], nullptr);
+		vkFreeMemory(vk::Device, m_ViewportImagesDeviceMemory[i], nullptr);
 	}
 	/* 
 	 * Need to clear the memory vector otherwise we may get errors saying that 
@@ -257,7 +257,7 @@ void RasterView::DestroyViewportImagesAndFramebuffers()
 
 void RasterView::CreateViewportImageDescriptorSets()
 {
-	for (uint32_t i = 0; i < VK::ImageCount; i++)
+	for (uint32_t i = 0; i < vk::ImageCount; i++)
 	{
 		m_ViewportImageDescriptorSets.push_back((VkDescriptorSet)ImGui_ImplVulkan_AddTexture(m_ViewportSampler, m_ViewportImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 	}
@@ -277,17 +277,17 @@ void RasterView::DestroyViewportImageDescriptorSets()
 
 void RasterView::DestroyColorResources()
 {
-	vkDestroyImageView(VK::Device, m_ColorImageView, nullptr);
-	vkDestroyImage(VK::Device, m_ColorImage, nullptr);
-	vkFreeMemory(VK::Device, m_ColorImageMemory, nullptr);
+	vkDestroyImageView(vk::Device, m_ColorImageView, nullptr);
+	vkDestroyImage(vk::Device, m_ColorImage, nullptr);
+	vkFreeMemory(vk::Device, m_ColorImageMemory, nullptr);
 }
 
 
 void RasterView::DestroyDepthResources()
 {
-	vkDestroyImageView(VK::Device, m_DepthImageView, nullptr);
-	vkDestroyImage(VK::Device, m_DepthImage, nullptr);
-	vkFreeMemory(VK::Device, m_DepthImageMemory, nullptr);
+	vkDestroyImageView(vk::Device, m_DepthImageView, nullptr);
+	vkDestroyImage(vk::Device, m_DepthImage, nullptr);
+	vkFreeMemory(vk::Device, m_DepthImageMemory, nullptr);
 }
 
 
@@ -296,7 +296,7 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = m_ViewportRenderPass;
-	renderPassInfo.framebuffer = m_ViewportFramebuffers[VK::MainWindowData.FrameIndex];
+	renderPassInfo.framebuffer = m_ViewportFramebuffers[vk::MainWindowData.FrameIndex];
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = { static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y) };
 

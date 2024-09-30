@@ -9,7 +9,7 @@
 #include "shader.h"
 
 
-namespace VK
+namespace vk
 {
 	/* === Namespace Globals === */
 	extern VkInstance Instance = VK_NULL_HANDLE;
@@ -1264,29 +1264,29 @@ namespace VK
 
 	void CreateDescriptorPool(uint32_t nSets, VkDescriptorPool& descriptorPool)
 	{
-		std::vector<VkDescriptorPoolSize> poolSizes;
+		std::array<VkDescriptorPoolSize, 4> poolSizes;
 
 		/* Uniform buffer */
 		VkDescriptorPoolSize uboPoolSize{};
 		uboPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		uboPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
-		poolSizes.push_back(uboPoolSize);
+		poolSizes[0] = uboPoolSize;
 
 		/* Texture samplers (diffuse, specular, normal) */
 		VkDescriptorPoolSize diffuseSamplerPoolSize{};
 		diffuseSamplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		diffuseSamplerPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
-		poolSizes.push_back(diffuseSamplerPoolSize);
+		poolSizes[1] = diffuseSamplerPoolSize;
 
 		VkDescriptorPoolSize specularSamplerPoolSize{};
 		specularSamplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		specularSamplerPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
-		poolSizes.push_back(specularSamplerPoolSize);
+		poolSizes[2] = specularSamplerPoolSize;
 
 		VkDescriptorPoolSize normalSamplerPoolSize{};
 		normalSamplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		normalSamplerPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
-		poolSizes.push_back(normalSamplerPoolSize);
+		poolSizes[3] = normalSamplerPoolSize;
 
 		/* Descriptor pool create info */
 		VkDescriptorPoolCreateInfo poolInfo{};
