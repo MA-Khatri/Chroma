@@ -5,12 +5,12 @@
 /* Note: this can only be included in one source file */
 #include <optix_function_table_definition.h>
 
-bool debug_mode = false;
 #ifdef _DEBUG
 #define Debug(x) std::cout << x << std::endl;
-debug_mode = true;
+bool debug_mode = true;
 #else
 #define Debug(x)
+bool debug_mode = false;
 #endif
 
 
@@ -93,7 +93,11 @@ namespace otx
 		}
 
 		OPTIX_CHECK(optixDeviceContextCreate(m_CudaContext, 0, &m_OptixContext));
+#ifdef _DEBUG
 		OPTIX_CHECK(optixDeviceContextSetLogCallback(m_OptixContext, context_log_cb, nullptr, 4));
+#else
+		OPTIX_CHECK(optixDeviceContextSetLogCallback(m_OptixContext, context_log_cb, nullptr, 2));
+#endif
 	}
 
 
