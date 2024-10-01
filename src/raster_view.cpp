@@ -11,8 +11,6 @@ void RasterView::OnAttach(Application* app)
 	m_AppHandle = app;
 	m_WindowHandle = app->GetWindowHandle();
 
-	m_Camera = new Camera(100, 100, glm::vec3(0.0f, 10.0f, 5.0f), glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, 1.0), 45.0f);
-
 	InitVulkan();
 	SceneSetup();
 }
@@ -28,7 +26,7 @@ void RasterView::OnUpdate()
 {
 	if (m_ViewportHovered)
 	{
-		m_Camera->Inputs(m_WindowHandle);
+		m_Camera.Inputs(m_WindowHandle);
 	}
 }
 
@@ -127,11 +125,11 @@ void RasterView::OnResize(ImVec2 newSize)
 	ImVec2 rPos = ImVec2(viewportPos.x - mainWindowPos.x, viewportPos.y - mainWindowPos.y);
 	ImVec2 minR = ImGui::GetWindowContentRegionMin();
 	ImVec2 maxR = ImGui::GetWindowContentRegionMax();
-	m_Camera->viewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
-	m_Camera->viewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
+	m_Camera.viewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
+	m_Camera.viewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
 	//std::cout << m_Camera->viewportContentMin.x << " " << m_Camera->viewportContentMin.y << "   " << m_Camera->viewportContentMax.x << " " << m_Camera->viewportContentMax.y << std::endl;
 	m_ViewportSize = newSize;
-	m_Camera->UpdateProjectionMatrix((int)m_ViewportSize.x, (int)m_ViewportSize.y);
+	m_Camera.UpdateProjectionMatrix((int)m_ViewportSize.x, (int)m_ViewportSize.y);
 
 	/* Before re-creating the images, we MUST wait for the device to be done using them */
 	vkDeviceWaitIdle(vk::Device);
@@ -325,8 +323,8 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 
 	/* Set push constants */
 	PushConstants constants;
-	constants.view = m_Camera->view_matrix;
-	constants.proj = m_Camera->projection_matrix;
+	constants.view = m_Camera.view_matrix;
+	constants.proj = m_Camera.projection_matrix;
 	constants.proj[1][1] *= -1; /* Flip y in proj matrix to match Vulkan convention */
 	vkCmdPushConstants(commandBuffer, m_ViewportPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
 

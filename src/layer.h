@@ -78,7 +78,7 @@ public:
 	virtual void OnUIRender() {}
 
 protected:
-	void CommonDebug(ImVec2 viewport_size, Camera* camera = nullptr)
+	void CommonDebug(ImVec2 viewport_size, const Camera& camera)
 	{
 		ImGuiIO io = ImGui::GetIO();
 
@@ -105,13 +105,11 @@ protected:
 
 		ImGui::Text("Viewport Size :  %.1i x %.1i ", (int)viewport_size.x, (int)viewport_size.y);
 
-		if (camera)
-		{
-			ImGui::Text("Camera Settings");
-			ImGui::Text("\tVertical Field of View: %.1f deg", camera->vfov);
-			ImGui::Text("\tCamera Position: X=%.3f, Y=%.3f, Z=%.3f", camera->position.x, camera->position.y, camera->position.z);
-			ImGui::Text("\tCamera Orientation: X=%.3f, Y=%.3f, Z=%.3f", camera->orientation.x, camera->orientation.y, camera->orientation.z);
-		}
+
+		ImGui::Text("Camera Settings");
+		ImGui::Text("\tVertical Field of View: %.1f deg", camera.vfov);
+		ImGui::Text("\tCamera Position: X=%.3f, Y=%.3f, Z=%.3f", camera.position.x, camera.position.y, camera.position.z);
+		ImGui::Text("\tCamera Orientation: X=%.3f, Y=%.3f, Z=%.3f", camera.orientation.x, camera.orientation.y, camera.orientation.z);
 
 	}
 

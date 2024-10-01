@@ -4,8 +4,6 @@ void RayTraceView::OnAttach(Application* app)
 {
 	m_AppHandle = app;
 	m_WindowHandle = app->GetWindowHandle();
-
-	m_Camera = new Camera(100, 100, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, 0.0, 1.0), 45.0f);
 }
 
 void RayTraceView::OnDetach()
@@ -18,7 +16,7 @@ void RayTraceView::OnUpdate()
 {
 	if (m_ViewportFocused)
 	{
-		m_Camera->Inputs(m_WindowHandle);
+		m_Camera.Inputs(m_WindowHandle);
 	}
 }
 

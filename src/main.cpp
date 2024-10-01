@@ -2,33 +2,18 @@
 #include "raster_view.h"
 #include "raytrace_view.h"
 
-#include "optix.h"
-
-void InitOptix()
-{
-	/* Check for Optix capable devices */
-	cudaFree(0);
-	int numDevices;
-	cudaGetDeviceCount(&numDevices);
-	if (numDevices == 0)
-	{
-		std::cerr << "InitOptix(): no CUDA capable devices found!" << std::endl;
-		exit(-1);
-	}
-
-	/* Initialize Optix */
-	OPTIX_CHECK(optixInit());
-}
-
 int main()
 {
-	InitOptix();
-
+	/* Initialize the application */
 	Application* app = new Application();
 
+
+	/* Create and initialize layers */
 	app->PushLayer(std::make_shared<RasterView>());
 	app->PushLayer(std::make_shared<RayTraceView>());
 
+
+	/* App menubar setup */
 	app->SetMenubarCallback([app]()
 		{
 			if (ImGui::BeginMenu("File"))
@@ -41,7 +26,10 @@ int main()
 			}
 		});
 
+
+	/* Run the application */
 	app->Run();
+
 
 	return 0;
 }
