@@ -10,6 +10,7 @@ From https://github.com/StudioCherno/Walnut/blob/master/Walnut/src/Walnut/Image.
 enum class ImageFormat
 {
 	None = 0,
+	RGB,
 	RGBA,
 	RGBA32F
 };

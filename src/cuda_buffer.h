@@ -61,8 +61,7 @@ namespace otx
 		{
 			assert(d_ptr != nullptr);
 			assert(sizeInBytes == count * sizeof(T));
-			CUDA_CHECK(Memcpy(d_ptr, (void*)t,
-				count * sizeof(T), cudaMemcpyHostToDevice));
+			CUDA_CHECK(Memcpy(d_ptr, (void*)t, count * sizeof(T), cudaMemcpyHostToDevice));
 		}
 
 
@@ -71,8 +70,7 @@ namespace otx
 		{
 			assert(d_ptr != nullptr);
 			assert(sizeInBytes == count * sizeof(T));
-			CUDA_CHECK(Memcpy((void*)t, d_ptr,
-				count * sizeof(T), cudaMemcpyDeviceToHost));
+			CUDA_CHECK(Memcpy((void*)t, d_ptr, count * sizeof(T), cudaMemcpyDeviceToHost));
 		}
 	};
 

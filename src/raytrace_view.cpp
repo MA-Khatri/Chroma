@@ -6,22 +6,26 @@ void RayTraceView::OnAttach(Application* app)
 	m_WindowHandle = app->GetWindowHandle();
 
 	m_OptixRenderer.Resize(m_ViewportSize);
+	m_RenderedImage.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+	m_RenderedImagePixels.resize(static_cast<size_t>(m_ViewportSize.x * m_ViewportSize.y));
 }
 
 void RayTraceView::OnDetach()
 {
-	// TODO ?
+	// TODO
 }
 
 
 void RayTraceView::OnUpdate()
 {
-	if (m_ViewportFocused)
+	if (m_ViewportHovered)
 	{
 		m_Camera.Inputs(m_WindowHandle);
 	}
 
 	m_OptixRenderer.Render();
+	m_OptixRenderer.DownloadPixels(m_RenderedImagePixels.data());
+	m_RenderedImage.SetData(m_RenderedImagePixels.data());
 }
 
 
@@ -35,9 +39,15 @@ void RayTraceView::OnUIRender()
 			ImGui::BeginChild("Ray Traced");
 			{
 				m_ViewportFocused = ImGui::IsWindowFocused();
-				m_ViewportSize = ImGui::GetWindowSize();
+				m_ViewportHovered = ImGui::IsWindowHovered();
 
-				// TODO
+				ImVec2 newSize = ImGui::GetContentRegionAvail();
+				if (m_ViewportSize.x != newSize.x || m_ViewportSize.y != newSize.y)
+				{
+					OnResize(newSize);
+				}
+
+				ImGui::Image(m_RenderedImage.GetDescriptorSet(), m_ViewportSize);
 			}
 			ImGui::EndChild();
 		}
@@ -51,4 +61,22 @@ void RayTraceView::OnUIRender()
 		CommonDebug(m_ViewportSize, m_Camera);
 	}
 	ImGui::End();
+}
+
+
+void RayTraceView::OnResize(ImVec2 newSize)
+{
+	ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
+	ImVec2 viewportPos = ImGui::GetWindowPos();
+	ImVec2 rPos = ImVec2(viewportPos.x - mainWindowPos.x, viewportPos.y - mainWindowPos.y);
+	ImVec2 minR = ImGui::GetWindowContentRegionMin();
+	ImVec2 maxR = ImGui::GetWindowContentRegionMax();
+	m_Camera.viewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
+	m_Camera.viewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
+
+	m_ViewportSize = newSize;
+
+	m_OptixRenderer.Resize(m_ViewportSize);
+	m_RenderedImage.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+	m_RenderedImagePixels.resize(static_cast<size_t>(m_ViewportSize.x * m_ViewportSize.y));
 }

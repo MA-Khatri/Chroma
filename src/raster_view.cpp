@@ -211,12 +211,12 @@ void RasterView::SceneSetup()
 	vikingRoom->Scale(5.0f);
 	m_Objects.push_back(vikingRoom);
 
-	TexturePaths noTextures;
-	Object* dragon = new Object(LoadMesh("res/meshes/dragon.obj"), noTextures, m_Pipelines[Solid]);
-	dragon->Translate(0.0f, 10.0f, 0.0f);
-	dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 90.0f);
-	dragon->Scale(5.0f);
-	m_Objects.push_back(dragon);
+	//TexturePaths noTextures;
+	//Object* dragon = new Object(LoadMesh("res/meshes/dragon.obj"), noTextures, m_Pipelines[Solid]);
+	//dragon->Translate(0.0f, 10.0f, 0.0f);
+	//dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 90.0f);
+	//dragon->Scale(5.0f);
+	//m_Objects.push_back(dragon);
 }
 
 
