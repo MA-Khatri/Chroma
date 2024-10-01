@@ -5,19 +5,13 @@
 #pragma once
 
 #include "cuda_buffer.h"
+#include "launch_params.h"
 
 #include "imgui.h"
 #include "glm/glm.hpp"
 
 namespace otx
 {
-	struct LaunchParams
-	{
-		int frameID{ 0 };
-		uint32_t* colorBuffer;
-		glm::ivec2 fbSize;
-	};
-
 	class Optix
 	{
 	public:

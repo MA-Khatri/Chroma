@@ -60,6 +60,7 @@
     <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\cuda_buffer.h" />
     <ClInclude Include="src\image.h" />
+    <ClInclude Include="src\launch_params.h" />
     <ClInclude Include="src\layer.h" />
     <ClInclude Include="src\mesh.h" />
     <ClInclude Include="src\object.h" />
@@ -82,6 +83,9 @@
     <Image Include="res\textures\teapot_normal.png" />
     <Image Include="res\textures\texture.jpg" />
     <Image Include="res\textures\viking_room_diff.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\device_programs.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{90638171-EF99-44F8-A2E3-28D93A30A9C8}</ProjectGuid>
