@@ -46,8 +46,8 @@ namespace otx
 			// otherwise they'd not get used)
 			printf("############################################\n");
 			printf("Hello world from OptiX 7 raygen program!\n(within a %ix%i-sized launch)\n",
-				optixLaunchParams.fbSize.x,
-				optixLaunchParams.fbSize.y);
+				optixLaunchParams.fbWidth,
+				optixLaunchParams.fbHeight);
 			printf("############################################\n");
 		}
 
@@ -68,7 +68,7 @@ namespace otx
 		const uint32_t rgba = 0xff000000 | (r << 0) | (g << 8) | (b << 16);
 
 		// and write to frame buffer ...
-		const uint32_t fbIndex = ix + iy * optixLaunchParams.fbSize.x;
+		const uint32_t fbIndex = ix + iy * optixLaunchParams.fbWidth;
 		optixLaunchParams.colorBuffer[fbIndex] = rgba;
 	}
 }

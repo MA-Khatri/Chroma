@@ -4,6 +4,8 @@ void RayTraceView::OnAttach(Application* app)
 {
 	m_AppHandle = app;
 	m_WindowHandle = app->GetWindowHandle();
+
+	m_OptixRenderer.Resize(m_ViewportSize);
 }
 
 void RayTraceView::OnDetach()
@@ -18,6 +20,8 @@ void RayTraceView::OnUpdate()
 	{
 		m_Camera.Inputs(m_WindowHandle);
 	}
+
+	m_OptixRenderer.Render();
 }
 
 

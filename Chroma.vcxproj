@@ -124,19 +124,32 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\GLFW\include;$(SolutionDir)external\imgui-docking;$(SolutionDir)external\glm;$(SolutionDir)external\stb_image;$(SolutionDir)external\tiny_obj_loader;$(CudaToolkitIncludeDir);C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;WIN64;__CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__=1;NOMINMAX;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\GLFW\include;$(SolutionDir)external\imgui-docking;$(SolutionDir)external\glm;$(SolutionDir)external\stb_image;$(SolutionDir)external\tiny_obj_loader;$(CUDA_PATH)\include;C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;cudart_static.lib;cuda.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;shaderc_combinedd.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)external\GLFW\lib-vc2022;$(SolutionDir)external\imgui-docking;$(VULKAN_SDK)\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(CUDA_PATH)\lib\x64\cudart_static.lib;$(CUDA_PATH)\lib\x64\cuda.lib;vulkan-1.lib;glfw3.lib;cudart_static.lib;cuda.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;shaderc_combinedd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)external\GLFW\lib-vc2022;$(SolutionDir)external\imgui-docking;$(VULKAN_SDK)\Lib;$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
-      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <CompileOut>$(ProjectDir)src\%(Filename).optixir</CompileOut>
     </CudaCompile>
+    <CudaCompile>
+      <NvccCompilation>optix-ir</NvccCompilation>
+      <Keep>false</Keep>
+      <Include>$(CUDA_PATH)\include;C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include</Include>
+      <UseHostInclude>false</UseHostInclude>
+      <FastMath>true</FastMath>
+      <KeepDir>$(IntDir)</KeepDir>
+    </CudaCompile>
+    <CudaLink>
+      <PerformDeviceLink>false</PerformDeviceLink>
+      <UseHostLibraryDirectories>false</UseHostLibraryDirectories>
+      <UseHostLibraryDependencies>false</UseHostLibraryDependencies>
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -144,8 +157,8 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\GLFW\include;$(SolutionDir)external\imgui-docking;$(SolutionDir)external\glm;$(SolutionDir)external\stb_image;$(SolutionDir)external\tiny_obj_loader;$(CudaToolkitIncludeDir);C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;WIN64;__CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__=1;NOMINMAX;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\GLFW\include;$(SolutionDir)external\imgui-docking;$(SolutionDir)external\glm;$(SolutionDir)external\stb_image;$(SolutionDir)external\tiny_obj_loader;$(CUDA_PATH)\include;C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -153,12 +166,25 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;$(CudaToolkitDir)lib\x64\cudart_static.lib;$(CudaToolkitDir)lib\x64\cuda.lib;shaderc_combined.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)external\GLFW\lib-vc2022;$(SolutionDir)external\imgui-docking;$(VULKAN_SDK)\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(CUDA_PATH)\lib\x64\cudart_static.lib;$(CUDA_PATH)\lib\x64\cuda.lib;vulkan-1.lib;glfw3.lib;cudart_static.lib;cuda.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;shaderc_combined.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)external\GLFW\lib-vc2022;$(SolutionDir)external\imgui-docking;$(VULKAN_SDK)\Lib;$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
-      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <CompileOut>$(ProjectDir)src\%(Filename).optixir</CompileOut>
     </CudaCompile>
+    <CudaCompile>
+      <NvccCompilation>optix-ir</NvccCompilation>
+      <Keep>false</Keep>
+      <Include>$(CUDA_PATH)\include;C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include</Include>
+      <UseHostInclude>false</UseHostInclude>
+      <FastMath>true</FastMath>
+      <KeepDir>$(IntDir)</KeepDir>
+    </CudaCompile>
+    <CudaLink>
+      <PerformDeviceLink>false</PerformDeviceLink>
+      <UseHostLibraryDirectories>false</UseHostLibraryDirectories>
+      <UseHostLibraryDependencies>false</UseHostLibraryDependencies>
+    </CudaLink>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

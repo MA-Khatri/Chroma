@@ -21,7 +21,7 @@ private:
 	GLFWwindow* m_WindowHandle;
 	Camera m_Camera = Camera(100, 100, glm::vec3(0.0f, 10.0f, 5.0f), glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, 1.0), 45.0f);
 	bool m_ViewportFocused = false;
-	ImVec2 m_ViewportSize = ImVec2(10.0f, 10.0f);
+	ImVec2 m_ViewportSize = ImVec2(0.0f, 0.0f);
 
 	otx::Optix m_OptixRenderer = otx::Optix();
 };

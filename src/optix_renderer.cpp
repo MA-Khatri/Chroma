@@ -1,11 +1,14 @@
 #include "optix_renderer.h"
 
+#include <fstream>
+
 /* Note: this can only be included in one source file */
 #include <optix_function_table_definition.h>
 
-
+bool debug_mode = false;
 #ifdef _DEBUG
 #define Debug(x) std::cout << x << std::endl;
+debug_mode = true;
 #else
 #define Debug(x)
 #endif
@@ -13,8 +16,6 @@
 
 namespace otx
 {
-	extern "C" char embedded_ptx_code[];
-
 	/* SBT record for a raygen program */
 	struct __align__(OPTIX_SBT_RECORD_ALIGNMENT) RaygenRecord
 	{
@@ -99,8 +100,13 @@ namespace otx
 	void Optix::CreateModule()
 	{
 		m_ModuleCompileOptions.maxRegisterCount = 50;
+#ifdef _DEBUG
+		m_ModuleCompileOptions.optLevel = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
+		m_ModuleCompileOptions.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
+#else
 		m_ModuleCompileOptions.optLevel = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
 		m_ModuleCompileOptions.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
+#endif
 
 		m_PipelineCompileOptions = {};
 		m_PipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
@@ -112,16 +118,22 @@ namespace otx
 
 		m_PipelineLinkOptions.maxTraceDepth = 2;
 
-		const std::string ptxCode = embedded_ptx_code;
+		std::ifstream input("src/device_programs.optixir", std::ios::binary);
+		std::vector<char> ptxCode(std::istreambuf_iterator<char>(input), {});
+		if (ptxCode.empty())
+		{
+			std::cerr << "Optix::CreateModule(): Failed to load optixir code!" << std::endl;
+			exit(-1);
+		}
 
 		char log[2048];
 		size_t sizeof_log = sizeof(log);
 #if OPTIX_VERSION >= 70700
-		OPTIX_CHECK(optixModuleCreate(m_OptixContext, &m_ModuleCompileOptions, &m_PipelineCompileOptions, ptxCode.c_str(), ptxCode.size(), log, &sizeof_log, &m_Module));
+		OPTIX_CHECK(optixModuleCreate(m_OptixContext, &m_ModuleCompileOptions, &m_PipelineCompileOptions, ptxCode.data(), ptxCode.size(), log, &sizeof_log, &m_Module));
 #else
 		OPTIX_CHECK(optixModuleCreateFromPTX(m_OptixContext, &m_ModuleCompileOptions, &m_PipelineCompileOptions, ptxCode.c_str(), ptxCode.size(), log, &sizeof_log, &m_Module));
 #endif
-		if (sizeof_log > 1) std::cout << "Log: " << log << std::endl;
+		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 	}
 
 
@@ -138,7 +150,7 @@ namespace otx
 		char log[2048];
 		size_t sizeof_log = sizeof(log);
 		OPTIX_CHECK(optixProgramGroupCreate(m_OptixContext, &pgDesc, 1, &pgOptions, log, &sizeof_log, &m_RaygenPGs[0]));
-		if (sizeof_log > 1) std::cout << "Log: " << log << std::endl;
+		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 	}
 
 
@@ -155,7 +167,7 @@ namespace otx
 		char log[2048];
 		size_t sizeof_log = sizeof(log);
 		OPTIX_CHECK(optixProgramGroupCreate(m_OptixContext, &pgDesc, 1, &pgOptions, log, &sizeof_log, &m_MissPGs[0]));
-		if (sizeof_log > 1) std::cout << "Log: " << log << std::endl;
+		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 	}
 
 
@@ -174,7 +186,7 @@ namespace otx
 		char log[2048];
 		size_t sizeof_log = sizeof(log);
 		OPTIX_CHECK(optixProgramGroupCreate(m_OptixContext, &pgDesc, 1, &pgOptions, log, &sizeof_log, &m_HitgroupPGs[0]));
-		if (sizeof_log > 1) std::cout << "Log: " << log << std::endl;
+		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 	}
 
 
@@ -197,7 +209,7 @@ namespace otx
 		char log[2048];
 		size_t sizeof_log = sizeof(log);
 		OPTIX_CHECK(optixPipelineCreate(m_OptixContext, &m_PipelineCompileOptions, &m_PipelineLinkOptions, programGroups.data(), (int)programGroups.size(), log, &sizeof_log, &m_Pipeline));
-		if (sizeof_log > 1) std::cout << "Log: " << log << std::endl;
+		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 
 		OPTIX_CHECK(optixPipelineSetStackSize(
 			m_Pipeline, /* [in] The pipeline to configure the stack size for */
@@ -206,7 +218,7 @@ namespace otx
 			2 * 1024,   /* [in] The continuation stack size requirement */
 			1		    /* [in] The maximum depth of a traversable graph passed to trace */
 		));
-		if (sizeof_log > 1) std::cout << "Log: " << log << std::endl;
+		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 	}
 
 
@@ -259,12 +271,12 @@ namespace otx
 	void Optix::Render()
 	{
 		/* Sanity check: make sure we launch only after first resize is already done */
-		if (m_LaunchParams.fbSize.x == 0) return;
+		if (m_LaunchParams.fbWidth == 0 || m_LaunchParams.fbHeight == 0) return;
 
 		m_LaunchParamsBuffer.upload(&m_LaunchParams, 1);
 		m_LaunchParams.frameID++;
 
-		OPTIX_CHECK(optixLaunch(m_Pipeline, m_Stream, m_LaunchParamsBuffer.d_pointer(), m_LaunchParamsBuffer.sizeInBytes, &m_SBT, m_LaunchParams.fbSize.x, m_LaunchParams.fbSize.y, 1));
+		OPTIX_CHECK(optixLaunch(m_Pipeline, m_Stream, m_LaunchParamsBuffer.d_pointer(), m_LaunchParamsBuffer.sizeInBytes, &m_SBT, m_LaunchParams.fbWidth, m_LaunchParams.fbHeight, 1));
 
 		/*
 		 * Make sure frame is rendered before we display.
@@ -283,13 +295,14 @@ namespace otx
 		m_ColorBuffer.resize(static_cast<size_t>(newSize.x * newSize.y * sizeof(uint32_t)));
 
 		/* Update our launch parameters */
-		m_LaunchParams.fbSize = glm::ivec2(static_cast<int>(newSize.x), static_cast<int>(newSize.y));
+		m_LaunchParams.fbWidth = static_cast<int>(newSize.x);
+		m_LaunchParams.fbHeight = static_cast<int>(newSize.y);
 		m_LaunchParams.colorBuffer = (uint32_t*)m_ColorBuffer.d_ptr;
 	}
 
 
 	void Optix::DownloadPixels(uint32_t h_pixels[])
 	{
-		m_ColorBuffer.download(h_pixels, m_LaunchParams.fbSize.x * m_LaunchParams.fbSize.y);
+		m_ColorBuffer.download(h_pixels, m_LaunchParams.fbWidth * m_LaunchParams.fbHeight);
 	}
 }
