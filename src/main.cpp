@@ -1,3 +1,5 @@
+#define GLM_FORCE_CUDA /* Make sure this is defined before any include <glm/glm.hpp> */
+
 #include "application.h"
 #include "raster_view.h"
 #include "raytrace_view.h"

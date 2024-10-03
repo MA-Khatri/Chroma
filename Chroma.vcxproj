@@ -144,7 +144,7 @@
     <CudaCompile>
       <NvccCompilation>optix-ir</NvccCompilation>
       <Keep>false</Keep>
-      <Include>$(CUDA_PATH)\include;C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include</Include>
+      <Include>$(CUDA_PATH)\include;C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include;$(ProjectDir)external</Include>
       <UseHostInclude>false</UseHostInclude>
       <FastMath>true</FastMath>
       <KeepDir>$(IntDir)</KeepDir>
@@ -185,7 +185,7 @@
     <CudaCompile>
       <NvccCompilation>optix-ir</NvccCompilation>
       <Keep>false</Keep>
-      <Include>$(CUDA_PATH)\include;C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include</Include>
+      <Include>$(CUDA_PATH)\include;C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include;$(ProjectDir)external</Include>
       <UseHostInclude>false</UseHostInclude>
       <FastMath>true</FastMath>
       <KeepDir>$(IntDir)</KeepDir>

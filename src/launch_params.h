@@ -1,14 +1,28 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
 namespace otx
 {
 	
 	struct LaunchParams
 	{
 		int frameID{ 0 };
-		uint32_t* colorBuffer;
-		int fbWidth;
-		int fbHeight;
+
+		struct {
+			uint32_t* colorBuffer;
+			glm::ivec2 size;
+		} frame;
+
+		struct {
+			glm::vec3 position;
+			glm::vec3 direction;
+			glm::vec3 horizontal;
+			glm::vec3 vertical;
+			float verticalFOVdeg;
+		} camera;
+
+		OptixTraversableHandle traversable;
 	};
 
 } /* namspace otx */

@@ -4,11 +4,13 @@
 
 #pragma once
 
+#include "imgui.h"
+
 #include "cuda_buffer.h"
 #include "launch_params.h"
 
-#include "imgui.h"
-#include "glm/glm.hpp"
+#include "camera.h"
+#include "mesh.h"
 
 namespace otx
 {
@@ -18,15 +20,17 @@ namespace otx
 		/* Constructor, performs all setup */
 		Optix();
 
-		/* Render one frame */
-		void Render();
-
 		/* Resize frame buffer to given resolution */
 		void Resize(const ImVec2& newSize);
 
+		/* Set camera for Optix */
+		void SetCamera(const Camera& camera);
+
+		/* Render one frame */
+		void Render();
+
 		/* Download the rendered color buffer */
 		void DownloadPixels(uint32_t h_pixels[]);
-
 
 	protected:
 		/* Initializes Optix and checks for errors */
@@ -53,6 +57,8 @@ namespace otx
 		/* Constructs the shader binding table */
 		void BuildSBT();
 
+		/* Build an acceleration structure for the provided triangle mesh */
+		OptixTraversableHandle BuildAccel(const Mesh& mesh);
 
 	protected:
 		/* 
@@ -90,6 +96,16 @@ namespace otx
 
 		/* Our output color buffer */
 		CUDABuffer m_ColorBuffer;
+
+		/* The camera we are using to render */
+		Camera m_LastSetCamera;
+
+		/* The model we are tracing rays against */
+		const Mesh m_Mesh;
+		CUDABuffer m_VertexBuffer;
+		CUDABuffer m_IndexBuffer;
+		/* Buffer that keeps the final, compacted, acceleration structure */
+		CUDABuffer m_ASBuffer;
 	};
 
 

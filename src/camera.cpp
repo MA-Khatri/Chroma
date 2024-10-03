@@ -14,6 +14,20 @@ Camera::Camera(int width, int height, glm::vec3 position, glm::vec3 orientation,
 	Update(vfov, near_plane, far_plane, width, height);
 }
 
+Camera::Camera()
+{
+	Camera::m_Width = 100;
+	Camera::m_Height = 100;
+	Camera::position = glm::vec3(0.0f, 10.0f, 5.0f);
+	Camera::orientation = glm::vec3(0.0, -1.0, 0.0);
+	Camera::up = glm::vec3(0.0, 0.0, 1.0);
+	Camera::vfov = 45.0f;
+	Camera::m_NearPlane = 0.1f;
+	Camera::m_FarPlane = 1000.0f;
+
+	Update(vfov, m_NearPlane, m_FarPlane, m_Width, m_Height);
+}
+
 Camera::~Camera()
 {
 

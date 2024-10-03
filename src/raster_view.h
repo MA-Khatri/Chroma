@@ -55,7 +55,7 @@ private:
 	Application* m_AppHandle;
 	GLFWwindow* m_WindowHandle;
 
-	Camera m_Camera = Camera(100, 100, glm::vec3(0.0f, 10.0f, 5.0f), glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, 1.0), 45.0f);
+	Camera m_Camera;
 	
 	bool m_ViewportFocused = false;
 	bool m_ViewportHovered = false;

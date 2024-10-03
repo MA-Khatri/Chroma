@@ -40,14 +40,34 @@ namespace otx
 
 	Optix::Optix()
 	{
+		Debug("[Optix] Initializing Optix...");
 		InitOptix();
+
+		Debug("[Optix] Creating context...");
 		CreateContext();
+
+		Debug("[Optix] Setting up module...");
 		CreateModule();
+
+		Debug("[Optix] Creating raygen programs...");
 		CreateRaygenPrograms();
+
+		Debug("[Optix] Creating miss programs...");
 		CreateMissPrograms();
+
+		Debug("[Optix] Creating hitgroup programs...");
 		CreateHitgroupPrograms();
+
+		Debug("[Optix] Building acceleration structures...");
+		m_LaunchParams.traversable = BuildAccel(CreatePlane());
+		
+		Debug("[Optix] Setting up Optix pipeline...");
 		CreatePipeline();
+
+		Debug("[Optix] Building SBT...");
 		BuildSBT();
+
+		Debug("\033[1;32m[Optix] Optix fully set up!\033[0m");
 
 		m_LaunchParamsBuffer.alloc(sizeof(m_LaunchParams));
 	}
@@ -71,7 +91,7 @@ namespace otx
 	}
 
 
-	/* The callback function for the Optix context (only used in CreateContext) */
+	/* The callback function for the Optix context (set in CreateContext) */
 	static void context_log_cb(unsigned int level, const char* tag, const char* message, void*)
 	{
 		fprintf(stderr, "[%2d][%12s]: %s\n", (int)level, tag, message);
@@ -272,21 +292,94 @@ namespace otx
 	}
 
 
-	void Optix::Render()
+	OptixTraversableHandle Optix::BuildAccel(const Mesh& mesh)
 	{
-		/* Sanity check: make sure we launch only after first resize is already done */
-		if (m_LaunchParams.fbWidth == 0 || m_LaunchParams.fbHeight == 0) return;
+		/* Upload mesh data to device */
+		m_VertexBuffer.alloc_and_upload(mesh.vertices);
+		m_IndexBuffer.alloc_and_upload(mesh.indices);
 
-		m_LaunchParamsBuffer.upload(&m_LaunchParams, 1);
-		m_LaunchParams.frameID++;
+		OptixTraversableHandle asHandle{ 0 };
 
-		OPTIX_CHECK(optixLaunch(m_Pipeline, m_Stream, m_LaunchParamsBuffer.d_pointer(), m_LaunchParamsBuffer.sizeInBytes, &m_SBT, m_LaunchParams.fbWidth, m_LaunchParams.fbHeight, 1));
+		/* ======================= */
+		/* === Triangle inputs === */
+		/* ======================= */
+		OptixBuildInput triangleInput = {};
+		triangleInput.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+		
+		/* Create local variables to store pointers to the device pointers */
+		CUdeviceptr d_vertices = m_VertexBuffer.d_pointer();
+		CUdeviceptr d_indices = m_IndexBuffer.d_pointer();
 
-		/*
-		 * Make sure frame is rendered before we display.
-		 * For higher performance, we should use streams and do double-buffering
-		 */
+		/* Set up format for reading vertex and index data */
+		triangleInput.triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
+		triangleInput.triangleArray.vertexStrideInBytes = sizeof(Vertex);
+		triangleInput.triangleArray.numVertices = (int)mesh.vertices.size();
+		triangleInput.triangleArray.vertexBuffers = &d_vertices;
+
+		triangleInput.triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+		triangleInput.triangleArray.indexStrideInBytes = 3 * sizeof(uint32_t);
+		triangleInput.triangleArray.numIndexTriplets = (int)mesh.indices.size();
+		triangleInput.triangleArray.indexBuffer = d_indices;
+
+		/* For now, we only have one SBT entry and no per-primitive materials */
+		uint32_t triangleInputFlags[1] = { 0 };
+		triangleInput.triangleArray.flags = triangleInputFlags;
+		triangleInput.triangleArray.numSbtRecords = 1;
+		triangleInput.triangleArray.sbtIndexOffsetBuffer = 0;
+		triangleInput.triangleArray.sbtIndexOffsetSizeInBytes = 0;
+		triangleInput.triangleArray.sbtIndexOffsetStrideInBytes = 0;
+
+		/* ================== */
+		/* === BLAS Setup === */
+		/* ================== */
+		OptixAccelBuildOptions accelOptions = {};
+		accelOptions.buildFlags = OPTIX_BUILD_FLAG_NONE | OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+		accelOptions.motionOptions.numKeys = 1;
+		accelOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
+
+		OptixAccelBufferSizes blasBufferSizes;
+		OPTIX_CHECK(optixAccelComputeMemoryUsage(m_OptixContext, &accelOptions, &triangleInput, 1, &blasBufferSizes));
+
+		/* ========================== */
+		/* === Prepare compaction === */
+		/* ========================== */
+		CUDABuffer compactedSizeBuffer;
+		compactedSizeBuffer.alloc(sizeof(uint64_t));
+
+		OptixAccelEmitDesc emitDesc;
+		emitDesc.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
+		emitDesc.result = compactedSizeBuffer.d_pointer();
+
+		/* ===================== */
+		/* === Execute build === */
+		/* ===================== */
+		CUDABuffer tempBuffer;
+		tempBuffer.alloc(blasBufferSizes.tempSizeInBytes);
+
+		CUDABuffer outputBuffer;
+		outputBuffer.alloc(blasBufferSizes.outputSizeInBytes);
+
+		OPTIX_CHECK(optixAccelBuild(m_OptixContext, 0, &accelOptions, &triangleInput, 1, tempBuffer.d_pointer(), tempBuffer.sizeInBytes, outputBuffer.d_pointer(), outputBuffer.sizeInBytes, &asHandle, &emitDesc, 1));
 		CUDA_SYNC_CHECK();
+
+		/* ========================== */
+		/* === Perform compaction === */
+		/* ========================== */
+		uint64_t compactedSize;
+		compactedSizeBuffer.download(&compactedSize, 1);
+
+		m_ASBuffer.alloc(compactedSize);
+		OPTIX_CHECK(optixAccelCompact(m_OptixContext, 0, asHandle, m_ASBuffer.d_pointer(), m_ASBuffer.sizeInBytes, &asHandle));
+		CUDA_SYNC_CHECK();
+
+		/* ================ */
+		/* === Clean up === */
+		/* ================ */
+		outputBuffer.free(); /* Free the temporary, uncompacted buffer */
+		tempBuffer.free();
+		compactedSizeBuffer.free();
+
+		return asHandle;
 	}
 
 
@@ -299,14 +392,47 @@ namespace otx
 		m_ColorBuffer.resize(static_cast<size_t>(newSize.x * newSize.y * sizeof(uint32_t)));
 
 		/* Update our launch parameters */
-		m_LaunchParams.fbWidth = static_cast<int>(newSize.x);
-		m_LaunchParams.fbHeight = static_cast<int>(newSize.y);
-		m_LaunchParams.colorBuffer = (uint32_t*)m_ColorBuffer.d_ptr;
+		m_LaunchParams.frame.size.x = static_cast<int>(newSize.x);
+		m_LaunchParams.frame.size.y = static_cast<int>(newSize.y);
+		m_LaunchParams.frame.colorBuffer = (uint32_t*)m_ColorBuffer.d_ptr;
+
+		/* Reset the camera because our aspect ratio may have changed */
+		SetCamera(m_LastSetCamera);
+	}
+
+
+	void Optix::SetCamera(const Camera& camera)
+	{
+		m_LastSetCamera = camera;
+		m_LaunchParams.camera.position = glm::vec3(camera.position.x, camera.position.y, -camera.position.z);
+		m_LaunchParams.camera.direction = glm::normalize(glm::vec3(camera.orientation.x, camera.orientation.y, -camera.orientation.z));
+		const float cos_vfov = glm::cos(glm::radians(camera.vfov));
+		const float aspect = m_LaunchParams.frame.size.x / float(m_LaunchParams.frame.size.y);
+		m_LaunchParams.camera.horizontal = cos_vfov * aspect * glm::normalize(glm::cross(m_LaunchParams.camera.direction, camera.up));
+		m_LaunchParams.camera.vertical = cos_vfov * glm::normalize(glm::cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
+	}
+
+
+	void Optix::Render()
+	{
+		/* Sanity check: make sure we launch only after first resize is already done */
+		if (m_LaunchParams.frame.size.x == 0 || m_LaunchParams.frame.size.y == 0) return;
+
+		m_LaunchParamsBuffer.upload(&m_LaunchParams, 1);
+		m_LaunchParams.frameID++;
+
+		OPTIX_CHECK(optixLaunch(m_Pipeline, m_Stream, m_LaunchParamsBuffer.d_pointer(), m_LaunchParamsBuffer.sizeInBytes, &m_SBT, m_LaunchParams.frame.size.x, m_LaunchParams.frame.size.y, 1));
+
+		/*
+		 * Make sure frame is rendered before we display. BUT -- Vulkan does not know when this is finished!
+		 * For higher performance, we should use streams and do double-buffering
+		 */
+		CUDA_SYNC_CHECK();
 	}
 
 
 	void Optix::DownloadPixels(uint32_t h_pixels[])
 	{
-		m_ColorBuffer.download(h_pixels, m_LaunchParams.fbWidth * m_LaunchParams.fbHeight);
+		m_ColorBuffer.download(h_pixels, m_LaunchParams.frame.size.x * m_LaunchParams.frame.size.y);
 	}
 }
