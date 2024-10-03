@@ -34,11 +34,12 @@ namespace otx
 	struct __align__(OPTIX_SBT_RECORD_ALIGNMENT) HitgroupRecord
 	{
 		__align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
-		int objectID;
+		MeshSBTData data;
 	};
 
 
-	Optix::Optix()
+	Optix::Optix(const std::vector<Mesh>& meshes)
+		:m_Meshes(meshes)
 	{
 		Debug("[Optix] Initializing Optix...");
 		InitOptix();
@@ -59,7 +60,7 @@ namespace otx
 		CreateHitgroupPrograms();
 
 		Debug("[Optix] Building acceleration structures...");
-		m_LaunchParams.traversable = BuildAccel(CreatePlane());
+		m_LaunchParams.traversable = BuildAccel();
 		
 		Debug("[Optix] Setting up Optix pipeline...");
 		CreatePipeline();
@@ -153,9 +154,27 @@ namespace otx
 		char log[2048];
 		size_t sizeof_log = sizeof(log);
 #if OPTIX_VERSION >= 70700
-		OPTIX_CHECK(optixModuleCreate(m_OptixContext, &m_ModuleCompileOptions, &m_PipelineCompileOptions, ptxCode.data(), ptxCode.size(), log, &sizeof_log, &m_Module));
+		OPTIX_CHECK(optixModuleCreate(
+			m_OptixContext,
+			&m_ModuleCompileOptions,
+			&m_PipelineCompileOptions, 
+			ptxCode.data(),
+			ptxCode.size(),
+			log,
+			&sizeof_log,
+			&m_Module
+		));
 #else
-		OPTIX_CHECK(optixModuleCreateFromPTX(m_OptixContext, &m_ModuleCompileOptions, &m_PipelineCompileOptions, ptxCode.c_str(), ptxCode.size(), log, &sizeof_log, &m_Module));
+		OPTIX_CHECK(optixModuleCreateFromPTX(
+			m_OptixContext, 
+			&m_ModuleCompileOptions, 
+			&m_PipelineCompileOptions,
+			ptxCode.c_str(), 
+			ptxCode.size(), 
+			log, 
+			&sizeof_log, 
+			&m_Module
+		));
 #endif
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 	}
@@ -173,7 +192,15 @@ namespace otx
 
 		char log[2048];
 		size_t sizeof_log = sizeof(log);
-		OPTIX_CHECK(optixProgramGroupCreate(m_OptixContext, &pgDesc, 1, &pgOptions, log, &sizeof_log, &m_RaygenPGs[0]));
+		OPTIX_CHECK(optixProgramGroupCreate(
+			m_OptixContext, 
+			&pgDesc, 
+			1, 
+			&pgOptions, 
+			log, 
+			&sizeof_log, 
+			&m_RaygenPGs[0]
+		));
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 	}
 
@@ -190,7 +217,15 @@ namespace otx
 
 		char log[2048];
 		size_t sizeof_log = sizeof(log);
-		OPTIX_CHECK(optixProgramGroupCreate(m_OptixContext, &pgDesc, 1, &pgOptions, log, &sizeof_log, &m_MissPGs[0]));
+		OPTIX_CHECK(optixProgramGroupCreate(
+			m_OptixContext, 
+			&pgDesc, 
+			1, 
+			&pgOptions, 
+			log, 
+			&sizeof_log, 
+			&m_MissPGs[0]
+		));
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 	}
 
@@ -209,7 +244,15 @@ namespace otx
 
 		char log[2048];
 		size_t sizeof_log = sizeof(log);
-		OPTIX_CHECK(optixProgramGroupCreate(m_OptixContext, &pgDesc, 1, &pgOptions, log, &sizeof_log, &m_HitgroupPGs[0]));
+		OPTIX_CHECK(optixProgramGroupCreate(
+			m_OptixContext, 
+			&pgDesc, 
+			1, 
+			&pgOptions, 
+			log, 
+			&sizeof_log, 
+			&m_HitgroupPGs[0]
+		));
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 	}
 
@@ -232,7 +275,16 @@ namespace otx
 
 		char log[2048];
 		size_t sizeof_log = sizeof(log);
-		OPTIX_CHECK(optixPipelineCreate(m_OptixContext, &m_PipelineCompileOptions, &m_PipelineLinkOptions, programGroups.data(), (int)programGroups.size(), log, &sizeof_log, &m_Pipeline));
+		OPTIX_CHECK(optixPipelineCreate(
+			m_OptixContext, 
+			&m_PipelineCompileOptions, 
+			&m_PipelineLinkOptions, 
+			programGroups.data(), 
+			(int)programGroups.size(), 
+			log, 
+			&sizeof_log, 
+			&m_Pipeline
+		));
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 
 		OPTIX_CHECK(optixPipelineSetStackSize(
@@ -275,14 +327,15 @@ namespace otx
 		m_SBT.missRecordCount = (int)missRecords.size();
 
 		/* Build hitgroup records */
-		int numObjects = 1;
+		int numObjects = (int)m_Meshes.size();
 		std::vector<HitgroupRecord> hitgroupRecords;
-		for (int i = 0; i < numObjects; i++)
+		for (int meshID = 0; meshID < numObjects; meshID++)
 		{
-			int objectType = 0;
 			HitgroupRecord rec;
-			OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[objectType], &rec));
-			rec.objectID = i;
+			OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[0], &rec)); /* For now, all objects use same code */
+			rec.data.vertex = (glm::vec3*)m_VertexBuffers[meshID].d_pointer();
+			rec.data.index = (glm::ivec3*)m_IndexBuffers[meshID].d_pointer();
+			rec.data.color = glm::vec3(0.0f, 1.0f, 0.0f);
 			hitgroupRecords.push_back(rec);
 		}
 		m_HitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
@@ -292,42 +345,56 @@ namespace otx
 	}
 
 
-	OptixTraversableHandle Optix::BuildAccel(const Mesh& mesh)
+	OptixTraversableHandle Optix::BuildAccel()
 	{
 		/* Upload mesh data to device */
-		m_VertexBuffer.alloc_and_upload(mesh.vertices);
-		m_IndexBuffer.alloc_and_upload(mesh.indices);
+		m_VertexBuffers.resize(m_Meshes.size());
+		m_IndexBuffers.resize(m_Meshes.size());
 
 		OptixTraversableHandle asHandle{ 0 };
 
 		/* ======================= */
 		/* === Triangle inputs === */
 		/* ======================= */
-		OptixBuildInput triangleInput = {};
-		triangleInput.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
-		
-		/* Create local variables to store pointers to the device pointers */
-		CUdeviceptr d_vertices = m_VertexBuffer.d_pointer();
-		CUdeviceptr d_indices = m_IndexBuffer.d_pointer();
+		std::vector<OptixBuildInput> triangleInputs(m_Meshes.size());
+		std::vector<CUdeviceptr> d_vertices(m_Meshes.size());
+		std::vector<CUdeviceptr> d_indices(m_Meshes.size());
+		std::vector<uint32_t> triangleInputFlags(m_Meshes.size());
 
-		/* Set up format for reading vertex and index data */
-		triangleInput.triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
-		triangleInput.triangleArray.vertexStrideInBytes = sizeof(Vertex);
-		triangleInput.triangleArray.numVertices = (int)mesh.vertices.size();
-		triangleInput.triangleArray.vertexBuffers = &d_vertices;
+		for (int meshID = 0; meshID < m_Meshes.size(); meshID++)
+		{
+			/* Upload the mesh to the device */
+			Mesh& mesh = m_Meshes[meshID];
+			m_VertexBuffers[meshID].alloc_and_upload(mesh.vertices);
+			m_IndexBuffers[meshID].alloc_and_upload(mesh.ivecIndices);
 
-		triangleInput.triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
-		triangleInput.triangleArray.indexStrideInBytes = 3 * sizeof(uint32_t);
-		triangleInput.triangleArray.numIndexTriplets = (int)mesh.indices.size();
-		triangleInput.triangleArray.indexBuffer = d_indices;
+			triangleInputs[meshID] = {};
+			triangleInputs[meshID].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
 
-		/* For now, we only have one SBT entry and no per-primitive materials */
-		uint32_t triangleInputFlags[1] = { 0 };
-		triangleInput.triangleArray.flags = triangleInputFlags;
-		triangleInput.triangleArray.numSbtRecords = 1;
-		triangleInput.triangleArray.sbtIndexOffsetBuffer = 0;
-		triangleInput.triangleArray.sbtIndexOffsetSizeInBytes = 0;
-		triangleInput.triangleArray.sbtIndexOffsetStrideInBytes = 0;
+			/* Create local variables to store pointers to the device pointers */
+			d_vertices[meshID] = m_VertexBuffers[meshID].d_pointer();
+			d_indices[meshID] = m_IndexBuffers[meshID].d_pointer();
+
+			/* Set up format for reading vertex and index data */
+			triangleInputs[meshID].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
+			triangleInputs[meshID].triangleArray.vertexStrideInBytes = sizeof(Vertex);
+			triangleInputs[meshID].triangleArray.numVertices = (int)mesh.vertices.size();
+			triangleInputs[meshID].triangleArray.vertexBuffers = &d_vertices[meshID];
+
+			triangleInputs[meshID].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+			triangleInputs[meshID].triangleArray.indexStrideInBytes = sizeof(glm::ivec3);
+			triangleInputs[meshID].triangleArray.numIndexTriplets = (int)mesh.ivecIndices.size();
+			triangleInputs[meshID].triangleArray.indexBuffer = d_indices[meshID];
+
+			triangleInputFlags[meshID] = 0;
+
+			/* For now, we only have one SBT entry and no per-primitive materials */
+			triangleInputs[meshID].triangleArray.flags = &triangleInputFlags[meshID];
+			triangleInputs[meshID].triangleArray.numSbtRecords = 1;
+			triangleInputs[meshID].triangleArray.sbtIndexOffsetBuffer = 0;
+			triangleInputs[meshID].triangleArray.sbtIndexOffsetSizeInBytes = 0;
+			triangleInputs[meshID].triangleArray.sbtIndexOffsetStrideInBytes = 0;
+		}
 
 		/* ================== */
 		/* === BLAS Setup === */
@@ -338,7 +405,13 @@ namespace otx
 		accelOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
 
 		OptixAccelBufferSizes blasBufferSizes;
-		OPTIX_CHECK(optixAccelComputeMemoryUsage(m_OptixContext, &accelOptions, &triangleInput, 1, &blasBufferSizes));
+		OPTIX_CHECK(optixAccelComputeMemoryUsage(
+			m_OptixContext, 
+			&accelOptions, 
+			triangleInputs.data(), 
+			(int)m_Meshes.size(), 
+			&blasBufferSizes
+		));
 
 		/* ========================== */
 		/* === Prepare compaction === */
@@ -359,7 +432,20 @@ namespace otx
 		CUDABuffer outputBuffer;
 		outputBuffer.alloc(blasBufferSizes.outputSizeInBytes);
 
-		OPTIX_CHECK(optixAccelBuild(m_OptixContext, 0, &accelOptions, &triangleInput, 1, tempBuffer.d_pointer(), tempBuffer.sizeInBytes, outputBuffer.d_pointer(), outputBuffer.sizeInBytes, &asHandle, &emitDesc, 1));
+		OPTIX_CHECK(optixAccelBuild(
+			m_OptixContext, 
+			0, /* stream */
+			&accelOptions, 
+			triangleInputs.data(), 
+			(int)m_Meshes.size(), 
+			tempBuffer.d_pointer(), 
+			tempBuffer.sizeInBytes, 
+			outputBuffer.d_pointer(), 
+			outputBuffer.sizeInBytes, 
+			&asHandle, 
+			&emitDesc, 
+			1
+		));
 		CUDA_SYNC_CHECK();
 
 		/* ========================== */
@@ -369,7 +455,14 @@ namespace otx
 		compactedSizeBuffer.download(&compactedSize, 1);
 
 		m_ASBuffer.alloc(compactedSize);
-		OPTIX_CHECK(optixAccelCompact(m_OptixContext, 0, asHandle, m_ASBuffer.d_pointer(), m_ASBuffer.sizeInBytes, &asHandle));
+		OPTIX_CHECK(optixAccelCompact(
+			m_OptixContext, 
+			0, 
+			asHandle, 
+			m_ASBuffer.d_pointer(), 
+			m_ASBuffer.sizeInBytes, 
+			&asHandle
+		));
 		CUDA_SYNC_CHECK();
 
 		/* ================ */
@@ -421,7 +514,16 @@ namespace otx
 		m_LaunchParamsBuffer.upload(&m_LaunchParams, 1);
 		m_LaunchParams.frameID++;
 
-		OPTIX_CHECK(optixLaunch(m_Pipeline, m_Stream, m_LaunchParamsBuffer.d_pointer(), m_LaunchParamsBuffer.sizeInBytes, &m_SBT, m_LaunchParams.frame.size.x, m_LaunchParams.frame.size.y, 1));
+		OPTIX_CHECK(optixLaunch(
+			m_Pipeline,
+			m_Stream, 
+			m_LaunchParamsBuffer.d_pointer(), 
+			m_LaunchParamsBuffer.sizeInBytes, 
+			&m_SBT, 
+			m_LaunchParams.frame.size.x, 
+			m_LaunchParams.frame.size.y, 
+			1
+		));
 
 		/*
 		 * Make sure frame is rendered before we display. BUT -- Vulkan does not know when this is finished!

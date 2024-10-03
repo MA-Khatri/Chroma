@@ -18,6 +18,7 @@ Mesh CreateHelloTriangle()
 	};
 
 	mesh.drawMode = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	mesh.SetIndicesIVec3();
 
 	return mesh;
 }
@@ -39,6 +40,7 @@ Mesh CreatePlane()
 	};
 
 	mesh.drawMode = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	mesh.SetIndicesIVec3();
 
 	return mesh;
 }
@@ -94,6 +96,9 @@ Mesh LoadMesh(std::string filepath)
 			mesh.indices.push_back(uniqueVertices[vertex]);
 		}
 	}
+
+	mesh.drawMode = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	mesh.SetIndicesIVec3();
 
 	return mesh;
 }

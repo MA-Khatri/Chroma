@@ -4,6 +4,8 @@ From https://github.com/StudioCherno/Walnut/blob/master/Walnut/src/Walnut/Image.
 
 #pragma once
 
+#include <cuda.h>
+
 #include <string>
 #include "vulkan/vulkan.h"
 

@@ -74,7 +74,28 @@ struct Mesh
 {
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
+	std::vector<glm::ivec3> ivecIndices;
+
 	VkPrimitiveTopology drawMode = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+	/* Helper to convert index vector to vector of ivec3 where each represents the three indices for 1 triangle -- used for OptiX */
+	void SetIndicesIVec3()
+	{
+		if (drawMode == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+		{
+			ivecIndices.reserve(indices.size() / 3);
+			for (int i = 0; i < indices.size(); i += 3)
+			{
+				ivecIndices.emplace_back(glm::ivec3(indices[i + 0], indices[i + 1], indices[i + 2]));
+			}
+		}
+		// TODO: index vector conversion to ivec3 for other draw modes (e.g. triangle fan, triangle strip)
+		else
+		{
+			std::cerr << "Index vector conversion to ivec3 not supported for draw mode: " << drawMode << std::endl;
+			exit(-1);
+		}
+	}
 };
 
 

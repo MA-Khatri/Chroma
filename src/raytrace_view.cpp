@@ -29,6 +29,7 @@ void RayTraceView::OnUpdate()
 		m_OptixRenderer.Render();
 		m_OptixRenderer.DownloadPixels(m_RenderedImagePixels.data()); /* Instead of downloading to host then re-uploading to GPU, can we upload directly? */
 		m_RenderedImage.SetData(m_RenderedImagePixels.data());
+		//m_RenderedImage.SetData(m_OptixRenderer.GetColorBuffer());
 	}
 }
 

@@ -29,7 +29,7 @@ private:
 	ImVec2 m_ViewportSize = ImVec2(400.0f, 400.0f);
 
 
-	otx::Optix m_OptixRenderer = otx::Optix();
+	otx::Optix m_OptixRenderer = otx::Optix(std::vector<Mesh>{CreatePlane()});
 	Image m_RenderedImage = Image(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), ImageFormat::RGBA, nullptr);
 	std::vector<uint32_t> m_RenderedImagePixels;
 };

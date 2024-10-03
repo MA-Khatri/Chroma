@@ -18,7 +18,7 @@ namespace otx
 	{
 	public:
 		/* Constructor, performs all setup */
-		Optix();
+		Optix(const std::vector<Mesh>& meshes);
 
 		/* Resize frame buffer to given resolution */
 		void Resize(const ImVec2& newSize);
@@ -57,8 +57,8 @@ namespace otx
 		/* Constructs the shader binding table */
 		void BuildSBT();
 
-		/* Build an acceleration structure for the provided triangle mesh */
-		OptixTraversableHandle BuildAccel(const Mesh& mesh);
+		/* Build an acceleration structure for all meshes in m_Meshes */
+		OptixTraversableHandle BuildAccel();
 
 	protected:
 		/* 
@@ -100,10 +100,10 @@ namespace otx
 		/* The camera we are using to render */
 		Camera m_LastSetCamera;
 
-		/* The model we are tracing rays against */
-		const Mesh m_Mesh;
-		CUDABuffer m_VertexBuffer;
-		CUDABuffer m_IndexBuffer;
+		/* The meshes we are tracing rays against */
+		std::vector<Mesh> m_Meshes;
+		std::vector<CUDABuffer> m_VertexBuffers;
+		std::vector<CUDABuffer> m_IndexBuffers;
 		/* Buffer that keeps the final, compacted, acceleration structure */
 		CUDABuffer m_ASBuffer;
 	};

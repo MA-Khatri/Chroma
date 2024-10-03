@@ -53,10 +53,20 @@ namespace otx
 	 */
 	extern "C" __global__ void __closesthit__radiance()
 	{
-		/* TEMPORARY -- set solid color */
-		//const int primID = optixGetPrimitiveIndex();
+		const MeshSBTData& sbtData = *(const MeshSBTData*)optixGetSbtDataPointer();
+
+		/* Compute normal */
+		const int primID = optixGetPrimitiveIndex();
+		const glm::ivec3 index = sbtData.index[primID];
+		const glm::vec3& A = sbtData.vertex[index.x];
+		const glm::vec3& B = sbtData.vertex[index.y];
+		const glm::vec3& C = sbtData.vertex[index.z];
+		const glm::vec3 Ng = glm::normalize(glm::cross(B - A, C - A));
+
+		auto rd = optixGetWorldRayDirection();
+		const float cosDN = 0.2f + 0.8f * fabsf(glm::dot(glm::vec3(rd.x, rd.y, rd.z), Ng));
 		glm::vec3& prd = *(glm::vec3*)getPRD<glm::vec3>();
-		prd = glm::vec3(0.0f, 1.0f, 0.0f); /* GREEN */
+		prd = cosDN * sbtData.color;
 	}
 
 
