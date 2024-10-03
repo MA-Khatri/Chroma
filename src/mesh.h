@@ -15,7 +15,7 @@
 
 struct Vertex
 {
-	glm::vec3 pos;
+	glm::vec3 posn;
 	glm::vec3 normal;
 	glm::vec2 texCoord;
 
@@ -38,7 +38,7 @@ struct Vertex
 		attributeDescriptions[0].binding = 0;
 		attributeDescriptions[0].location = 0;
 		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescriptions[0].offset = offsetof(Vertex, pos);
+		attributeDescriptions[0].offset = offsetof(Vertex, posn);
 
 		attributeDescriptions[1].binding = 0;
 		attributeDescriptions[1].location = 1;
@@ -55,14 +55,14 @@ struct Vertex
 
 
 	bool operator==(const Vertex& other) const {
-		return pos == other.pos && normal == other.normal && texCoord == other.texCoord;
+		return posn == other.posn && normal == other.normal && texCoord == other.texCoord;
 	}
 };
 
 namespace std {
 	template<> struct hash<Vertex> {
 		size_t operator()(Vertex const& vertex) const {
-			return ((hash<glm::vec3>()(vertex.pos) ^
+			return ((hash<glm::vec3>()(vertex.posn) ^
 				(hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^
 				(hash<glm::vec2>()(vertex.texCoord) << 1);
 		}
@@ -74,12 +74,18 @@ struct Mesh
 {
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
-	std::vector<glm::ivec3> ivecIndices;
-
 	VkPrimitiveTopology drawMode = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
-	/* Helper to convert index vector to vector of ivec3 where each represents the three indices for 1 triangle -- used for OptiX */
-	void SetIndicesIVec3()
+	std::vector<glm::ivec3> ivecIndices;
+	std::vector<glm::vec3> posns;
+	std::vector<glm::vec3> normals;
+	std::vector<glm::vec2> texCoords;
+
+	/* 
+	 * Helper that converts index vector to vector of ivec3 where each represents the three indices for 1 triangle,
+	 * and splits up vector of Vertex to vectors of individual components of each Vertex.
+	 */
+	void SetupOptixMesh()
 	{
 		if (drawMode == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 		{
@@ -94,6 +100,16 @@ struct Mesh
 		{
 			std::cerr << "Index vector conversion to ivec3 not supported for draw mode: " << drawMode << std::endl;
 			exit(-1);
+		}
+
+		posns.reserve(vertices.size());
+		normals.reserve(vertices.size());
+		texCoords.reserve(vertices.size());
+		for (auto& vertex : vertices)
+		{
+			posns.emplace_back(vertex.posn);
+			normals.emplace_back(vertex.normal);
+			texCoords.emplace_back(vertex.texCoord);
 		}
 	}
 };

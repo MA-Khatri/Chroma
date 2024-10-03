@@ -104,6 +104,8 @@ namespace otx
 		std::vector<Mesh> m_Meshes;
 		std::vector<CUDABuffer> m_VertexBuffers;
 		std::vector<CUDABuffer> m_IndexBuffers;
+		std::vector<CUDABuffer> m_NormalBuffers;
+		std::vector<CUDABuffer> m_TexCoordBuffers;
 		/* Buffer that keeps the final, compacted, acceleration structure */
 		CUDABuffer m_ASBuffer;
 	};

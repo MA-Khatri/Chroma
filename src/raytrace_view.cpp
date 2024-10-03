@@ -52,7 +52,8 @@ void RayTraceView::OnUIRender()
 					OnResize(newSize);
 				}
 
-				ImGui::Image(m_RenderedImage.GetDescriptorSet(), m_ViewportSize);
+				/* Note: we flip the image vertically to match Vulkan convention! */
+				ImGui::Image(m_RenderedImage.GetDescriptorSet(), m_ViewportSize, ImVec2(0, 1), ImVec2(1, 0));
 			}
 			ImGui::EndChild();
 		}

@@ -18,7 +18,7 @@ Mesh CreateHelloTriangle()
 	};
 
 	mesh.drawMode = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	mesh.SetIndicesIVec3();
+	mesh.SetupOptixMesh();
 
 	return mesh;
 }
@@ -40,7 +40,7 @@ Mesh CreatePlane()
 	};
 
 	mesh.drawMode = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	mesh.SetIndicesIVec3();
+	mesh.SetupOptixMesh();
 
 	return mesh;
 }
@@ -70,7 +70,7 @@ Mesh LoadMesh(std::string filepath)
 		{
 			Vertex vertex{};
 
-			vertex.pos = {
+			vertex.posn = {
 				attrib.vertices[3 * index.vertex_index + 0],
 				attrib.vertices[3 * index.vertex_index + 1],
 				attrib.vertices[3 * index.vertex_index + 2]
@@ -98,7 +98,7 @@ Mesh LoadMesh(std::string filepath)
 	}
 
 	mesh.drawMode = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	mesh.SetIndicesIVec3();
+	mesh.SetupOptixMesh();
 
 	return mesh;
 }

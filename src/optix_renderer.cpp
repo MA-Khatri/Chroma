@@ -298,6 +298,145 @@ namespace otx
 	}
 
 
+	OptixTraversableHandle Optix::BuildAccel()
+	{
+		/* Upload mesh data to device */
+		m_VertexBuffers.resize(m_Meshes.size());
+		m_IndexBuffers.resize(m_Meshes.size());
+		m_NormalBuffers.resize(m_Meshes.size());
+		m_TexCoordBuffers.resize(m_Meshes.size());
+
+		OptixTraversableHandle asHandle{ 0 };
+
+		/* ======================= */
+		/* === Triangle inputs === */
+		/* ======================= */
+		std::vector<OptixBuildInput> triangleInputs(m_Meshes.size());
+		std::vector<CUdeviceptr> d_vertices(m_Meshes.size());
+		std::vector<CUdeviceptr> d_indices(m_Meshes.size());
+		//std::vector<CUdeviceptr> d_normals(m_Meshes.size());
+		//std::vector<CUdeviceptr> d_texcoords(m_Meshes.size());
+		std::vector<uint32_t> triangleInputFlags(m_Meshes.size());
+
+		for (int meshID = 0; meshID < m_Meshes.size(); meshID++)
+		{
+			/* Upload the mesh to the device */
+			Mesh& mesh = m_Meshes[meshID];
+			m_VertexBuffers[meshID].alloc_and_upload(mesh.posns);
+			m_IndexBuffers[meshID].alloc_and_upload(mesh.ivecIndices);
+			m_NormalBuffers[meshID].alloc_and_upload(mesh.normals);
+			m_TexCoordBuffers[meshID].alloc_and_upload(mesh.texCoords);
+
+			triangleInputs[meshID] = {};
+			triangleInputs[meshID].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+
+			/* Create local variables to store pointers to the device pointers */
+			d_vertices[meshID] = m_VertexBuffers[meshID].d_pointer();
+			d_indices[meshID] = m_IndexBuffers[meshID].d_pointer();
+			//d_normals[meshID] = m_NormalBuffers[meshID].d_pointer();
+			//d_texcoords[meshID] = m_TexCoordBuffers[meshID].d_pointer();
+
+			/* Set up format for reading vertex and index data */
+			triangleInputs[meshID].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
+			triangleInputs[meshID].triangleArray.vertexStrideInBytes = sizeof(glm::vec3);
+			triangleInputs[meshID].triangleArray.numVertices = (int)mesh.posns.size();
+			triangleInputs[meshID].triangleArray.vertexBuffers = &d_vertices[meshID];
+
+			triangleInputs[meshID].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+			triangleInputs[meshID].triangleArray.indexStrideInBytes = sizeof(glm::ivec3);
+			triangleInputs[meshID].triangleArray.numIndexTriplets = (int)mesh.ivecIndices.size();
+			triangleInputs[meshID].triangleArray.indexBuffer = d_indices[meshID];
+
+			triangleInputFlags[meshID] = 0;
+
+			/* For now, we only have one SBT entry and no per-primitive materials */
+			triangleInputs[meshID].triangleArray.flags = &triangleInputFlags[meshID];
+			triangleInputs[meshID].triangleArray.numSbtRecords = 1;
+			triangleInputs[meshID].triangleArray.sbtIndexOffsetBuffer = 0;
+			triangleInputs[meshID].triangleArray.sbtIndexOffsetSizeInBytes = 0;
+			triangleInputs[meshID].triangleArray.sbtIndexOffsetStrideInBytes = 0;
+		}
+
+		/* ================== */
+		/* === BLAS Setup === */
+		/* ================== */
+		OptixAccelBuildOptions accelOptions = {};
+		accelOptions.buildFlags = OPTIX_BUILD_FLAG_NONE | OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+		accelOptions.motionOptions.numKeys = 1;
+		accelOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
+
+		OptixAccelBufferSizes blasBufferSizes;
+		OPTIX_CHECK(optixAccelComputeMemoryUsage(
+			m_OptixContext,
+			&accelOptions,
+			triangleInputs.data(),
+			(int)m_Meshes.size(),
+			&blasBufferSizes
+		));
+
+		/* ========================== */
+		/* === Prepare compaction === */
+		/* ========================== */
+		CUDABuffer compactedSizeBuffer;
+		compactedSizeBuffer.alloc(sizeof(uint64_t));
+
+		OptixAccelEmitDesc emitDesc;
+		emitDesc.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
+		emitDesc.result = compactedSizeBuffer.d_pointer();
+
+		/* ===================== */
+		/* === Execute build === */
+		/* ===================== */
+		CUDABuffer tempBuffer;
+		tempBuffer.alloc(blasBufferSizes.tempSizeInBytes);
+
+		CUDABuffer outputBuffer;
+		outputBuffer.alloc(blasBufferSizes.outputSizeInBytes);
+
+		OPTIX_CHECK(optixAccelBuild(
+			m_OptixContext,
+			0, /* stream */
+			&accelOptions,
+			triangleInputs.data(),
+			(int)m_Meshes.size(),
+			tempBuffer.d_pointer(),
+			tempBuffer.sizeInBytes,
+			outputBuffer.d_pointer(),
+			outputBuffer.sizeInBytes,
+			&asHandle,
+			&emitDesc,
+			1
+		));
+		CUDA_SYNC_CHECK();
+
+		/* ========================== */
+		/* === Perform compaction === */
+		/* ========================== */
+		uint64_t compactedSize;
+		compactedSizeBuffer.download(&compactedSize, 1);
+
+		m_ASBuffer.alloc(compactedSize);
+		OPTIX_CHECK(optixAccelCompact(
+			m_OptixContext,
+			0,
+			asHandle,
+			m_ASBuffer.d_pointer(),
+			m_ASBuffer.sizeInBytes,
+			&asHandle
+		));
+		CUDA_SYNC_CHECK();
+
+		/* ================ */
+		/* === Clean up === */
+		/* ================ */
+		outputBuffer.free(); /* Free the temporary, uncompacted buffer */
+		tempBuffer.free();
+		compactedSizeBuffer.free();
+
+		return asHandle;
+	}
+
+
 	void Optix::BuildSBT()
 	{
 		/* Build raygen records */
@@ -335,144 +474,14 @@ namespace otx
 			OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[0], &rec)); /* For now, all objects use same code */
 			rec.data.vertex = (glm::vec3*)m_VertexBuffers[meshID].d_pointer();
 			rec.data.index = (glm::ivec3*)m_IndexBuffers[meshID].d_pointer();
-			rec.data.color = glm::vec3(0.0f, 1.0f, 0.0f);
+			rec.data.normal = (glm::vec3*)m_NormalBuffers[meshID].d_pointer();
+			rec.data.texCoord = (glm::vec2*)m_TexCoordBuffers[meshID].d_pointer();
 			hitgroupRecords.push_back(rec);
 		}
 		m_HitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
 		m_SBT.hitgroupRecordBase = m_HitgroupRecordsBuffer.d_pointer();
 		m_SBT.hitgroupRecordStrideInBytes = sizeof(HitgroupRecord);
 		m_SBT.hitgroupRecordCount = (int)hitgroupRecords.size();
-	}
-
-
-	OptixTraversableHandle Optix::BuildAccel()
-	{
-		/* Upload mesh data to device */
-		m_VertexBuffers.resize(m_Meshes.size());
-		m_IndexBuffers.resize(m_Meshes.size());
-
-		OptixTraversableHandle asHandle{ 0 };
-
-		/* ======================= */
-		/* === Triangle inputs === */
-		/* ======================= */
-		std::vector<OptixBuildInput> triangleInputs(m_Meshes.size());
-		std::vector<CUdeviceptr> d_vertices(m_Meshes.size());
-		std::vector<CUdeviceptr> d_indices(m_Meshes.size());
-		std::vector<uint32_t> triangleInputFlags(m_Meshes.size());
-
-		for (int meshID = 0; meshID < m_Meshes.size(); meshID++)
-		{
-			/* Upload the mesh to the device */
-			Mesh& mesh = m_Meshes[meshID];
-			m_VertexBuffers[meshID].alloc_and_upload(mesh.vertices);
-			m_IndexBuffers[meshID].alloc_and_upload(mesh.ivecIndices);
-
-			triangleInputs[meshID] = {};
-			triangleInputs[meshID].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
-
-			/* Create local variables to store pointers to the device pointers */
-			d_vertices[meshID] = m_VertexBuffers[meshID].d_pointer();
-			d_indices[meshID] = m_IndexBuffers[meshID].d_pointer();
-
-			/* Set up format for reading vertex and index data */
-			triangleInputs[meshID].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
-			triangleInputs[meshID].triangleArray.vertexStrideInBytes = sizeof(Vertex);
-			triangleInputs[meshID].triangleArray.numVertices = (int)mesh.vertices.size();
-			triangleInputs[meshID].triangleArray.vertexBuffers = &d_vertices[meshID];
-
-			triangleInputs[meshID].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
-			triangleInputs[meshID].triangleArray.indexStrideInBytes = sizeof(glm::ivec3);
-			triangleInputs[meshID].triangleArray.numIndexTriplets = (int)mesh.ivecIndices.size();
-			triangleInputs[meshID].triangleArray.indexBuffer = d_indices[meshID];
-
-			triangleInputFlags[meshID] = 0;
-
-			/* For now, we only have one SBT entry and no per-primitive materials */
-			triangleInputs[meshID].triangleArray.flags = &triangleInputFlags[meshID];
-			triangleInputs[meshID].triangleArray.numSbtRecords = 1;
-			triangleInputs[meshID].triangleArray.sbtIndexOffsetBuffer = 0;
-			triangleInputs[meshID].triangleArray.sbtIndexOffsetSizeInBytes = 0;
-			triangleInputs[meshID].triangleArray.sbtIndexOffsetStrideInBytes = 0;
-		}
-
-		/* ================== */
-		/* === BLAS Setup === */
-		/* ================== */
-		OptixAccelBuildOptions accelOptions = {};
-		accelOptions.buildFlags = OPTIX_BUILD_FLAG_NONE | OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
-		accelOptions.motionOptions.numKeys = 1;
-		accelOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
-
-		OptixAccelBufferSizes blasBufferSizes;
-		OPTIX_CHECK(optixAccelComputeMemoryUsage(
-			m_OptixContext, 
-			&accelOptions, 
-			triangleInputs.data(), 
-			(int)m_Meshes.size(), 
-			&blasBufferSizes
-		));
-
-		/* ========================== */
-		/* === Prepare compaction === */
-		/* ========================== */
-		CUDABuffer compactedSizeBuffer;
-		compactedSizeBuffer.alloc(sizeof(uint64_t));
-
-		OptixAccelEmitDesc emitDesc;
-		emitDesc.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
-		emitDesc.result = compactedSizeBuffer.d_pointer();
-
-		/* ===================== */
-		/* === Execute build === */
-		/* ===================== */
-		CUDABuffer tempBuffer;
-		tempBuffer.alloc(blasBufferSizes.tempSizeInBytes);
-
-		CUDABuffer outputBuffer;
-		outputBuffer.alloc(blasBufferSizes.outputSizeInBytes);
-
-		OPTIX_CHECK(optixAccelBuild(
-			m_OptixContext, 
-			0, /* stream */
-			&accelOptions, 
-			triangleInputs.data(), 
-			(int)m_Meshes.size(), 
-			tempBuffer.d_pointer(), 
-			tempBuffer.sizeInBytes, 
-			outputBuffer.d_pointer(), 
-			outputBuffer.sizeInBytes, 
-			&asHandle, 
-			&emitDesc, 
-			1
-		));
-		CUDA_SYNC_CHECK();
-
-		/* ========================== */
-		/* === Perform compaction === */
-		/* ========================== */
-		uint64_t compactedSize;
-		compactedSizeBuffer.download(&compactedSize, 1);
-
-		m_ASBuffer.alloc(compactedSize);
-		OPTIX_CHECK(optixAccelCompact(
-			m_OptixContext, 
-			0, 
-			asHandle, 
-			m_ASBuffer.d_pointer(), 
-			m_ASBuffer.sizeInBytes, 
-			&asHandle
-		));
-		CUDA_SYNC_CHECK();
-
-		/* ================ */
-		/* === Clean up === */
-		/* ================ */
-		outputBuffer.free(); /* Free the temporary, uncompacted buffer */
-		tempBuffer.free();
-		compactedSizeBuffer.free();
-
-		return asHandle;
 	}
 
 
@@ -497,8 +506,8 @@ namespace otx
 	void Optix::SetCamera(const Camera& camera)
 	{
 		m_LastSetCamera = camera;
-		m_LaunchParams.camera.position = glm::vec3(camera.position.x, camera.position.y, -camera.position.z);
-		m_LaunchParams.camera.direction = glm::normalize(glm::vec3(camera.orientation.x, camera.orientation.y, -camera.orientation.z));
+		m_LaunchParams.camera.position = camera.position;
+		m_LaunchParams.camera.direction = glm::normalize(camera.orientation);
 		const float cos_vfov = glm::cos(glm::radians(camera.vfov));
 		const float aspect = m_LaunchParams.frame.size.x / float(m_LaunchParams.frame.size.y);
 		m_LaunchParams.camera.horizontal = cos_vfov * aspect * glm::normalize(glm::cross(m_LaunchParams.camera.direction, camera.up));

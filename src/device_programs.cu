@@ -46,6 +46,11 @@ namespace otx
 	}
 
 
+	extern "C" __device__ glm::vec3 InterpolateNormals(const float2& uv, const glm::vec3& n0, const glm::vec3& n1, const glm::vec3& n2)
+	{
+		return n0 + uv.x * (n1 - n0) + uv.y * (n2 - n0);
+	}
+
 	/*
 	 * Closest hit and any hit programs for radiance-type rays.
 	 * Eventually, we will need a pair of these for each ray type 
@@ -58,15 +63,24 @@ namespace otx
 		/* Compute normal */
 		const int primID = optixGetPrimitiveIndex();
 		const glm::ivec3 index = sbtData.index[primID];
-		const glm::vec3& A = sbtData.vertex[index.x];
-		const glm::vec3& B = sbtData.vertex[index.y];
-		const glm::vec3& C = sbtData.vertex[index.z];
-		const glm::vec3 Ng = glm::normalize(glm::cross(B - A, C - A));
+		//const glm::vec3& A = sbtData.vertex[index.x];
+		//const glm::vec3& B = sbtData.vertex[index.y];
+		//const glm::vec3& C = sbtData.vertex[index.z];
+		//const glm::vec3 Ng = glm::normalize(glm::cross(B - A, C - A));
 
-		auto rd = optixGetWorldRayDirection();
-		const float cosDN = 0.2f + 0.8f * fabsf(glm::dot(glm::vec3(rd.x, rd.y, rd.z), Ng));
+		//auto rd = optixGetWorldRayDirection();
+		//const float cosDN = 0.2f + 0.8f * fabsf(glm::dot(glm::vec3(rd.x, rd.y, rd.z), Ng));
+		//glm::vec3& prd = *(glm::vec3*)getPRD<glm::vec3>();
+		//prd = cosDN * sbtData.color;
+
+		const glm::vec3& n0 = sbtData.normal[index.x];
+		const glm::vec3& n1 = sbtData.normal[index.y];
+		const glm::vec3& n2 = sbtData.normal[index.z];
+		float2 uv = optixGetTriangleBarycentrics();
+		glm::vec3 interpolatedNormal = InterpolateNormals(uv, n0, n1, n2);
+
 		glm::vec3& prd = *(glm::vec3*)getPRD<glm::vec3>();
-		prd = cosDN * sbtData.color;
+		prd = 1.0f * interpolatedNormal;
 	}
 
 

@@ -56,7 +56,8 @@ void RasterView::OnUIRender()
 				/* Wait until the descriptor set for the viewport image is created */
 				/* This could be a source of latency later on -- might be better to add multiple images here as well to allow simultaneous rendering/displaying */
 				vkDeviceWaitIdle(vk::Device);
-				ImGui::Image(m_ViewportImageDescriptorSets[vk::MainWindowData.FrameIndex], m_ViewportSize);
+				/* Note: we flip the image vertically to match Vulkan convention! */
+				ImGui::Image(m_ViewportImageDescriptorSets[vk::MainWindowData.FrameIndex], m_ViewportSize, ImVec2(0, 1), ImVec2(1, 0));
 			}
 			ImGui::EndChild();
 		}
@@ -325,7 +326,6 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 	PushConstants constants;
 	constants.view = m_Camera.view_matrix;
 	constants.proj = m_Camera.projection_matrix;
-	constants.proj[1][1] *= -1; /* Flip y in proj matrix to match Vulkan convention */
 	vkCmdPushConstants(commandBuffer, m_ViewportPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
 
 	/* Draw the objects */
