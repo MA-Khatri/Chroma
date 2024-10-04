@@ -20,7 +20,7 @@
 
 #include "vulkan_utils.h"
 #include "layer.h"
-
+#include "camera.h"
 
 
 /* === Forward Declerations === */
@@ -47,12 +47,21 @@ public:
 	void PushLayer(const std::shared_ptr<Layer>& layer);
 
 	GLFWwindow* GetWindowHandle() const { return m_WindowHandle; }
+	Camera* GetMainCamera() const { return m_MainCamera; }
 	float GetTime();
 
 private:
 	void Init();
 	void Shutdown();
 	void NextFrame();
+
+public:
+	enum {
+		RasterizedViewport,
+		RayTracedViewport
+	};
+	bool m_LinkCameras = true; /* Determines whether all viewports share the same camera (i.e., m_MainCamera) */
+	int m_FocusedWindow = RasterizedViewport; /* Which window data should be used to display debug info? */
 
 private:
 	GLFWwindow* m_WindowHandle;
@@ -65,4 +74,7 @@ private:
 	float m_LastFrameTime = 0.0f;
 
 	bool m_Running = false;
+
+	/* The default, application-wide camera */
+	Camera* m_MainCamera = new Camera();
 };

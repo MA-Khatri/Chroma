@@ -10,6 +10,7 @@ void RasterView::OnAttach(Application* app)
 {
 	m_AppHandle = app;
 	m_WindowHandle = app->GetWindowHandle();
+	m_Camera = app->GetMainCamera();
 
 	InitVulkan();
 	SceneSetup();
@@ -26,8 +27,10 @@ void RasterView::OnUpdate()
 {
 	if (m_ViewportHovered)
 	{
-		m_Camera.Inputs(m_WindowHandle);
+		m_Camera->Inputs(m_WindowHandle);
 	}
+
+	if (m_ViewportFocused) m_AppHandle->m_FocusedWindow = Application::RasterizedViewport;
 }
 
 
@@ -68,11 +71,14 @@ void RasterView::OnUIRender()
 
 	ImGui::ShowDemoWindow();
 
-	ImGui::Begin("Raster Debug Panel");
+	if (m_AppHandle->m_FocusedWindow == Application::RasterizedViewport)
 	{
-		CommonDebug(m_ViewportSize, m_Camera);
+		ImGui::Begin("Debug Panel");
+		{
+			CommonDebug(m_AppHandle, m_ViewportSize, m_Camera);
+		}
+		ImGui::End();
 	}
-	ImGui::End();
 }
 
 
@@ -121,16 +127,16 @@ void RasterView::CleanupVulkan()
 
 void RasterView::OnResize(ImVec2 newSize)
 {
+	m_ViewportSize = newSize;
+
 	ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
 	ImVec2 viewportPos = ImGui::GetWindowPos();
 	ImVec2 rPos = ImVec2(viewportPos.x - mainWindowPos.x, viewportPos.y - mainWindowPos.y);
 	ImVec2 minR = ImGui::GetWindowContentRegionMin();
 	ImVec2 maxR = ImGui::GetWindowContentRegionMax();
-	m_Camera.viewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
-	m_Camera.viewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
-	//std::cout << m_Camera->viewportContentMin.x << " " << m_Camera->viewportContentMin.y << "   " << m_Camera->viewportContentMax.x << " " << m_Camera->viewportContentMax.y << std::endl;
-	m_ViewportSize = newSize;
-	m_Camera.UpdateProjectionMatrix((int)m_ViewportSize.x, (int)m_ViewportSize.y);
+	m_Camera->viewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
+	m_Camera->viewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
+	m_Camera->UpdateProjectionMatrix(static_cast<int>(m_ViewportSize.x), static_cast<int>(m_ViewportSize.y));
 
 	/* Before re-creating the images, we MUST wait for the device to be done using them */
 	vkDeviceWaitIdle(vk::Device);
@@ -196,28 +202,32 @@ void RasterView::SceneSetup()
 	pInfo.descriptorPool = m_DescriptorPool;
 	pInfo.descriptorSetLayout = m_DescriptorSetLayout;
 
-	std::vector<std::string> shadersBasic = { "res/shaders/Basic.vert", "res/shaders/Basic.frag" };
-	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersBasic, m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
+	std::vector<std::string> shadersFlat = { "res/shaders/Flat.vert", "res/shaders/Flat.frag" };
+	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersFlat, m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
 	pInfo.pipelineLayout = m_ViewportPipelineLayout; /* Note: has to be after pipeline creation bc pipeline layout is created in CreateGraphicsPipeline() */
-	m_Pipelines[Basic] = pInfo;
+	m_Pipelines[Flat] = pInfo;
 
 	std::vector<std::string> shadersSolid = { "res/shaders/Solid.vert", "res/shaders/Solid.frag" };
 	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersSolid, m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
 	m_Pipelines[Solid] = pInfo;
 
-	/* Create objects that will be drawn */
-	TexturePaths vikingRoomTextures;
-	vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
-	Object* vikingRoom = new Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, m_Pipelines[Basic]);
-	vikingRoom->Scale(5.0f);
-	m_Objects.push_back(vikingRoom);
+	std::vector<std::string> shadersNormal = { "res/shaders/Solid.vert", "res/shaders/Normal.frag" };
+	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersNormal, m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
+	m_Pipelines[Normal] = pInfo;
 
-	//TexturePaths noTextures;
-	//Object* dragon = new Object(LoadMesh("res/meshes/dragon.obj"), noTextures, m_Pipelines[Solid]);
+	/* Create objects that will be drawn */
+	//TexturePaths vikingRoomTextures;
+	//vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
+	//Object* vikingRoom = new Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, m_Pipelines[Flat]);
+	//vikingRoom->Scale(5.0f);
+	//m_Objects.push_back(vikingRoom);
+
+	TexturePaths noTextures;
+	Object* dragon = new Object(LoadMesh("res/meshes/dragon.obj"), noTextures, m_Pipelines[Normal]);
 	//dragon->Translate(0.0f, 10.0f, 0.0f);
 	//dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 90.0f);
 	//dragon->Scale(5.0f);
-	//m_Objects.push_back(dragon);
+	m_Objects.push_back(dragon);
 }
 
 
@@ -324,8 +334,8 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 
 	/* Set push constants */
 	PushConstants constants;
-	constants.view = m_Camera.view_matrix;
-	constants.proj = m_Camera.projection_matrix;
+	constants.view = m_Camera->view_matrix;
+	constants.proj = m_Camera->projection_matrix;
 	vkCmdPushConstants(commandBuffer, m_ViewportPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
 
 	/* Draw the objects */

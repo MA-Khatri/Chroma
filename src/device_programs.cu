@@ -77,10 +77,10 @@ namespace otx
 		const glm::vec3& n1 = sbtData.normal[index.y];
 		const glm::vec3& n2 = sbtData.normal[index.z];
 		float2 uv = optixGetTriangleBarycentrics();
-		glm::vec3 interpolatedNormal = InterpolateNormals(uv, n0, n1, n2);
+		glm::vec3 clampedNormals = glm::clamp(InterpolateNormals(uv, n0, n1, n2), 0.0f, 1.0f);
 
 		glm::vec3& prd = *(glm::vec3*)getPRD<glm::vec3>();
-		prd = 1.0f * interpolatedNormal;
+		prd = clampedNormals;
 	}
 
 
@@ -96,7 +96,7 @@ namespace otx
 	extern "C" __global__ void __miss__radiance()
 	{
 		glm::vec3& prd = *(glm::vec3*)getPRD<glm::vec3>();
-		prd = glm::vec3(1.0f); /* WHITE */
+		prd = glm::vec3(0.0f); /* BLACK */
 	}
 
 

@@ -15,22 +15,11 @@
 class Camera
 {
 private:
-	/* Width and Height of the viewport */
-	int m_Width;
-	int m_Height;
-
 	float m_NearPlane;
 	float m_FarPlane;
 
-	/* Camera movement speed */
-	float m_Speed = 0.01f;
-	
-	/* Camera rotation sensitivity */
-	float m_Sensitivity = 100.0f;
-
 	/* Previous mouse position */
 	glm::vec2 m_PrevMousePosn;
-
 
 
 public:
@@ -59,8 +48,18 @@ public:
 	ImVec2 viewportContentMin = ImVec2(0.0f, 0.0f);
 	ImVec2 viewportContentMax = ImVec2(0.0f, 0.0f);
 
+	/* Width and Height of the viewport */
+	int m_Width;
+	int m_Height;
+
 	/* Is the left mouse key pressed? */
 	bool m_LMB = false;
+
+	/* Camera movement speed */
+	float m_Speed = 0.01f;
+
+	/* Camera rotation sensitivity */
+	float m_Sensitivity = 100.0f;
 
 public:
 	Camera(int width, int height, glm::vec3 position, glm::vec3 orientation, glm::vec3 up, float vfov = 45.0f, float near_plane = 0.1f, float far_plane = 1000.0f);

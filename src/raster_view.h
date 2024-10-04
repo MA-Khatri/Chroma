@@ -48,14 +48,15 @@ private:
 	/* List of pipeline types */
 	enum Pipelines
 	{
-		Basic,
-		Solid
+		Flat,   /* Only see diffuse texture */
+		Normal, /* View object normals */
+		Solid   /* Proxy for Blender's solid viewport shading */
 	};
 
 	Application* m_AppHandle;
 	GLFWwindow* m_WindowHandle;
 
-	Camera m_Camera;
+	Camera* m_Camera;
 	
 	bool m_ViewportFocused = false;
 	bool m_ViewportHovered = false;

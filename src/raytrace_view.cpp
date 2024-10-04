@@ -8,6 +8,9 @@ void RayTraceView::OnAttach(Application* app)
 	m_OptixRenderer.Resize(m_ViewportSize);
 	m_RenderedImage.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 	m_RenderedImagePixels.resize(static_cast<size_t>(m_ViewportSize.x * m_ViewportSize.y));
+
+	if (m_AppHandle->m_LinkCameras)	m_Camera = m_AppHandle->GetMainCamera();
+	else m_Camera = m_LocalCamera;
 }
 
 void RayTraceView::OnDetach()
@@ -20,16 +23,20 @@ void RayTraceView::OnUpdate()
 {
 	if (m_ViewportHovered)
 	{
-		m_Camera.Inputs(m_WindowHandle);
+		m_Camera->Inputs(m_WindowHandle);
 	}
 
 	if (m_ViewportFocused)
 	{
-		m_OptixRenderer.SetCamera(m_Camera);
+		m_AppHandle->m_FocusedWindow = Application::RayTracedViewport;
+
+		if (m_AppHandle->m_LinkCameras)	m_Camera = m_AppHandle->GetMainCamera();
+		else m_Camera = m_LocalCamera;
+
+		m_OptixRenderer.SetCamera(*m_Camera);
 		m_OptixRenderer.Render();
 		m_OptixRenderer.DownloadPixels(m_RenderedImagePixels.data()); /* Instead of downloading to host then re-uploading to GPU, can we upload directly? */
 		m_RenderedImage.SetData(m_RenderedImagePixels.data());
-		//m_RenderedImage.SetData(m_OptixRenderer.GetColorBuffer());
 	}
 }
 
@@ -62,25 +69,37 @@ void RayTraceView::OnUIRender()
 	/* Add back in padding for non-viewport ImGui */
 	ImGui::PopStyleVar();
 
-	ImGui::Begin("Ray Trace Debug Panel");
+	if (m_AppHandle->m_FocusedWindow == Application::RayTracedViewport)
 	{
-		CommonDebug(m_ViewportSize, m_Camera);
+		ImGui::Begin("Debug Panel");
+		{
+			CommonDebug(m_AppHandle, m_ViewportSize, m_Camera);
+		}
+		ImGui::End();
 	}
-	ImGui::End();
 }
 
 
 void RayTraceView::OnResize(ImVec2 newSize)
 {
+	m_ViewportSize = newSize;
+
 	ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
 	ImVec2 viewportPos = ImGui::GetWindowPos();
 	ImVec2 rPos = ImVec2(viewportPos.x - mainWindowPos.x, viewportPos.y - mainWindowPos.y);
 	ImVec2 minR = ImGui::GetWindowContentRegionMin();
 	ImVec2 maxR = ImGui::GetWindowContentRegionMax();
-	m_Camera.viewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
-	m_Camera.viewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
+	m_Camera->viewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
+	m_Camera->viewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
+	m_Camera->UpdateProjectionMatrix(static_cast<int>(m_ViewportSize.x), static_cast<int>(m_ViewportSize.y));
 
-	m_ViewportSize = newSize;
+	/* If cameras are linked, we still need to update the local camera */
+	if (m_AppHandle->m_LinkCameras)
+	{
+		m_LocalCamera->viewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
+		m_LocalCamera->viewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
+		m_LocalCamera->UpdateProjectionMatrix(static_cast<int>(m_ViewportSize.x), static_cast<int>(m_ViewportSize.y));
+	}
 
 	m_OptixRenderer.Resize(m_ViewportSize);
 	m_RenderedImage.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));

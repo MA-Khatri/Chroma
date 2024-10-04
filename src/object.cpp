@@ -105,6 +105,8 @@ Object::Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelin
     }
 
     vkUpdateDescriptorSets(vk::Device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+
+    UpdateUniformBuffer(); /* Need to call this just to make sure it gets set. */
 }
 
 
