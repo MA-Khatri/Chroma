@@ -508,10 +508,14 @@ namespace otx
 		m_LastSetCamera = camera;
 		m_LaunchParams.camera.position = camera.position;
 		m_LaunchParams.camera.direction = glm::normalize(camera.orientation);
-		const float cos_vfov = glm::cos(glm::radians(camera.vfov));
-		const float aspect = m_LaunchParams.frame.size.x / float(m_LaunchParams.frame.size.y);
-		m_LaunchParams.camera.horizontal = cos_vfov * aspect * glm::normalize(glm::cross(m_LaunchParams.camera.direction, camera.up));
-		m_LaunchParams.camera.vertical = cos_vfov * glm::normalize(glm::cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
+
+		float aspect = m_LaunchParams.frame.size.x / float(m_LaunchParams.frame.size.y);
+		float focal_length = glm::length(camera.orientation);
+		float h = glm::tan(glm::radians(camera.vfov) / 2.0f);
+		float height = 2.0f * h * focal_length;
+		float width = height * aspect;
+		m_LaunchParams.camera.horizontal = width * glm::normalize(glm::cross(m_LaunchParams.camera.direction, camera.up));
+		m_LaunchParams.camera.vertical = height * glm::normalize(glm::cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
 	}
 
 

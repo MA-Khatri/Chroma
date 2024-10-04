@@ -63,22 +63,17 @@ namespace otx
 		/* Compute normal */
 		const int primID = optixGetPrimitiveIndex();
 		const glm::ivec3 index = sbtData.index[primID];
-		//const glm::vec3& A = sbtData.vertex[index.x];
-		//const glm::vec3& B = sbtData.vertex[index.y];
-		//const glm::vec3& C = sbtData.vertex[index.z];
-		//const glm::vec3 Ng = glm::normalize(glm::cross(B - A, C - A));
-
-		//auto rd = optixGetWorldRayDirection();
-		//const float cosDN = 0.2f + 0.8f * fabsf(glm::dot(glm::vec3(rd.x, rd.y, rd.z), Ng));
-		//glm::vec3& prd = *(glm::vec3*)getPRD<glm::vec3>();
-		//prd = cosDN * sbtData.color;
 
 		const glm::vec3& n0 = sbtData.normal[index.x];
 		const glm::vec3& n1 = sbtData.normal[index.y];
 		const glm::vec3& n2 = sbtData.normal[index.z];
 		float2 uv = optixGetTriangleBarycentrics();
-		glm::vec3 clampedNormals = glm::clamp(InterpolateNormals(uv, n0, n1, n2), 0.0f, 1.0f);
+		glm::vec3 iN = InterpolateNormals(uv, n0, n1, n2);
 
+		/* We need to clamp each element individually or the compiler will complain */
+		glm::vec3 clampedNormals = glm::vec3(glm::clamp(iN.x, 0.0f, 1.0f), glm::clamp(iN.y, 0.0f, 1.0f), glm::clamp(iN.z, 0.0f, 1.0f));
+
+		/* Set data */
 		glm::vec3& prd = *(glm::vec3*)getPRD<glm::vec3>();
 		prd = clampedNormals;
 	}
@@ -120,10 +115,12 @@ namespace otx
 		packPointer(&pixelColorPRD, u0, u1);
 
 		/* Normalized screen plane position in [0, 1]^2 */
-		const glm::vec2 screen = glm::vec2(glm::vec2(ix + 0.5f, iy + 0.5f) / glm::vec2(optixLaunchParams.frame.size));
+		const glm::vec2 screen = glm::vec2(ix + 0.5f, iy + 0.5f) / glm::vec2(optixLaunchParams.frame.size);
 
 		/* Generate ray direction */
 		glm::vec3 rayDir = glm::normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical);
+
+		/* Set the origin and direction as float3s */
 		float3 ray_direction = { rayDir.x, rayDir.y, rayDir.z };
 		float3 ray_origin = { camera.position.x, camera.position.y, camera.position.z };
 

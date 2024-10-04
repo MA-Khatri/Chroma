@@ -26,7 +26,7 @@ public:
 	/* The position of the camera */
 	glm::vec3 position;
 
-	/* The direction the camera is looking.Internally, the lookAt point is position + this orientation */
+	/* The direction the camera is looking. Internally, the lookAt point is position + this orientation */
 	glm::vec3 orientation;
 
 	/* The up vector(think orientation of the viewport) */
