@@ -46,6 +46,84 @@ Mesh CreatePlane()
 }
 
 
+Mesh CreateGroundGrid()
+{
+	/* Axis colors for center lines */
+	glm::vec3 xAxisColor = glm::vec3(98.0f / 255.0f, 135.0f / 255.0f, 41.0f / 255.0f);
+	glm::vec3 yAxisColor = glm::vec3(154.0f / 255.0f, 60.0f / 255.0f, 74.0f / 255.0f);
+
+	/* Axis color for remaining grid lines */
+	glm::vec3 xGridColor = glm::vec3(78.0f / 255.0f, 78.0f / 255.0f, 78.0f / 255.0f);
+	glm::vec3 yGridColor = glm::vec3(78.0f / 255.0f, 78.0f / 255.0f, 78.0f / 255.0f);
+
+	/* Count from xgap to +x/+y */
+	int xcount = 500;
+	int ycount = 500;
+
+	/* Spacing between lines along each axis */
+	float xgap = 1.0f;
+	float ygap = 1.0f;
+
+
+	float xmax = xcount * xgap;
+	float ymax = ycount * ygap;
+
+	Mesh mesh;
+	mesh.vertices.reserve(xcount * 2 + ycount * 2 + 2);
+	mesh.indices.reserve(xcount * 2 + ycount * 2 + 2);
+
+	/* Lines along x axis spanning -ymax to +ymax */
+	int index = 0;
+	for (int i = -xcount; i < xcount + 1; i++)
+	{
+		Vertex v0;
+		v0.posn = glm::vec3(i * xgap, -ymax, 0.0f);
+		v0.normal = i == 0 ? xAxisColor : xGridColor;
+		v0.texCoord = glm::vec2(0.0f);
+
+		mesh.vertices.emplace_back(v0);
+		mesh.indices.emplace_back(index);
+		index++;
+
+		Vertex v1;
+		v1.posn = glm::vec3(i * xgap, ymax, 0.0f);
+		v1.normal = i == 0 ? xAxisColor : xGridColor;
+		v1.texCoord = glm::vec2(0.0f);
+
+		mesh.vertices.emplace_back(v1);
+		mesh.indices.emplace_back(index);
+		index++;
+	}
+	
+	/* Lines along y axis spanning -xmax to +xmax */
+	for (int j = -ycount; j < ycount + 1; j++)
+	{
+		Vertex v0;
+		v0.posn = glm::vec3(-xmax, j * ygap, 0.0f);
+		v0.normal = j == 0 ? yAxisColor : yGridColor;
+		v0.texCoord = glm::vec2(0.0f);
+
+		mesh.vertices.emplace_back(v0);
+		mesh.indices.emplace_back(index);
+		index++;
+
+		Vertex v1;
+		v1.posn = glm::vec3(xmax, j * ygap, 0.0f);
+		v1.normal = j == 0 ? yAxisColor : yGridColor;
+		v1.texCoord = glm::vec2(0.0f);
+
+		mesh.vertices.emplace_back(v1);
+		mesh.indices.emplace_back(index);
+		index++;
+	}
+
+	mesh.drawMode = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+	//mesh.SetupOptixMesh();
+
+	return mesh;
+}
+
+
 Mesh LoadMesh(std::string filepath)
 {
 	Mesh mesh;

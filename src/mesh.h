@@ -118,4 +118,7 @@ struct Mesh
 Mesh CreateHelloTriangle();
 Mesh CreatePlane();
 
+/* Create ground plane line grid -- note: Vertex.normal = color of the lines */
+Mesh CreateGroundGrid();
+
 Mesh LoadMesh(std::string filepath);

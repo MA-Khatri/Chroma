@@ -134,8 +134,8 @@ namespace vk
 
 	void CreateRenderPass(VkSampleCountFlagBits msaaSamples, VkRenderPass& renderPass);
 
-	void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, VkSampleCountFlagBits msaaSamples, const VkRenderPass& renderPass, const VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout, VkPipeline& pipeline);
-	VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, VkSampleCountFlagBits msaaSamples, const VkRenderPass& renderPass, const VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout);
+	void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology, const VkRenderPass& renderPass, const VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout, VkPipeline& pipeline);
+	VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent, VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology, const VkRenderPass& renderPass, const VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& layout);
 
 	void CreateFrameBuffer(std::vector<VkImageView> attachments, VkRenderPass& renderPass, ImVec2 extent, VkFramebuffer& framebuffer);
 	void CreateFrameBuffers(std::vector<VkImageView> attachments, VkRenderPass& renderPass, ImVec2 extent, uint32_t count, std::vector<VkFramebuffer>& framebuffers);

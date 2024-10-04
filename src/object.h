@@ -29,6 +29,15 @@ struct TexturePaths
 	std::string normal;
 };
 
+/* Local texture storage */
+struct Texture
+{
+	~Texture() { if (pixel) delete[] pixel; }
+
+	uint32_t* pixel{ nullptr };
+	glm::ivec2 resolution;
+};
+
 
 class Object
 {
@@ -98,16 +107,19 @@ private:
 	VkImageView m_DiffuseTextureImageView = VK_NULL_HANDLE;
 	VkSampler m_DiffuseTextureSampler = VK_NULL_HANDLE;
 	uint32_t m_DiffuseMipLevels = 0;
+	Texture m_DiffuseTexture;
 
 	VkImage m_SpecularTextureImage = VK_NULL_HANDLE;
 	VkDeviceMemory m_SpecularTextureImageMemory = VK_NULL_HANDLE;
 	VkImageView m_SpecularTextureImageView = VK_NULL_HANDLE;
 	VkSampler m_SpecularTextureSampler = VK_NULL_HANDLE;
 	uint32_t m_SpecularMipLevels = 0;
+	Texture m_SpecularTexture;
 
 	VkImage m_NormalTextureImage = VK_NULL_HANDLE;
 	VkDeviceMemory m_NormalTextureImageMemory = VK_NULL_HANDLE;
 	VkImageView m_NormalTextureImageView = VK_NULL_HANDLE;
 	VkSampler m_NormalTextureSampler = VK_NULL_HANDLE;
 	uint32_t m_NormalMipLevels = 0;
+	Texture m_NormalTexture;
 };

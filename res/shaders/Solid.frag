@@ -9,9 +9,9 @@ layout(location = 0) out vec4 outColor;
 void main() 
 {
 	float ambient = 0.2;
-	float diffuse = 0.6;
-	float specular = 0.2;
-	float exponent = 4;
+	float diffuse = 0.5;
+	float specular = 0.1;
+	float exponent = 16;
 
 	vec3 lightDir = normalize(v_CameraPosn - v_Position);
 	vec3 reflectDir = reflect(-lightDir, v_Normal);

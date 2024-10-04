@@ -41,6 +41,8 @@
     <None Include="res\shaders\FlatWithSpecular.frag" />
     <None Include="res\shaders\HelloTriangle.frag" />
     <None Include="res\shaders\HelloTriangle.vert" />
+    <None Include="res\shaders\Lines.frag" />
+    <None Include="res\shaders\Lines.vert" />
     <None Include="res\shaders\Normal.frag" />
     <None Include="res\shaders\Solid.frag" />
     <None Include="res\shaders\Solid.vert" />

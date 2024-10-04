@@ -65,6 +65,9 @@ namespace otx
 		Debug("[Optix] Setting up Optix pipeline...");
 		CreatePipeline();
 
+		Debug("[Optix] Creating textures...");
+		CreateTextures();
+
 		Debug("[Optix] Building SBT...");
 		BuildSBT();
 
@@ -434,6 +437,12 @@ namespace otx
 		compactedSizeBuffer.free();
 
 		return asHandle;
+	}
+
+
+	void Optix::CreateTextures()
+	{
+
 	}
 
 

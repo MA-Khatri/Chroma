@@ -50,7 +50,8 @@ private:
 	{
 		Flat,   /* Only see diffuse texture */
 		Normal, /* View object normals */
-		Solid   /* Proxy for Blender's solid viewport shading */
+		Solid,  /* Proxy for Blender's solid viewport shading */
+		Lines,  /* Displays line list with color */
 	};
 
 	Application* m_AppHandle;

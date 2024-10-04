@@ -54,11 +54,15 @@ namespace otx
 		/* Assembles pipeline of all the programs */
 		void CreatePipeline();
 
-		/* Constructs the shader binding table */
-		void BuildSBT();
 
 		/* Build an acceleration structure for all meshes in m_Meshes */
 		OptixTraversableHandle BuildAccel();
+
+		/* Constructs the shader binding table */
+		void BuildSBT();
+
+		/* Upload textures and create cuda texture objects for them */
+		void CreateTextures();
 
 	protected:
 		/* 

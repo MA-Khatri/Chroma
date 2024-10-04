@@ -203,27 +203,35 @@ void RasterView::SceneSetup()
 	pInfo.descriptorSetLayout = m_DescriptorSetLayout;
 
 	std::vector<std::string> shadersFlat = { "res/shaders/Flat.vert", "res/shaders/Flat.frag" };
-	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersFlat, m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
+	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersFlat, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
 	pInfo.pipelineLayout = m_ViewportPipelineLayout; /* Note: has to be after pipeline creation bc pipeline layout is created in CreateGraphicsPipeline() */
 	m_Pipelines[Flat] = pInfo;
 
 	std::vector<std::string> shadersSolid = { "res/shaders/Solid.vert", "res/shaders/Solid.frag" };
-	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersSolid, m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
+	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersSolid, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
 	m_Pipelines[Solid] = pInfo;
 
 	std::vector<std::string> shadersNormal = { "res/shaders/Solid.vert", "res/shaders/Normal.frag" };
-	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersNormal, m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
+	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersNormal, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
 	m_Pipelines[Normal] = pInfo;
 
+	std::vector<std::string> shadersLines = { "res/shaders/Lines.vert", "res/shaders/Lines.frag" };
+	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersLines, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_ViewportPipelineLayout);
+	m_Pipelines[Lines] = pInfo;
+
 	/* Create objects that will be drawn */
+	TexturePaths noTextures;
+
+	Object* grid = new Object(CreateGroundGrid(), noTextures, m_Pipelines[Lines]);
+	m_Objects.push_back(grid);
+
 	//TexturePaths vikingRoomTextures;
 	//vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
 	//Object* vikingRoom = new Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, m_Pipelines[Flat]);
 	//vikingRoom->Scale(5.0f);
 	//m_Objects.push_back(vikingRoom);
 
-	TexturePaths noTextures;
-	Object* dragon = new Object(LoadMesh("res/meshes/dragon.obj"), noTextures, m_Pipelines[Normal]);
+	Object* dragon = new Object(LoadMesh("res/meshes/dragon.obj"), noTextures, m_Pipelines[Solid]);
 	//dragon->Translate(0.0f, 10.0f, 0.0f);
 	//dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 90.0f);
 	//dragon->Scale(5.0f);
@@ -310,7 +318,7 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 	renderPassInfo.renderArea.extent = { static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y) };
 
 	std::array<VkClearValue, 2> clearValues{};
-	clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+	clearValues[0].color = { {63.0f/255.0f, 63.0f/255.0f, 63.0f/255.0f, 1.0f} };
 	clearValues[1].depthStencil = { 1.0f, 0 };
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassInfo.pClearValues = clearValues.data();
