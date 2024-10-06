@@ -57,6 +57,8 @@ void RasterView::OnUIRender()
 			{
 				m_ViewportFocused = ImGui::IsWindowFocused();
 				m_ViewportHovered = ImGui::IsWindowHovered();
+				if (ImGui::IsWindowAppearing()) m_ViewportVisible = true;
+				if (ImGui::IsWindowCollapsed()) m_ViewportVisible = false;
 
 				ImVec2 newSize = ImGui::GetContentRegionAvail();
 				if (m_ViewportSize.x != newSize.x || m_ViewportSize.y != newSize.y)
@@ -64,13 +66,17 @@ void RasterView::OnUIRender()
 					OnResize(newSize);
 				}
 
-				m_Scene->VkDraw(*m_Camera);
+				if (m_ViewportVisible)
+				{
+					m_Scene->VkDraw(*m_Camera);
 
-				/* Wait until the descriptor set for the viewport image is created */
-				/* This could be a source of latency later on -- might be better to add multiple images here as well to allow simultaneous rendering/displaying */
-				vkDeviceWaitIdle(vk::Device);
-				/* Note: we flip the image vertically to match Vulkan convention! */
-				ImGui::Image(m_ViewportImageDescriptorSets[vk::MainWindowData.FrameIndex], m_ViewportSize, ImVec2(0, 1), ImVec2(1, 0));
+					/* Wait until the descriptor set for the viewport image is created */
+					/* This could be a source of latency later on -- might be better to add multiple images here as well to allow simultaneous rendering/displaying */
+					vkDeviceWaitIdle(vk::Device);
+
+					/* Note: we flip the image vertically to match Vulkan convention! */
+					ImGui::Image(m_ViewportImageDescriptorSets[vk::MainWindowData.FrameIndex], m_ViewportSize, ImVec2(0, 1), ImVec2(1, 0));
+				}
 			}
 			ImGui::EndChild();
 		}

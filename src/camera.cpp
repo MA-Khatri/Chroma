@@ -159,7 +159,7 @@ void Camera::Inputs(GLFWwindow* window)
 		{
 			mouseX = viewportContentMin[0] + padding;
 		}
-		if (mouseY < viewportContentMin[1] + padding)
+		if (mouseY < viewportContentMin[1]) /* No padding here to prevent issues when clicking to switch tabs */
 		{
 			mouseY = viewportContentMax[1] - padding;
 		}

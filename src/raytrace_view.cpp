@@ -39,7 +39,7 @@ void RayTraceView::OnUpdate()
 		m_Camera->Inputs(m_WindowHandle);
 	}
 
-	if (m_ViewportFocused)
+	if (m_ViewportVisible)
 	{
 		m_AppHandle->m_FocusedWindow = Application::RayTracedViewport;
 
@@ -65,6 +65,8 @@ void RayTraceView::OnUIRender()
 			{
 				m_ViewportFocused = ImGui::IsWindowFocused();
 				m_ViewportHovered = ImGui::IsWindowHovered();
+				if (ImGui::IsWindowAppearing()) m_ViewportVisible = true;
+				if (ImGui::IsWindowCollapsed()) m_ViewportVisible = false;
 
 				ImVec2 newSize = ImGui::GetContentRegionAvail();
 				if (m_ViewportSize.x != newSize.x || m_ViewportSize.y != newSize.y)
