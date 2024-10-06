@@ -32,9 +32,9 @@ struct TexturePaths
 /* Local texture storage */
 struct Texture
 {
-	~Texture() { if (pixel) delete[] pixel; }
+	~Texture() { if (pixels) delete[] pixels; }
 
-	uint32_t* pixel{ nullptr };
+	uint32_t* pixels{ nullptr };
 	glm::ivec2 resolution;
 };
 

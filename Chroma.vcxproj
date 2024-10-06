@@ -31,6 +31,7 @@
     <ClCompile Include="src\optix_renderer.cpp" />
     <ClCompile Include="src\raster_view.cpp" />
     <ClCompile Include="src\raytrace_view.cpp" />
+    <ClCompile Include="src\scene.cpp" />
     <ClCompile Include="src\shader.cpp" />
     <ClCompile Include="src\vulkan_utils.cpp" />
   </ItemGroup>
@@ -72,6 +73,7 @@
     <ClInclude Include="src\optix_renderer.h" />
     <ClInclude Include="src\raster_view.h" />
     <ClInclude Include="src\raytrace_view.h" />
+    <ClInclude Include="src\scene.h" />
     <ClInclude Include="src\shader.h" />
     <ClInclude Include="src\vulkan_utils.h" />
   </ItemGroup>

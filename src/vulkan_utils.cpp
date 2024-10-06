@@ -1370,11 +1370,13 @@ namespace vk
 	}
 
 
-	void CreateTextureImage(std::string filepath, uint32_t& mipLevels, VkImage& textureImage, VkDeviceMemory& textureImageMemory)
+	void CreateTextureImage(std::string filepath, uint32_t& mipLevels, uint32_t* pixels, glm::ivec2& resolution, VkImage& textureImage, VkDeviceMemory& textureImageMemory)
 	{
 		/* Load the image */
 		int texWidth, texHeight, texChannels;
-		stbi_uc* pixels = stbi_load(filepath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha); /* load image with alpha channel even if it doesn't have one */
+		pixels = (uint32_t*)stbi_load(filepath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha); /* load image with alpha channel even if it doesn't have one */
+		resolution.x = texWidth;
+		resolution.y = texHeight;
 		VkDeviceSize imageSize = texWidth * texHeight * 4; /* 4 for RGBA channels */
 
 		if (!pixels)

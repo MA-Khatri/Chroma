@@ -45,7 +45,7 @@ Object::Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelin
 
     if (!texturePaths.diffuse.empty())
     {
-        vk::CreateTextureImage(texturePaths.diffuse, m_DiffuseMipLevels, m_DiffuseTextureImage, m_DiffuseTextureImageMemory);
+        vk::CreateTextureImage(texturePaths.diffuse, m_DiffuseMipLevels, m_DiffuseTexture.pixels, m_DiffuseTexture.resolution, m_DiffuseTextureImage, m_DiffuseTextureImageMemory);
         vk::CreateTextureImageView(m_DiffuseMipLevels, m_DiffuseTextureImage, m_DiffuseTextureImageView);
         vk::CreateTextureSampler(m_DiffuseMipLevels, m_DiffuseTextureSampler);
 
@@ -65,7 +65,7 @@ Object::Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelin
     }
     if (!texturePaths.specular.empty())
     {
-        vk::CreateTextureImage(texturePaths.specular, m_SpecularMipLevels, m_SpecularTextureImage, m_SpecularTextureImageMemory);
+        vk::CreateTextureImage(texturePaths.specular, m_SpecularMipLevels, m_SpecularTexture.pixels, m_SpecularTexture.resolution, m_SpecularTextureImage, m_SpecularTextureImageMemory);
         vk::CreateTextureImageView(m_SpecularMipLevels, m_SpecularTextureImage, m_SpecularTextureImageView);
         vk::CreateTextureSampler(m_SpecularMipLevels, m_SpecularTextureSampler);
 
@@ -85,7 +85,7 @@ Object::Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelin
     }
     if (!texturePaths.normal.empty())
     {
-        vk::CreateTextureImage(texturePaths.normal, m_NormalMipLevels, m_NormalTextureImage, m_NormalTextureImageMemory);
+        vk::CreateTextureImage(texturePaths.normal, m_NormalMipLevels, m_NormalTexture.pixels, m_NormalTexture.resolution, m_NormalTextureImage, m_NormalTextureImageMemory);
         vk::CreateTextureImageView(m_NormalMipLevels, m_NormalTextureImage, m_NormalTextureImageView);
         vk::CreateTextureSampler(m_NormalMipLevels, m_NormalTextureSampler);
 

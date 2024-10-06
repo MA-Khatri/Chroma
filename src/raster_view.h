@@ -11,6 +11,7 @@
 #include "camera.h"
 #include "mesh.h"
 #include "object.h"
+#include "scene.h"
 
 
 class RasterView : public Layer 
@@ -31,7 +32,7 @@ private:
 	void CleanupVulkan();
 	void OnResize(ImVec2 newSize);
 
-	void SceneSetup();
+	//void SceneSetup();
 	void CreateViewportImageDescriptorSets();
 	void DestroyViewportImageDescriptorSets();
 	void CreateViewportImagesAndFramebuffers();
@@ -40,19 +41,19 @@ private:
 	void DestroyColorResources();
 	void DestroyDepthResources();
 
-	void RecordCommandBuffer(VkCommandBuffer& commandBuffer);
+	//void RecordCommandBuffer(VkCommandBuffer& commandBuffer);
 
 
 private:
 
-	/* List of pipeline types */
-	enum Pipelines
-	{
-		Flat, /* Only see diffuse texture */
-		Normal, /* View object normals */
-		Solid, /* Proxy for Blender's solid viewport shading */
-		Lines, /* Displays line list with color */
-	};
+	///* List of pipeline types */
+	//enum Pipelines
+	//{
+	//	Flat, /* Only see diffuse texture */
+	//	Normal, /* View object normals */
+	//	Solid, /* Proxy for Blender's solid viewport shading */
+	//	Lines, /* Displays line list with color */
+	//};
 
 	Application* m_AppHandle;
 	GLFWwindow* m_WindowHandle;
@@ -82,16 +83,18 @@ private:
 	VkDeviceMemory m_DepthImageMemory;
 	VkImageView m_DepthImageView;
 	
-	std::map<Pipelines, PipelineInfo> m_Pipelines; /* Pipelines with diff. shaders/draw modes */
-	
-	std::vector<Object*> m_Objects; /* Objects to be drawn */
+	Scene* m_Scene;
 
-	/* We set the camera's view and projection matrices as push constants */
-	struct PushConstants {
-		alignas(16) glm::mat4 view = glm::mat4(1.0f);
-		alignas(16) glm::mat4 proj = glm::mat4(1.0f);
-	};
+	//std::map<Pipelines, PipelineInfo> m_Pipelines; /* Pipelines with diff. shaders/draw modes */
+	//
+	//std::vector<Object*> m_Objects; /* Objects to be drawn */
 
-	VkDescriptorSetLayout m_DescriptorSetLayout;
-	VkDescriptorPool m_DescriptorPool;
+	///* We set the camera's view and projection matrices as push constants */
+	//struct PushConstants {
+	//	alignas(16) glm::mat4 view = glm::mat4(1.0f);
+	//	alignas(16) glm::mat4 proj = glm::mat4(1.0f);
+	//};
+
+	//VkDescriptorSetLayout m_DescriptorSetLayout;
+	//VkDescriptorPool m_DescriptorPool;
 };
