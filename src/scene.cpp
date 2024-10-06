@@ -1,30 +1,53 @@
 #include "scene.h"
 #include "application.h"
 
-Scene::Scene(ImVec2 viewportSize, VkSampleCountFlagBits sampleCount, VkRenderPass& renderPass, std::vector<VkFramebuffer>& framebuffers, Application* app, Camera* camera)
-	: m_ViewportSize(viewportSize), m_MSAASampleCount(sampleCount), m_ViewportRenderPass(renderPass), m_ViewportFramebuffers(framebuffers), m_AppHandle(app), m_Camera(camera)
+Scene::Scene()
 {
-	Setup();
+	TexturePaths noTextures;
+
+	/* ======================== */
+	/* === World Grid Lines === */
+	/* ======================== */
+	Object* grid = new Object(CreateGroundGrid(), noTextures, Lines);
+	grid->m_DepthTest = false;
+	grid->m_ModelNormalMatrix = glm::mat3(m_ClearColor, glm::vec3(0.0f), glm::vec3(0.0f)); /* We'll store the clear color in the grid's normal matrix... */
+	m_Objects.push_back(grid);
+
+	Object* axes = new Object(CreateXYAxes(), noTextures, Lines);
+	axes->m_DepthTest = false;
+	axes->m_ModelNormalMatrix = glm::mat3(m_ClearColor, glm::vec3(0.0f), glm::vec3(0.0f));
+	m_Objects.push_back(axes);
+
+	/* ===================== */
+	/* === Scene Objects === */
+	/* ===================== */
+	//TexturePaths vikingRoomTextures;
+	//vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
+	//Object* vikingRoom = new Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, Flat);
+	//vikingRoom->Scale(5.0f);
+	//m_Objects.push_back(vikingRoom);
+
+	Object* dragon = new Object(LoadMesh("res/meshes/dragon.obj"), noTextures, Normal);
+	//dragon->Translate(0.0f, 10.0f, 0.0f);
+	//dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 90.0f);
+	//dragon->Scale(5.0f);
+	m_Objects.push_back(dragon);
 }
 
 
 Scene::~Scene()
 {
-	vkDestroyDescriptorPool(vk::Device, m_DescriptorPool, nullptr);
-	vkDestroyDescriptorSetLayout(vk::Device, m_DescriptorSetLayout, nullptr);
-	
-	auto it = m_Pipelines.begin();
-	while (it != m_Pipelines.end())
-	{
-		vkDestroyPipeline(vk::Device, it->second.pipeline, nullptr);
-	}
-
-	vkDestroyPipelineLayout(vk::Device, m_PipelineLayout, nullptr);
+	VkCleanup();
 }
 
 
-void Scene::Setup()
+void Scene::VkSetup(ImVec2 viewportSize, VkSampleCountFlagBits sampleCount, VkRenderPass& renderPass, std::vector<VkFramebuffer>& framebuffers)
 {
+	m_ViewportSize = viewportSize;
+	m_MSAASampleCount = sampleCount;
+	m_ViewportRenderPass = renderPass;
+	m_ViewportFramebuffers = framebuffers;
+
 	/* Descriptor set layout creation: uniforms, textures/samplers */
 	std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
 
@@ -87,44 +110,24 @@ void Scene::Setup()
 	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersLines, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_PipelineLayout);
 	m_Pipelines[Lines] = pInfo;
 
-	/* Create objects that will be drawn */
-	TexturePaths noTextures;
-	const auto& clr = m_AppHandle->m_ViewportClearColor;
-
-	Object* grid = new Object(CreateGroundGrid(), noTextures, m_Pipelines[Lines]);
-	grid->m_DepthTest = false;
-	grid->m_ModelNormalMatrix = glm::mat3(glm::vec3(clr), glm::vec3(0.0f), glm::vec3(0.0f)); /* We'll store the clear color in the grid's normal matrix... */
-	grid->UpdateUniformBuffer();
-	m_Objects.push_back(grid);
-
-	Object* axes = new Object(CreateXYAxes(), noTextures, m_Pipelines[Lines]);
-	axes->m_DepthTest = false;
-	axes->m_ModelNormalMatrix = glm::mat3(glm::vec3(clr), glm::vec3(0.0f), glm::vec3(0.0f));
-	axes->UpdateUniformBuffer();
-	m_Objects.push_back(axes);
-
-	TexturePaths vikingRoomTextures;
-	vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
-	Object* vikingRoom = new Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, m_Pipelines[Flat]);
-	vikingRoom->Scale(5.0f);
-	m_Objects.push_back(vikingRoom);
-
-	//Object* dragon = new Object(LoadMesh("res/meshes/dragon.obj"), noTextures, m_Pipelines[Solid]);
-	////dragon->Translate(0.0f, 10.0f, 0.0f);
-	////dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 90.0f);
-	////dragon->Scale(5.0f);
-	//m_Objects.push_back(dragon);
+	
+	/* Setup objects for rendering with Vulkan */
+	for (auto& obj : m_Objects)
+	{
+		obj->VkSetup(m_Pipelines[static_cast<PipelineType>(obj->m_PipelineType)]);
+		obj->VkUpdateUniformBuffer();
+	}
 }
 
 
-void Scene::Resize(ImVec2 newSize, std::vector<VkFramebuffer>& framebuffers)
+void Scene::VkResize(ImVec2 newSize, std::vector<VkFramebuffer>& framebuffers)
 {
 	m_ViewportSize = newSize;
 	m_ViewportFramebuffers = framebuffers;
 }
 
 
-void Scene::VkDraw()
+void Scene::VkDraw(const Camera& camera)
 {
 	VkCommandBuffer commandBuffer = vk::GetGraphicsCommandBuffer();
 
@@ -137,8 +140,7 @@ void Scene::VkDraw()
 	renderPassInfo.renderArea.extent = { static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y) };
 
 	std::array<VkClearValue, 2> clearValues{};
-	const auto& clr = m_AppHandle->m_ViewportClearColor;
-	clearValues[0].color = { {clr.x, clr.y, clr.z, 1.0f} };
+	clearValues[0].color = { {m_ClearColor.x, m_ClearColor.y, m_ClearColor.z, 1.0f} };
 	clearValues[1].depthStencil = { 1.0f, 0 };
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassInfo.pClearValues = clearValues.data();
@@ -162,18 +164,33 @@ void Scene::VkDraw()
 
 	/* Set push constants */
 	PushConstants constants;
-	constants.view = m_Camera->view_matrix;
-	constants.proj = m_Camera->projection_matrix;
+	constants.view = camera.view_matrix;
+	constants.proj = camera.projection_matrix;
 	vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
 
 	/* Draw the objects */
 	for (auto object : m_Objects)
 	{
-		object->Draw(commandBuffer);
+		object->VkDraw(commandBuffer);
 	}
 
 	vkCmdEndRenderPass(commandBuffer);
 
 
 	vk::FlushGraphicsCommandBuffer(commandBuffer);
+}
+
+
+void Scene::VkCleanup()
+{
+	vkDestroyDescriptorPool(vk::Device, m_DescriptorPool, nullptr);
+	vkDestroyDescriptorSetLayout(vk::Device, m_DescriptorSetLayout, nullptr);
+
+	auto it = m_Pipelines.begin();
+	while (it != m_Pipelines.end())
+	{
+		vkDestroyPipeline(vk::Device, it->second.pipeline, nullptr);
+	}
+
+	vkDestroyPipelineLayout(vk::Device, m_PipelineLayout, nullptr);
 }

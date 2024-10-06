@@ -1,6 +1,6 @@
 #include "layer.h"
 
-void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera* camera)
+void Layer::CommonDebug(Application* app, ImVec2 viewport_size, const Camera& camera)
 {
 	ImGuiIO io = ImGui::GetIO();
 
@@ -30,8 +30,8 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera* camera)
 
 	ImGui::Text("Camera Settings");
 	ImGui::Checkbox("Link Cameras", &app->m_LinkCameras);
-	ImGui::Text("\tVertical Field of View: %.1f deg", camera->vfov);
-	ImGui::Text("\tCamera Position: X=%.3f, Y=%.3f, Z=%.3f", camera->position.x, camera->position.y, camera->position.z);
-	ImGui::Text("\tCamera Orientation: X=%.3f, Y=%.3f, Z=%.3f", camera->orientation.x, camera->orientation.y, camera->orientation.z);
+	ImGui::Text("\tVertical Field of View: %.1f deg", camera.vfov);
+	ImGui::Text("\tCamera Position: X=%.3f, Y=%.3f, Z=%.3f", camera.position.x, camera.position.y, camera.position.z);
+	ImGui::Text("\tCamera Orientation: X=%.3f, Y=%.3f, Z=%.3f", camera.orientation.x, camera.orientation.y, camera.orientation.z);
 
 }

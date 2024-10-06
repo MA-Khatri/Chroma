@@ -5,15 +5,18 @@
 #include "layer.h"
 #include "image.h"
 #include "camera.h"
+#include "scene.h"
 
 class RayTraceView : public Layer 
 {
+public:
+	RayTraceView(std::shared_ptr<Scene> scene);
+	~RayTraceView();
+
+	/* Standard layer methods */
 	virtual void OnAttach(Application* app);
-
 	virtual void OnDetach();
-
 	virtual void OnUpdate();
-
 	virtual void OnUIRender();
 
 
@@ -21,6 +24,8 @@ private:
 	void OnResize(ImVec2 newSize);
 
 private:
+	std::shared_ptr<Scene> m_Scene;
+
 	Application* m_AppHandle;
 	GLFWwindow* m_WindowHandle;
 	Camera* m_Camera = nullptr; /* Set on OnAttach() */

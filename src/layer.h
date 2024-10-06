@@ -78,7 +78,7 @@ public:
 	virtual void OnUIRender() {}
 
 protected:
-	void CommonDebug(Application* app, ImVec2 viewport_size, Camera* camera);
+	void CommonDebug(Application* app, ImVec2 viewport_size, const Camera& camera);
 
 	int frame_storage_count = 1001;
 	SlidingBuffer<float> frame_times = SlidingBuffer<float>(frame_storage_count);

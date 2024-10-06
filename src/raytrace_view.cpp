@@ -1,5 +1,18 @@
 #include "raytrace_view.h"
 
+
+RayTraceView::RayTraceView(std::shared_ptr<Scene> scene)
+{
+	m_Scene = scene;
+}
+
+
+RayTraceView::~RayTraceView()
+{
+	// TODO?
+}
+
+
 void RayTraceView::OnAttach(Application* app)
 {
 	m_AppHandle = app;
@@ -73,7 +86,7 @@ void RayTraceView::OnUIRender()
 	{
 		ImGui::Begin("Debug Panel");
 		{
-			CommonDebug(m_AppHandle, m_ViewportSize, m_Camera);
+			CommonDebug(m_AppHandle, m_ViewportSize, *m_Camera);
 		}
 		ImGui::End();
 	}

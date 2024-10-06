@@ -9,10 +9,11 @@ int main()
 	/* Initialize the application */
 	Application* app = new Application();
 
+	std::shared_ptr<Scene> scene = std::make_shared<Scene>();
 
 	/* Create and initialize layers */
-	app->PushLayer(std::make_shared<RasterView>());
-	app->PushLayer(std::make_shared<RayTraceView>());
+	app->PushLayer(std::make_shared<RasterView>(scene));
+	app->PushLayer(std::make_shared<RayTraceView>(scene));
 
 
 	/* App menubar setup */

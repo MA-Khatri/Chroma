@@ -3,9 +3,43 @@
 #include "vulkan_utils.h"
 
 
-Object::Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelineInfo)
+Object::Object(Mesh mesh, TexturePaths texturePaths, int pipelineType)
+    : m_Mesh(mesh), m_TexturePaths(texturePaths), m_PipelineType(pipelineType)
 {
-    m_Mesh = mesh;
+    // TODO?
+}
+
+
+Object::~Object()
+{
+    vkDestroyBuffer(vk::Device, m_IndexBuffer, nullptr);
+    vkFreeMemory(vk::Device, m_IndexBufferMemory, nullptr);
+
+    vkDestroyBuffer(vk::Device, m_VertexBuffer, nullptr);
+    vkFreeMemory(vk::Device, m_VertexBufferMemory, nullptr);
+
+    vkDestroyBuffer(vk::Device, m_UniformBuffer, nullptr);
+    vkFreeMemory(vk::Device, m_UniformBufferMemory, nullptr);
+
+    vkDestroyImageView(vk::Device, m_DiffuseTextureImageView, nullptr);
+    vkDestroyImage(vk::Device, m_DiffuseTextureImage, nullptr);
+    vkFreeMemory(vk::Device, m_DiffuseTextureImageMemory, nullptr);
+    vkDestroySampler(vk::Device, m_DiffuseTextureSampler, nullptr);
+
+    vkDestroyImageView(vk::Device, m_SpecularTextureImageView, nullptr);
+    vkDestroyImage(vk::Device, m_SpecularTextureImage, nullptr);
+    vkFreeMemory(vk::Device, m_SpecularTextureImageMemory, nullptr);
+    vkDestroySampler(vk::Device, m_SpecularTextureSampler, nullptr);
+
+    vkDestroyImageView(vk::Device, m_NormalTextureImageView, nullptr);
+    vkDestroyImage(vk::Device, m_NormalTextureImage, nullptr);
+    vkFreeMemory(vk::Device, m_NormalTextureImageMemory, nullptr);
+    vkDestroySampler(vk::Device, m_NormalTextureSampler, nullptr);
+}
+
+
+void Object::VkSetup(const PipelineInfo& pipelineInfo)
+{
     vk::CreateVertexBuffer(m_Mesh.vertices, m_VertexBuffer, m_VertexBufferMemory);
     vk::CreateIndexBuffer(m_Mesh.indices, m_IndexBuffer, m_IndexBufferMemory);
 
@@ -43,9 +77,9 @@ Object::Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelin
     VkDescriptorImageInfo specImageInfo{};
     VkDescriptorImageInfo normImageInfo{};
 
-    if (!texturePaths.diffuse.empty())
+    if (!m_TexturePaths.diffuse.empty())
     {
-        vk::CreateTextureImage(texturePaths.diffuse, m_DiffuseMipLevels, m_DiffuseTexture.pixels, m_DiffuseTexture.resolution, m_DiffuseTextureImage, m_DiffuseTextureImageMemory);
+        vk::CreateTextureImage(m_TexturePaths.diffuse, m_DiffuseMipLevels, m_DiffuseTexture.pixels, m_DiffuseTexture.resolution, m_DiffuseTextureImage, m_DiffuseTextureImageMemory);
         vk::CreateTextureImageView(m_DiffuseMipLevels, m_DiffuseTextureImage, m_DiffuseTextureImageView);
         vk::CreateTextureSampler(m_DiffuseMipLevels, m_DiffuseTextureSampler);
 
@@ -63,9 +97,9 @@ Object::Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelin
         samplerWrite.pImageInfo = &diffImageInfo;
         descriptorWrites.push_back(samplerWrite);
     }
-    if (!texturePaths.specular.empty())
+    if (!m_TexturePaths.specular.empty())
     {
-        vk::CreateTextureImage(texturePaths.specular, m_SpecularMipLevels, m_SpecularTexture.pixels, m_SpecularTexture.resolution, m_SpecularTextureImage, m_SpecularTextureImageMemory);
+        vk::CreateTextureImage(m_TexturePaths.specular, m_SpecularMipLevels, m_SpecularTexture.pixels, m_SpecularTexture.resolution, m_SpecularTextureImage, m_SpecularTextureImageMemory);
         vk::CreateTextureImageView(m_SpecularMipLevels, m_SpecularTextureImage, m_SpecularTextureImageView);
         vk::CreateTextureSampler(m_SpecularMipLevels, m_SpecularTextureSampler);
 
@@ -83,9 +117,9 @@ Object::Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelin
         samplerWrite.pImageInfo = &specImageInfo;
         descriptorWrites.push_back(samplerWrite);
     }
-    if (!texturePaths.normal.empty())
+    if (!m_TexturePaths.normal.empty())
     {
-        vk::CreateTextureImage(texturePaths.normal, m_NormalMipLevels, m_NormalTexture.pixels, m_NormalTexture.resolution, m_NormalTextureImage, m_NormalTextureImageMemory);
+        vk::CreateTextureImage(m_TexturePaths.normal, m_NormalMipLevels, m_NormalTexture.pixels, m_NormalTexture.resolution, m_NormalTextureImage, m_NormalTextureImageMemory);
         vk::CreateTextureImageView(m_NormalMipLevels, m_NormalTextureImage, m_NormalTextureImageView);
         vk::CreateTextureSampler(m_NormalMipLevels, m_NormalTextureSampler);
 
@@ -106,39 +140,11 @@ Object::Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelin
 
     vkUpdateDescriptorSets(vk::Device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
-    UpdateUniformBuffer(); /* Need to call this just to make sure it gets set. */
+    VkUpdateUniformBuffer(); /* Need to call this just to make sure it gets set. */
 }
 
 
-Object::~Object()
-{
-    vkDestroyBuffer(vk::Device, m_IndexBuffer, nullptr);
-    vkFreeMemory(vk::Device, m_IndexBufferMemory, nullptr);
-
-    vkDestroyBuffer(vk::Device, m_VertexBuffer, nullptr);
-    vkFreeMemory(vk::Device, m_VertexBufferMemory, nullptr);
-
-    vkDestroyBuffer(vk::Device, m_UniformBuffer, nullptr);
-    vkFreeMemory(vk::Device, m_UniformBufferMemory, nullptr);
-
-    vkDestroyImageView(vk::Device, m_DiffuseTextureImageView, nullptr);
-    vkDestroyImage(vk::Device, m_DiffuseTextureImage, nullptr);
-    vkFreeMemory(vk::Device, m_DiffuseTextureImageMemory, nullptr);
-    vkDestroySampler(vk::Device, m_DiffuseTextureSampler, nullptr);
-
-    vkDestroyImageView(vk::Device, m_SpecularTextureImageView, nullptr);
-    vkDestroyImage(vk::Device, m_SpecularTextureImage, nullptr);
-    vkFreeMemory(vk::Device, m_SpecularTextureImageMemory, nullptr);
-    vkDestroySampler(vk::Device, m_SpecularTextureSampler, nullptr);
-
-    vkDestroyImageView(vk::Device, m_NormalTextureImageView, nullptr);
-    vkDestroyImage(vk::Device, m_NormalTextureImage, nullptr);
-    vkFreeMemory(vk::Device, m_NormalTextureImageMemory, nullptr);
-    vkDestroySampler(vk::Device, m_NormalTextureSampler, nullptr);
-}
-
-
-void Object::Draw(VkCommandBuffer& commandBuffer)
+void Object::VkDraw(VkCommandBuffer& commandBuffer)
 {
 #ifndef _DEBUG
     vkCmdSetDepthTestEnable(commandBuffer, m_DepthTest); /* WARNING: For some reason, this raises an error *only* in Debug mode... */
@@ -158,18 +164,27 @@ void Object::Draw(VkCommandBuffer& commandBuffer)
 }
 
 
-void Object::UpdateUniformBuffer()
+void Object::VkUpdateUniformBuffer()
 {
-    UniformBufferObject ubo{};
-    ubo.modelMatrix = m_ModelMatrix;
-    ubo.normalMatrix = glm::mat4(m_ModelNormalMatrix);
+    if (m_UniformBufferMapped)
+    {
+        UniformBufferObject ubo{};
+        ubo.modelMatrix = m_ModelMatrix;
+        ubo.normalMatrix = glm::mat4(m_ModelNormalMatrix);
 
-    //std::cout << ubo.normalmatrix[0][0] << " " << ubo.normalmatrix[1][0] << " " << ubo.normalmatrix[2][0] << std::endl;
-    //std::cout << ubo.normalmatrix[0][1] << " " << ubo.normalmatrix[1][1] << " " << ubo.normalmatrix[2][1] << std::endl;
-    //std::cout << ubo.normalmatrix[0][2] << " " << ubo.normalmatrix[1][2] << " " << ubo.normalmatrix[2][2] << std::endl;
-    //std::cout << std::endl;
+        //std::cout << ubo.normalmatrix[0][0] << " " << ubo.normalmatrix[1][0] << " " << ubo.normalmatrix[2][0] << std::endl;
+        //std::cout << ubo.normalmatrix[0][1] << " " << ubo.normalmatrix[1][1] << " " << ubo.normalmatrix[2][1] << std::endl;
+        //std::cout << ubo.normalmatrix[0][2] << " " << ubo.normalmatrix[1][2] << " " << ubo.normalmatrix[2][2] << std::endl;
+        //std::cout << std::endl;
 
-    memcpy(m_UniformBufferMapped, &ubo, sizeof(ubo));
+        memcpy(m_UniformBufferMapped, &ubo, sizeof(ubo));
+    }
+#ifdef _DEBUG
+    else
+    {
+        std::cerr << "VkUpdateUniformBuffer(): Warning, m_UniformBufferMapped is nullptr!" << std::endl;
+    }
+#endif
 }
 
 
@@ -186,7 +201,7 @@ void Object::SetModelMatrix(glm::mat4 matrix)
 {
     m_ModelMatrix = matrix;
     UpdateModelNormalMatrix();
-    UpdateUniformBuffer();
+    VkUpdateUniformBuffer();
 }
 
 
@@ -194,14 +209,14 @@ void Object::UpdateModelMatrix(glm::mat4 matrix)
 {
     m_ModelMatrix *= matrix;
     UpdateModelNormalMatrix();
-    UpdateUniformBuffer();
+    VkUpdateUniformBuffer();
 }
 
 
 void Object::Translate(glm::vec3 translate)
 {
     m_ModelMatrix *= glm::translate(translate);
-    UpdateUniformBuffer();
+    VkUpdateUniformBuffer();
 }
 
 
@@ -215,7 +230,7 @@ void Object::Rotate(glm::vec3 axis, float deg)
 {
     m_ModelMatrix *= glm::rotate(glm::radians(deg), axis);
     UpdateModelNormalMatrix();
-    UpdateUniformBuffer();
+    VkUpdateUniformBuffer();
 }
 
 
@@ -226,7 +241,7 @@ void Object::Scale(glm::vec3 scale, bool updateNormal /* = true */)
     {
         UpdateModelNormalMatrix();
     }
-    UpdateUniformBuffer();
+    VkUpdateUniformBuffer();
 }
 
 

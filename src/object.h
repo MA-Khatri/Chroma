@@ -42,11 +42,14 @@ struct Texture
 class Object
 {
 public:
-	Object(Mesh mesh, TexturePaths texturePaths, const PipelineInfo& pipelineInfo);
+	Object(Mesh mesh, TexturePaths texturePaths, int pipelineType);
 	~Object();
 
+	/* Sets up object to be drawn with Vulkan */
+	void VkSetup(const PipelineInfo& pipelineInfo);
+
 	/* Adds draw command to the provided command buffer */
-	void Draw(VkCommandBuffer& commandBuffer);
+	void VkDraw(VkCommandBuffer& commandBuffer);
 
 	/* === Transformations === */
 	void UpdateModelNormalMatrix();
@@ -62,12 +65,13 @@ public:
 	void Scale(float scale);
 	void Scale(float x, float y, float z);
 
-	void UpdateUniformBuffer();
+	void VkUpdateUniformBuffer();
 
 public:
 	glm::mat4 m_ModelMatrix = glm::mat4(1.0f);
 	glm::mat3 m_ModelNormalMatrix = glm::mat3(1.0f);
 	bool m_DepthTest = true;
+	int m_PipelineType = 0;
 
 	/* Uniform buffer contains all necessary drawing info for this object */
 	struct UniformBufferObject {
@@ -78,6 +82,7 @@ public:
 
 private:
 	Mesh m_Mesh = Mesh();
+	TexturePaths m_TexturePaths;
 
 	VkBuffer m_VertexBuffer = VK_NULL_HANDLE;
 	VkDeviceMemory m_VertexBufferMemory = VK_NULL_HANDLE;
