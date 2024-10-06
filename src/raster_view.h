@@ -48,10 +48,10 @@ private:
 	/* List of pipeline types */
 	enum Pipelines
 	{
-		Flat,   /* Only see diffuse texture */
+		Flat, /* Only see diffuse texture */
 		Normal, /* View object normals */
-		Solid,  /* Proxy for Blender's solid viewport shading */
-		Lines,  /* Displays line list with color */
+		Solid, /* Proxy for Blender's solid viewport shading */
+		Lines, /* Displays line list with color */
 	};
 
 	Application* m_AppHandle;

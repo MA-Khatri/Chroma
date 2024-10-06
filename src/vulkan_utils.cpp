@@ -993,7 +993,8 @@ namespace vk
 		/* Since we are using them, these must be set before we draw! */
 		std::vector<VkDynamicState> dynamicStates = {
 			VK_DYNAMIC_STATE_VIEWPORT,
-			VK_DYNAMIC_STATE_SCISSOR
+			VK_DYNAMIC_STATE_SCISSOR,
+			VK_DYNAMIC_STATE_LINE_WIDTH
 		};
 
 		VkPipelineDynamicStateCreateInfo dynamicState{};

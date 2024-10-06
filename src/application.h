@@ -62,6 +62,7 @@ public:
 	};
 	bool m_LinkCameras = true; /* Determines whether all viewports share the same camera (i.e., m_MainCamera) */
 	int m_FocusedWindow = RasterizedViewport; /* Which window data should be used to display debug info? */
+	glm::vec3 m_ViewportClearColor = glm::vec3(63.0f / 255.0f, 63.0f / 255.0f, 63.0f / 255.0f); /* Default viewport clear color */
 
 private:
 	GLFWwindow* m_WindowHandle;

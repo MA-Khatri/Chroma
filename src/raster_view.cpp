@@ -195,7 +195,7 @@ void RasterView::SceneSetup()
 	layoutBindings.push_back(normalSamplerLayoutBinding);
 
 	vk::CreateDescriptorSetLayout(layoutBindings, m_DescriptorSetLayout);
-	vk::CreateDescriptorPool(1, m_DescriptorPool); /* Note: Make sure to update the max number of descriptor sets according to the number of objects you have! */
+	vk::CreateDescriptorPool(1000, m_DescriptorPool); /* Note: Make sure to update the max number of descriptor sets according to the number of objects you have! */
 
 	/* Generate graphics pipelines with different shaders */
 	PipelineInfo pInfo;
@@ -221,9 +221,19 @@ void RasterView::SceneSetup()
 
 	/* Create objects that will be drawn */
 	TexturePaths noTextures;
+	const auto& clr = m_AppHandle->m_ViewportClearColor;
 
 	Object* grid = new Object(CreateGroundGrid(), noTextures, m_Pipelines[Lines]);
+	grid->m_DepthTest = false;
+	grid->m_ModelNormalMatrix = glm::mat3(glm::vec3(clr), glm::vec3(0.0f), glm::vec3(0.0f)); /* We'll store the clear color in the grid's normal matrix... */
+	grid->UpdateUniformBuffer();
 	m_Objects.push_back(grid);
+
+	Object* axes = new Object(CreateXYAxes(), noTextures, m_Pipelines[Lines]);
+	axes->m_DepthTest = false;
+	axes->m_ModelNormalMatrix = glm::mat3(glm::vec3(clr), glm::vec3(0.0f), glm::vec3(0.0f));
+	axes->UpdateUniformBuffer();
+	m_Objects.push_back(axes);
 
 	//TexturePaths vikingRoomTextures;
 	//vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
@@ -318,7 +328,8 @@ void RasterView::RecordCommandBuffer(VkCommandBuffer& commandBuffer)
 	renderPassInfo.renderArea.extent = { static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y) };
 
 	std::array<VkClearValue, 2> clearValues{};
-	clearValues[0].color = { {63.0f/255.0f, 63.0f/255.0f, 63.0f/255.0f, 1.0f} };
+	const auto& clr = m_AppHandle->m_ViewportClearColor;
+	clearValues[0].color = { {clr.x, clr.y, clr.z, 1.0f} };
 	clearValues[1].depthStencil = { 1.0f, 0 };
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassInfo.pClearValues = clearValues.data();

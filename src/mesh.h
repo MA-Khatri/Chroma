@@ -75,6 +75,7 @@ struct Mesh
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 	VkPrimitiveTopology drawMode = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	float lineWidth = 1.0f;
 
 	std::vector<glm::ivec3> ivecIndices;
 	std::vector<glm::vec3> posns;
@@ -118,7 +119,10 @@ struct Mesh
 Mesh CreateHelloTriangle();
 Mesh CreatePlane();
 
-/* Create ground plane line grid -- note: Vertex.normal = color of the lines */
+/* Create ground plane line grid except for x = 0, y = 0 -- note: Vertex.normal = color of the lines */
 Mesh CreateGroundGrid();
+
+/* Create XY axes -- this is separate since we use a diff. pipeline to render them thicker */
+Mesh CreateXYAxes(); 
 
 Mesh LoadMesh(std::string filepath);

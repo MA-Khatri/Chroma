@@ -62,14 +62,12 @@ public:
 	void Scale(float scale);
 	void Scale(float x, float y, float z);
 
-
-private:
 	void UpdateUniformBuffer();
-
 
 public:
 	glm::mat4 m_ModelMatrix = glm::mat4(1.0f);
 	glm::mat3 m_ModelNormalMatrix = glm::mat3(1.0f);
+	bool m_DepthTest = true;
 
 	/* Uniform buffer contains all necessary drawing info for this object */
 	struct UniformBufferObject {

@@ -140,6 +140,9 @@ Object::~Object()
 
 void Object::Draw(VkCommandBuffer& commandBuffer)
 {
+    vkCmdSetDepthTestEnable(commandBuffer, m_DepthTest);
+    vkCmdSetLineWidth(commandBuffer, m_Mesh.lineWidth);
+
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
@@ -159,9 +162,9 @@ void Object::UpdateUniformBuffer()
     ubo.modelMatrix = m_ModelMatrix;
     ubo.normalMatrix = glm::mat4(m_ModelNormalMatrix);
 
-    //std::cout << ubo.normalMatrix[0][0] << " " << ubo.normalMatrix[1][0] << " " << ubo.normalMatrix[2][0] << std::endl;
-    //std::cout << ubo.normalMatrix[0][1] << " " << ubo.normalMatrix[1][1] << " " << ubo.normalMatrix[2][1] << std::endl;
-    //std::cout << ubo.normalMatrix[0][2] << " " << ubo.normalMatrix[1][2] << " " << ubo.normalMatrix[2][2] << std::endl;
+    //std::cout << ubo.normalmatrix[0][0] << " " << ubo.normalmatrix[1][0] << " " << ubo.normalmatrix[2][0] << std::endl;
+    //std::cout << ubo.normalmatrix[0][1] << " " << ubo.normalmatrix[1][1] << " " << ubo.normalmatrix[2][1] << std::endl;
+    //std::cout << ubo.normalmatrix[0][2] << " " << ubo.normalmatrix[1][2] << " " << ubo.normalmatrix[2][2] << std::endl;
     //std::cout << std::endl;
 
     memcpy(m_UniformBufferMapped, &ubo, sizeof(ubo));
