@@ -150,7 +150,7 @@ void Camera::Inputs(GLFWwindow* window)
 		orientation = glm::rotate(orientation, glm::radians(-rotY), up);
 
 		/* Wrap mouse around viewport if LMB is still pressed */
-		int padding = 2; /* we add some padding to the viewport bc we're using ImGui::IsWindowHovered() to check for inputs */
+		int padding = 2; /* We add some padding to the viewport bc we're using ImGui::IsWindowHovered() to check for inputs */
 		if (mouseX < viewportContentMin[0] + padding)
 		{
 			mouseX = viewportContentMax[0] - padding;

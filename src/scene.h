@@ -27,6 +27,9 @@ public:
 	void VkCleanup();
 
 public:
+	/* Scene clear/background color */
+	glm::vec3 m_ClearColor = glm::vec3(63.0f / 255.0f, 63.0f / 255.0f, 63.0f / 255.0f);
+
 	/* List of pipeline types */
 	static enum PipelineType
 	{
@@ -36,16 +39,12 @@ public:
 		Lines, /* Displays line list with color */
 	};
 
-	/* Scene clear/background color */
-	glm::vec3 m_ClearColor = glm::vec3(63.0f / 255.0f, 63.0f / 255.0f, 63.0f / 255.0f);
-
-
-private:
 	std::vector<Object*> m_Objects; /* Objects to be drawn */
 
+private:
 	std::map<PipelineType, PipelineInfo> m_Pipelines; /* Pipelines with diff. shaders/draw modes */
 
-	/* We set the camera's view and projection matrices as push constants */
+	/* We set the camera's view and projection matrices as push constants for Vulkan rendering */
 	struct PushConstants {
 		alignas(16) glm::mat4 view = glm::mat4(1.0f);
 		alignas(16) glm::mat4 proj = glm::mat4(1.0f);

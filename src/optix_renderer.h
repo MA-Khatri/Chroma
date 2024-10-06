@@ -10,7 +10,7 @@
 #include "launch_params.h"
 
 #include "camera.h"
-#include "mesh.h"
+#include "scene.h"
 
 namespace otx
 {
@@ -18,7 +18,7 @@ namespace otx
 	{
 	public:
 		/* Constructor, performs all setup */
-		Optix(const std::vector<Mesh>& meshes);
+		Optix(std::shared_ptr<Scene> scene);
 
 		/* Resize frame buffer to given resolution */
 		void Resize(const ImVec2& newSize);
@@ -104,12 +104,14 @@ namespace otx
 		/* The camera we are using to render */
 		Camera m_LastSetCamera;
 
-		/* The meshes we are tracing rays against */
+		/* The scene we are tracing rays against */
+		std::shared_ptr<Scene> m_Scene;
 		std::vector<Mesh> m_Meshes;
 		std::vector<CUDABuffer> m_VertexBuffers;
 		std::vector<CUDABuffer> m_IndexBuffers;
 		std::vector<CUDABuffer> m_NormalBuffers;
 		std::vector<CUDABuffer> m_TexCoordBuffers;
+
 		/* Buffer that keeps the final, compacted, acceleration structure */
 		CUDABuffer m_ASBuffer;
 	};

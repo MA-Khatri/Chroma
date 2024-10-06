@@ -24,8 +24,6 @@ private:
 	void OnResize(ImVec2 newSize);
 
 private:
-	std::shared_ptr<Scene> m_Scene;
-
 	Application* m_AppHandle;
 	GLFWwindow* m_WindowHandle;
 	Camera* m_Camera = nullptr; /* Set on OnAttach() */
@@ -35,8 +33,7 @@ private:
 	bool m_ViewportVisible = false;
 	ImVec2 m_ViewportSize = ImVec2(400.0f, 400.0f);
 
-
-	otx::Optix m_OptixRenderer = otx::Optix(std::vector<Mesh>{LoadMesh("res/meshes/dragon.obj")});
+	otx::Optix m_OptixRenderer;
 	Image m_RenderedImage = Image(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), ImageFormat::RGBA, nullptr);
 	std::vector<uint32_t> m_RenderedImagePixels;
 };

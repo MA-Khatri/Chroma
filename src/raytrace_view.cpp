@@ -2,8 +2,9 @@
 
 
 RayTraceView::RayTraceView(std::shared_ptr<Scene> scene)
-{
-	m_Scene = scene;
+	: m_OptixRenderer(otx::Optix(scene))
+{ 
+	// TODO?
 }
 
 

@@ -38,8 +38,8 @@ namespace otx
 	};
 
 
-	Optix::Optix(const std::vector<Mesh>& meshes)
-		:m_Meshes(meshes)
+	Optix::Optix(std::shared_ptr<Scene> scene)
+		:m_Scene(scene)
 	{
 		Debug("[Optix] Initializing Optix...");
 		InitOptix();
@@ -303,25 +303,40 @@ namespace otx
 
 	OptixTraversableHandle Optix::BuildAccel()
 	{
+		auto& objects = m_Scene->m_Objects;
+		int nObjects = objects.size();
+
+		/* Extract meshes from scene objects */
+		m_Meshes.reserve(nObjects);
+		for (auto& object : objects)
+		{
+			if (object->m_RayTraceRender)
+			{
+				m_Meshes.emplace_back(object->m_Mesh);
+			}
+		}
+		m_Meshes.shrink_to_fit();
+		int nMeshes = m_Meshes.size();
+
 		/* Upload mesh data to device */
-		m_VertexBuffers.resize(m_Meshes.size());
-		m_IndexBuffers.resize(m_Meshes.size());
-		m_NormalBuffers.resize(m_Meshes.size());
-		m_TexCoordBuffers.resize(m_Meshes.size());
+		m_VertexBuffers.resize(nMeshes);
+		m_IndexBuffers.resize(nMeshes);
+		m_NormalBuffers.resize(nMeshes);
+		m_TexCoordBuffers.resize(nMeshes);
 
 		OptixTraversableHandle asHandle{ 0 };
 
 		/* ======================= */
 		/* === Triangle inputs === */
 		/* ======================= */
-		std::vector<OptixBuildInput> triangleInputs(m_Meshes.size());
-		std::vector<CUdeviceptr> d_vertices(m_Meshes.size());
-		std::vector<CUdeviceptr> d_indices(m_Meshes.size());
-		//std::vector<CUdeviceptr> d_normals(m_Meshes.size());
-		//std::vector<CUdeviceptr> d_texcoords(m_Meshes.size());
-		std::vector<uint32_t> triangleInputFlags(m_Meshes.size());
+		std::vector<OptixBuildInput> triangleInputs(nMeshes);
+		std::vector<CUdeviceptr> d_vertices(nMeshes);
+		std::vector<CUdeviceptr> d_indices(nMeshes);
+		//std::vector<CUdeviceptr> d_normals(nMeshes);
+		//std::vector<CUdeviceptr> d_texcoords(nMeshes);
+		std::vector<uint32_t> triangleInputFlags(nMeshes);
 
-		for (int meshID = 0; meshID < m_Meshes.size(); meshID++)
+		for (int meshID = 0; meshID < nMeshes; meshID++)
 		{
 			/* Upload the mesh to the device */
 			Mesh& mesh = m_Meshes[meshID];
@@ -373,7 +388,7 @@ namespace otx
 			m_OptixContext,
 			&accelOptions,
 			triangleInputs.data(),
-			(int)m_Meshes.size(),
+			nMeshes,
 			&blasBufferSizes
 		));
 
@@ -401,7 +416,7 @@ namespace otx
 			0, /* stream */
 			&accelOptions,
 			triangleInputs.data(),
-			(int)m_Meshes.size(),
+			nMeshes,
 			tempBuffer.d_pointer(),
 			tempBuffer.sizeInBytes,
 			outputBuffer.d_pointer(),
@@ -475,9 +490,9 @@ namespace otx
 		m_SBT.missRecordCount = (int)missRecords.size();
 
 		/* Build hitgroup records */
-		int numObjects = (int)m_Meshes.size();
+		int nObjects = m_Meshes.size();
 		std::vector<HitgroupRecord> hitgroupRecords;
-		for (int meshID = 0; meshID < numObjects; meshID++)
+		for (int meshID = 0; meshID < nObjects; meshID++)
 		{
 			HitgroupRecord rec;
 			OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[0], &rec)); /* For now, all objects use same code */
@@ -514,6 +529,9 @@ namespace otx
 
 	void Optix::SetCamera(const Camera& camera)
 	{
+		/* Note: we set the clear/background color here too! */
+		m_LaunchParams.clearColor = m_Scene->m_ClearColor;
+
 		m_LastSetCamera = camera;
 		m_LaunchParams.camera.position = camera.position;
 		m_LaunchParams.camera.direction = glm::normalize(camera.orientation);

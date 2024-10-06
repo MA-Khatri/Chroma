@@ -30,6 +30,8 @@ namespace otx
 			float verticalFOVdeg;
 		} camera;
 
+		glm::vec3 clearColor;
+
 		OptixTraversableHandle traversable;
 	};
 

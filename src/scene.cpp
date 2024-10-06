@@ -10,22 +10,24 @@ Scene::Scene()
 	/* ======================== */
 	Object* grid = new Object(CreateGroundGrid(), noTextures, Lines);
 	grid->m_DepthTest = false;
+	grid->m_RayTraceRender = false;
 	grid->m_ModelNormalMatrix = glm::mat3(m_ClearColor, glm::vec3(0.0f), glm::vec3(0.0f)); /* We'll store the clear color in the grid's normal matrix... */
 	m_Objects.push_back(grid);
 
 	Object* axes = new Object(CreateXYAxes(), noTextures, Lines);
 	axes->m_DepthTest = false;
+	axes->m_RayTraceRender = false;
 	axes->m_ModelNormalMatrix = glm::mat3(m_ClearColor, glm::vec3(0.0f), glm::vec3(0.0f));
 	m_Objects.push_back(axes);
 
 	/* ===================== */
 	/* === Scene Objects === */
 	/* ===================== */
-	//TexturePaths vikingRoomTextures;
-	//vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
-	//Object* vikingRoom = new Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, Flat);
+	TexturePaths vikingRoomTextures;
+	vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
+	Object* vikingRoom = new Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, Flat);
 	//vikingRoom->Scale(5.0f);
-	//m_Objects.push_back(vikingRoom);
+	m_Objects.push_back(vikingRoom);
 
 	Object* dragon = new Object(LoadMesh("res/meshes/dragon.obj"), noTextures, Normal);
 	//dragon->Translate(0.0f, 10.0f, 0.0f);

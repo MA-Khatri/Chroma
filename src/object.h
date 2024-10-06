@@ -71,7 +71,8 @@ public:
 	glm::mat4 m_ModelMatrix = glm::mat4(1.0f);
 	glm::mat3 m_ModelNormalMatrix = glm::mat3(1.0f);
 	bool m_DepthTest = true;
-	int m_PipelineType = 0;
+	bool m_RayTraceRender = true; /* Should this object be rendered in the ray traced view? */
+	int m_PipelineType = 0; /* Used to access the Scene::PipelineType enum */
 
 	/* Uniform buffer contains all necessary drawing info for this object */
 	struct UniformBufferObject {
@@ -79,11 +80,13 @@ public:
 		alignas(16) glm::mat4 normalMatrix; /* We pass in the normal matrix as a mat4 to avoid alignment issues */
 	};
 
-
-private:
 	Mesh m_Mesh = Mesh();
 	TexturePaths m_TexturePaths;
+	Texture m_DiffuseTexture;
+	Texture m_SpecularTexture;
+	Texture m_NormalTexture;
 
+private:
 	VkBuffer m_VertexBuffer = VK_NULL_HANDLE;
 	VkDeviceMemory m_VertexBufferMemory = VK_NULL_HANDLE;
 
@@ -110,19 +113,16 @@ private:
 	VkImageView m_DiffuseTextureImageView = VK_NULL_HANDLE;
 	VkSampler m_DiffuseTextureSampler = VK_NULL_HANDLE;
 	uint32_t m_DiffuseMipLevels = 0;
-	Texture m_DiffuseTexture;
 
 	VkImage m_SpecularTextureImage = VK_NULL_HANDLE;
 	VkDeviceMemory m_SpecularTextureImageMemory = VK_NULL_HANDLE;
 	VkImageView m_SpecularTextureImageView = VK_NULL_HANDLE;
 	VkSampler m_SpecularTextureSampler = VK_NULL_HANDLE;
 	uint32_t m_SpecularMipLevels = 0;
-	Texture m_SpecularTexture;
 
 	VkImage m_NormalTextureImage = VK_NULL_HANDLE;
 	VkDeviceMemory m_NormalTextureImageMemory = VK_NULL_HANDLE;
 	VkImageView m_NormalTextureImageView = VK_NULL_HANDLE;
 	VkSampler m_NormalTextureSampler = VK_NULL_HANDLE;
 	uint32_t m_NormalMipLevels = 0;
-	Texture m_NormalTexture;
 };

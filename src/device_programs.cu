@@ -92,7 +92,8 @@ namespace otx
 	{
 		glm::vec3& prd = *(glm::vec3*)getPRD<glm::vec3>();
 		//prd = glm::vec3(0.0f); /* BLACK */
-		prd = glm::vec3(63.0f / 255.0f, 63.0f / 255.0f, 63.0f / 255.0f); /* match app's m_ViewportClearColor */
+		//prd = glm::vec3(63.0f / 255.0f, 63.0f / 255.0f, 63.0f / 255.0f); /* match app's m_ViewportClearColor */
+		prd = optixLaunchParams.clearColor;
 	}
 
 
