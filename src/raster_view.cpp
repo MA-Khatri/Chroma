@@ -13,7 +13,7 @@ void RasterView::OnAttach(Application* app)
 	m_Camera = app->GetMainCamera();
 
 	InitVulkan();
-	m_Scene = new Scene(m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, &m_ViewportFramebuffers, m_AppHandle, m_Camera);
+	m_Scene = new Scene(m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_ViewportFramebuffers, m_AppHandle, m_Camera);
 }
 
 
@@ -153,6 +153,8 @@ void RasterView::OnResize(ImVec2 newSize)
 	vk::CreateDepthResources(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount, m_DepthImage, m_DepthImageMemory, m_DepthImageView);
 	CreateViewportImagesAndFramebuffers();
 	CreateViewportImageDescriptorSets();
+
+	m_Scene->Resize(m_ViewportSize, m_ViewportFramebuffers);
 }
 
 

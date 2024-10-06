@@ -12,10 +12,11 @@ class Scene
 {
 public:
 	Scene() {}; /* Bogus initializer to prevent errors */
-	Scene(ImVec2& viewportSize, VkSampleCountFlagBits& sampleCount, VkRenderPass& renderPass, std::vector<VkFramebuffer>* framebuffers, Application* app, Camera* camera);
+	Scene(ImVec2 viewportSize, VkSampleCountFlagBits sampleCount, VkRenderPass& renderPass, std::vector<VkFramebuffer>& framebuffers, Application* app, Camera* camera);
 	~Scene();
 
 	void Setup();
+	void Resize(ImVec2 newSize, std::vector<VkFramebuffer>& framebuffers);
 	void VkDraw();
 
 private:
@@ -46,7 +47,7 @@ private:
 	ImVec2 m_ViewportSize;
 	VkSampleCountFlagBits m_MSAASampleCount;
 	VkRenderPass m_ViewportRenderPass;
-	std::vector<VkFramebuffer>* m_ViewportFramebuffers;
+	std::vector<VkFramebuffer> m_ViewportFramebuffers;
 	Application* m_AppHandle;
 	Camera* m_Camera;
 };

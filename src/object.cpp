@@ -140,7 +140,9 @@ Object::~Object()
 
 void Object::Draw(VkCommandBuffer& commandBuffer)
 {
-    vkCmdSetDepthTestEnable(commandBuffer, m_DepthTest);
+#ifndef _DEBUG
+    vkCmdSetDepthTestEnable(commandBuffer, m_DepthTest); /* WARNING: For some reason, this raises an error *only* in Debug mode... */
+#endif
     vkCmdSetLineWidth(commandBuffer, m_Mesh.lineWidth);
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);

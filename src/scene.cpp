@@ -1,7 +1,7 @@
 #include "scene.h"
 #include "application.h"
 
-Scene::Scene(ImVec2& viewportSize, VkSampleCountFlagBits& sampleCount, VkRenderPass& renderPass, std::vector<VkFramebuffer>* framebuffers, Application* app, Camera* camera)
+Scene::Scene(ImVec2 viewportSize, VkSampleCountFlagBits sampleCount, VkRenderPass& renderPass, std::vector<VkFramebuffer>& framebuffers, Application* app, Camera* camera)
 	: m_ViewportSize(viewportSize), m_MSAASampleCount(sampleCount), m_ViewportRenderPass(renderPass), m_ViewportFramebuffers(framebuffers), m_AppHandle(app), m_Camera(camera)
 {
 	Setup();
@@ -117,6 +117,13 @@ void Scene::Setup()
 }
 
 
+void Scene::Resize(ImVec2 newSize, std::vector<VkFramebuffer>& framebuffers)
+{
+	m_ViewportSize = newSize;
+	m_ViewportFramebuffers = framebuffers;
+}
+
+
 void Scene::VkDraw()
 {
 	VkCommandBuffer commandBuffer = vk::GetGraphicsCommandBuffer();
@@ -125,7 +132,7 @@ void Scene::VkDraw()
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = m_ViewportRenderPass;
-	renderPassInfo.framebuffer = (*m_ViewportFramebuffers)[vk::MainWindowData.FrameIndex];
+	renderPassInfo.framebuffer = m_ViewportFramebuffers[vk::MainWindowData.FrameIndex];
 	renderPassInfo.renderArea.offset = { 0, 0 };
 	renderPassInfo.renderArea.extent = { static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y) };
 
