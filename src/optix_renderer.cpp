@@ -471,15 +471,16 @@ namespace otx
 
 			/* Get all textures for this object */
 			std::vector<Texture*> textures;
+			textures.reserve(3);
 
 			Texture* diffuse = &(obj->m_DiffuseTexture);
-			if (diffuse->pixels) { diffuse->textureID = textureID; textureID++; textures.push_back(diffuse); }
+			if (diffuse->pixels) { diffuse->textureID = textureID; textureID++; obj->LoadTexture(*diffuse); textures.emplace_back(diffuse); }
 
 			Texture* specular = &(obj->m_SpecularTexture);
-			if (specular->pixels) { specular->textureID = textureID; textureID++; textures.push_back(specular); }
+			if (specular->pixels) { specular->textureID = textureID; textureID++; obj->LoadTexture(*specular); textures.emplace_back(specular); }
 
 			Texture* normal = &(obj->m_NormalTexture);
-			if (normal->pixels) { normal->textureID = textureID; textureID++; textures.push_back(normal); }
+			if (normal->pixels) { normal->textureID = textureID; textureID++; obj->LoadTexture(*normal); textures.emplace_back(normal); }
 
 			/* Create CUDA resources for each texture */
 			for (Texture* tex : textures)
