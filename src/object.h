@@ -92,6 +92,7 @@ public:
 	Texture m_NormalTexture;
 
 private:
+	/* === Vulkan === */
 	VkBuffer m_VertexBuffer = VK_NULL_HANDLE;
 	VkDeviceMemory m_VertexBufferMemory = VK_NULL_HANDLE;
 

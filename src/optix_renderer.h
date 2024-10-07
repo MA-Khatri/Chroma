@@ -107,6 +107,7 @@ namespace otx
 		/* The scene we are tracing rays against */
 		std::shared_ptr<Scene> m_Scene;
 		std::vector<Mesh> m_Meshes;
+		std::vector<CUDABuffer> m_Transforms; /* (static) mesh (pre-)transforms */
 		std::vector<CUDABuffer> m_VertexBuffers;
 		std::vector<CUDABuffer> m_IndexBuffers;
 		std::vector<CUDABuffer> m_NormalBuffers;

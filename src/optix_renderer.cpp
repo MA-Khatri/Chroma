@@ -308,11 +308,27 @@ namespace otx
 
 		/* Extract meshes from scene objects */
 		m_Meshes.reserve(nObjects);
+		m_Transforms.reserve(nObjects);
 		for (auto& object : objects)
 		{
 			if (object->m_RayTraceRender)
 			{
 				m_Meshes.emplace_back(object->m_Mesh);
+
+				/* Get object transform */
+				std::vector<float> transform;
+				transform.reserve(12);
+				const glm::mat4& t = object->m_ModelMatrix;
+				for (int row = 0; row < 3; row++)
+				{
+					for (int col = 0; col < 4; col++)
+					{
+						transform.emplace_back(t[col][row]);
+					}
+				}
+				CUDABuffer transformBuffer;
+				transformBuffer.alloc_and_upload(transform);
+				m_Transforms.emplace_back(transformBuffer);
 			}
 		}
 		m_Meshes.shrink_to_fit();
@@ -369,6 +385,10 @@ namespace otx
 			triangleInputs[meshID].triangleArray.sbtIndexOffsetBuffer = 0;
 			triangleInputs[meshID].triangleArray.sbtIndexOffsetSizeInBytes = 0;
 			triangleInputs[meshID].triangleArray.sbtIndexOffsetStrideInBytes = 0;
+
+			/* Assign pre-transform */
+			triangleInputs[meshID].triangleArray.preTransform = m_Transforms[meshID].d_pointer();
+			triangleInputs[meshID].triangleArray.transformFormat = OPTIX_TRANSFORM_FORMAT_MATRIX_FLOAT12;
 		}
 
 		/* ================== */

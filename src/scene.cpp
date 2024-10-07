@@ -26,14 +26,14 @@ Scene::Scene()
 	TexturePaths vikingRoomTextures;
 	vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
 	std::shared_ptr<Object> vikingRoom = std::make_shared<Object>(Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, Flat));
-	//vikingRoom->Scale(5.0f);
+	vikingRoom->Scale(5.0f);
 	m_Objects.push_back(vikingRoom);
 
-	std::shared_ptr<Object> dragon = std::make_shared<Object>(LoadMesh("res/meshes/dragon.obj"), noTextures, Normal);
+	//std::shared_ptr<Object> dragon = std::make_shared<Object>(LoadMesh("res/meshes/dragon.obj"), noTextures, Normal);
 	//dragon->Translate(0.0f, 10.0f, 0.0f);
 	//dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 90.0f);
 	//dragon->Scale(5.0f);
-	m_Objects.push_back(dragon);
+	//m_Objects.push_back(dragon);
 }
 
 
