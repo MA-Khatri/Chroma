@@ -1,5 +1,6 @@
 #include "object.h"
 
+#include "stb_image.h"
 #include "vulkan_utils.h"
 
 
@@ -35,6 +36,23 @@ Object::~Object()
     vkDestroyImage(vk::Device, m_NormalTextureImage, nullptr);
     vkFreeMemory(vk::Device, m_NormalTextureImageMemory, nullptr);
     vkDestroySampler(vk::Device, m_NormalTextureSampler, nullptr);
+}
+
+
+void Object::LoadTexture(Texture& tex)
+{
+    int texWidth, texHeight, texChannels;
+    tex.pixels = (uint32_t*)stbi_load(tex.filePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha); /* load image with alpha channel even if it doesn't have one */
+#ifdef _DEBUG
+    if (texChannels != 4) std::cout << "Warning: loaded texture only has " << texChannels << " channels. Force loaded with 4 channels!" << std::endl;
+#endif
+    tex.resolution = glm::ivec3(texWidth, texHeight, 4);
+
+    if (!tex.pixels)
+    {
+        std::cerr << "LoadTexture(): Error! Failed to load image " << tex.filePath << " ! " << std::endl;
+        exit(-1);
+    }
 }
 
 
@@ -79,7 +97,9 @@ void Object::VkSetup(const PipelineInfo& pipelineInfo)
 
     if (!m_TexturePaths.diffuse.empty())
     {
-        vk::CreateTextureImage(m_TexturePaths.diffuse, m_DiffuseMipLevels, m_DiffuseTexture.pixels, m_DiffuseTexture.resolution, m_DiffuseTextureImage, m_DiffuseTextureImageMemory);
+        m_DiffuseTexture.filePath = m_TexturePaths.diffuse;
+        LoadTexture(m_DiffuseTexture);
+        vk::CreateTextureImage(m_DiffuseTexture, m_DiffuseMipLevels, m_DiffuseTextureImage, m_DiffuseTextureImageMemory);
         vk::CreateTextureImageView(m_DiffuseMipLevels, m_DiffuseTextureImage, m_DiffuseTextureImageView);
         vk::CreateTextureSampler(m_DiffuseMipLevels, m_DiffuseTextureSampler);
 
@@ -99,7 +119,9 @@ void Object::VkSetup(const PipelineInfo& pipelineInfo)
     }
     if (!m_TexturePaths.specular.empty())
     {
-        vk::CreateTextureImage(m_TexturePaths.specular, m_SpecularMipLevels, m_SpecularTexture.pixels, m_SpecularTexture.resolution, m_SpecularTextureImage, m_SpecularTextureImageMemory);
+        m_SpecularTexture.filePath = m_TexturePaths.specular;
+        LoadTexture(m_SpecularTexture);
+        vk::CreateTextureImage(m_SpecularTexture, m_SpecularMipLevels, m_SpecularTextureImage, m_SpecularTextureImageMemory);
         vk::CreateTextureImageView(m_SpecularMipLevels, m_SpecularTextureImage, m_SpecularTextureImageView);
         vk::CreateTextureSampler(m_SpecularMipLevels, m_SpecularTextureSampler);
 
@@ -119,7 +141,9 @@ void Object::VkSetup(const PipelineInfo& pipelineInfo)
     }
     if (!m_TexturePaths.normal.empty())
     {
-        vk::CreateTextureImage(m_TexturePaths.normal, m_NormalMipLevels, m_NormalTexture.pixels, m_NormalTexture.resolution, m_NormalTextureImage, m_NormalTextureImageMemory);
+        m_NormalTexture.filePath = m_TexturePaths.normal;
+        LoadTexture(m_NormalTexture);
+        vk::CreateTextureImage(m_NormalTexture, m_NormalMipLevels, m_NormalTextureImage, m_NormalTextureImageMemory);
         vk::CreateTextureImageView(m_NormalMipLevels, m_NormalTextureImage, m_NormalTextureImageView);
         vk::CreateTextureSampler(m_NormalMipLevels, m_NormalTextureSampler);
 

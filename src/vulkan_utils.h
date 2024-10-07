@@ -11,6 +11,7 @@
 
 
 #include "mesh.h"
+#include "object.h"
 
 
 //#define APP_USE_UNLIMITED_FRAME_RATE
@@ -173,7 +174,7 @@ namespace vk
 	void CopyBufferToImage(VkCommandBuffer& commandBuffer, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
-	void CreateTextureImage(std::string filepath, uint32_t& mipLevels, uint32_t* pixels, glm::ivec2& resolution, VkImage& textureImage, VkDeviceMemory& textureImageMemory);
+	void CreateTextureImage(Texture tex, uint32_t& mipLevels, VkImage& textureImage, VkDeviceMemory& textureImageMemory);
 	void CreateTextureImageView(uint32_t mipLevels, VkImage& textureImage, VkImageView& textureImageView);
 	void CreateTextureSampler(uint32_t mipLevels, VkSampler& textureSampler);
 

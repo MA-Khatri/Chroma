@@ -4,8 +4,6 @@
 #include <vector>
 #include <fstream>
 
-#include "stb_image.h"
-
 #include "shader.h"
 
 
@@ -1370,20 +1368,13 @@ namespace vk
 	}
 
 
-	void CreateTextureImage(std::string filepath, uint32_t& mipLevels, uint32_t* pixels, glm::ivec2& resolution, VkImage& textureImage, VkDeviceMemory& textureImageMemory)
+	void CreateTextureImage(Texture tex, uint32_t & mipLevels, VkImage& textureImage, VkDeviceMemory& textureImageMemory)
 	{
-		/* Load the image */
-		int texWidth, texHeight, texChannels;
-		pixels = (uint32_t*)stbi_load(filepath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha); /* load image with alpha channel even if it doesn't have one */
-		resolution.x = texWidth;
-		resolution.y = texHeight;
-		VkDeviceSize imageSize = texWidth * texHeight * 4; /* 4 for RGBA channels */
+		int texWidth = tex.resolution.x;
+		int texHeight = tex.resolution.y;
+		int texChannels = tex.resolution.z; /* should be 4... we don't have any exceptions to this (yet) */
 
-		if (!pixels)
-		{
-			std::cerr << "CreateTextureImage(): Error! Failed to load image " << filepath << " ! " << std::endl;
-			exit(-1);
-		}
+		VkDeviceSize imageSize = texWidth * texHeight * texChannels;
 
 		mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
@@ -1395,11 +1386,8 @@ namespace vk
 		/* Copy pixel data to the staging buffer */
 		void* data;
 		vkMapMemory(Device, stagingBufferMemory, 0, imageSize, 0, &data);
-		memcpy(data, pixels, static_cast<size_t>(imageSize));
+		memcpy(data, tex.pixels, static_cast<size_t>(imageSize));
 		vkUnmapMemory(Device, stagingBufferMemory);
-
-		/* Clean up original image from host side */
-		stbi_image_free(pixels);
 
 		/* Create the texture image */
 		CreateImage(texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);

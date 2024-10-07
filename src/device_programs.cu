@@ -46,9 +46,16 @@ namespace otx
 	}
 
 
-	extern "C" __device__ glm::vec3 InterpolateNormals(const float2& uv, const glm::vec3& n0, const glm::vec3& n1, const glm::vec3& n2)
+	/* Compute barycentric normal */
+	extern "C" __device__ glm::vec3 BCNormal(const float2& uv, const glm::vec3& n0, const glm::vec3& n1, const glm::vec3& n2)
 	{
 		return n0 + uv.x * (n1 - n0) + uv.y * (n2 - n0);
+	}
+
+	/* Compute barycentric texture coordinate */
+	extern "C" __device__ glm::vec2 BCTexCoord(const float2& uv, const glm::vec2& v0, const glm::vec2& v1, const glm::vec2& v2)
+	{
+		return (1.0f - uv.x - uv.y) * v0 + uv.x * v1 + uv.y * v2;
 	}
 
 	/*
@@ -68,14 +75,25 @@ namespace otx
 		const glm::vec3& n1 = sbtData.normal[index.y];
 		const glm::vec3& n2 = sbtData.normal[index.z];
 		float2 uv = optixGetTriangleBarycentrics();
-		glm::vec3 iN = InterpolateNormals(uv, n0, n1, n2);
+		glm::vec3 iN = BCNormal(uv, n0, n1, n2);
 
 		/* We need to clamp each element individually or the compiler will complain */
 		glm::vec3 clampedNormals = glm::vec3(glm::clamp(iN.x, 0.0f, 1.0f), glm::clamp(iN.y, 0.0f, 1.0f), glm::clamp(iN.z, 0.0f, 1.0f));
 
+		glm::vec3 diffuseColor = clampedNormals;
+
+		/* Sample texture(s) */
+		glm::vec2 tc = BCTexCoord(uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);
+		if (sbtData.hasDiffuseTexture)
+		{
+			float4 tex = tex2D<float4>(sbtData.diffuseTexture, tc.x, tc.y);
+			diffuseColor = glm::vec3(tex.x, tex.y, tex.z);
+		}
+
+
 		/* Set data */
 		glm::vec3& prd = *(glm::vec3*)getPRD<glm::vec3>();
-		prd = clampedNormals;
+		prd = diffuseColor;
 	}
 
 

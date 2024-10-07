@@ -39,7 +39,7 @@ public:
 		Lines, /* Displays line list with color */
 	};
 
-	std::vector<Object*> m_Objects; /* Objects to be drawn */
+	std::vector<std::shared_ptr<Object>> m_Objects; /* Objects to be drawn */
 
 private:
 	std::map<PipelineType, PipelineInfo> m_Pipelines; /* Pipelines with diff. shaders/draw modes */

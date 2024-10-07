@@ -34,8 +34,10 @@ struct Texture
 {
 	~Texture() { if (pixels) delete[] pixels; }
 
+	std::string filePath;
 	uint32_t* pixels{ nullptr };
-	glm::ivec2 resolution;
+	glm::ivec3 resolution; /* x = width, y = height, z = channels */
+	int textureID = -1; /* textureID set in optix_renderer -> CreateTextures() */
 };
 
 
@@ -44,6 +46,9 @@ class Object
 public:
 	Object(Mesh mesh, TexturePaths texturePaths, int pipelineType);
 	~Object();
+
+	/* Load in the pixels and resolution of the provided texture */
+	void LoadTexture(Texture& tex);
 
 	/* Sets up object to be drawn with Vulkan */
 	void VkSetup(const PipelineInfo& pipelineInfo);

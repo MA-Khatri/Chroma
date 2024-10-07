@@ -332,8 +332,6 @@ namespace otx
 		std::vector<OptixBuildInput> triangleInputs(nMeshes);
 		std::vector<CUdeviceptr> d_vertices(nMeshes);
 		std::vector<CUdeviceptr> d_indices(nMeshes);
-		//std::vector<CUdeviceptr> d_normals(nMeshes);
-		//std::vector<CUdeviceptr> d_texcoords(nMeshes);
 		std::vector<uint32_t> triangleInputFlags(nMeshes);
 
 		for (int meshID = 0; meshID < nMeshes; meshID++)
@@ -351,8 +349,6 @@ namespace otx
 			/* Create local variables to store pointers to the device pointers */
 			d_vertices[meshID] = m_VertexBuffers[meshID].d_pointer();
 			d_indices[meshID] = m_IndexBuffers[meshID].d_pointer();
-			//d_normals[meshID] = m_NormalBuffers[meshID].d_pointer();
-			//d_texcoords[meshID] = m_TexCoordBuffers[meshID].d_pointer();
 
 			/* Set up format for reading vertex and index data */
 			triangleInputs[meshID].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
@@ -457,7 +453,70 @@ namespace otx
 
 	void Optix::CreateTextures()
 	{
+		int nTextures = 0;
+		for (auto obj : m_Scene->m_Objects)
+		{
+			if (obj->m_DiffuseTexture.pixels) nTextures++;
+			if (obj->m_SpecularTexture.pixels) nTextures++;
+			if (obj->m_NormalTexture.pixels) nTextures++;
+		}
 
+		m_TextureArrays.resize(nTextures);
+		m_TextureObjects.resize(nTextures);
+
+		int textureID = 0;
+		for (auto obj : m_Scene->m_Objects)
+		{
+			if (!obj->m_RayTraceRender) continue;
+
+			/* Get all textures for this object */
+			std::vector<Texture*> textures;
+
+			Texture* diffuse = &(obj->m_DiffuseTexture);
+			if (diffuse->pixels) { diffuse->textureID = textureID; textureID++; textures.push_back(diffuse); }
+
+			Texture* specular = &(obj->m_SpecularTexture);
+			if (specular->pixels) { specular->textureID = textureID; textureID++; textures.push_back(specular); }
+
+			Texture* normal = &(obj->m_NormalTexture);
+			if (normal->pixels) { normal->textureID = textureID; textureID++; textures.push_back(normal); }
+
+			/* Create CUDA resources for each texture */
+			for (Texture* tex : textures)
+			{
+				int32_t width = tex->resolution.x;
+				int32_t height = tex->resolution.y;
+				int32_t numComponents = tex->resolution.z;
+				int32_t pitch = width * numComponents * sizeof(uint8_t);
+				cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<uchar4>();
+
+				cudaArray_t& pixelArray = m_TextureArrays[tex->textureID];
+				CUDA_CHECK(MallocArray(&pixelArray, &channel_desc, width, height));
+				CUDA_CHECK(Memcpy2DToArray(pixelArray, 0, 0, tex->pixels, pitch, pitch, height, cudaMemcpyHostToDevice));
+
+				cudaResourceDesc res_desc = {};
+				res_desc.resType = cudaResourceTypeArray;
+				res_desc.res.array.array = pixelArray;
+
+				cudaTextureDesc tex_desc = {};
+				tex_desc.addressMode[0] = cudaAddressModeWrap;
+				tex_desc.addressMode[1] = cudaAddressModeWrap;
+				tex_desc.filterMode = cudaFilterModeLinear;
+				tex_desc.readMode = cudaReadModeNormalizedFloat;
+				tex_desc.normalizedCoords = 1;
+				tex_desc.maxAnisotropy = 1;
+				tex_desc.maxMipmapLevelClamp = 99;
+				tex_desc.minMipmapLevelClamp = 0;
+				tex_desc.mipmapFilterMode = cudaFilterModePoint;
+				tex_desc.borderColor[0] = 1.0f;
+				tex_desc.sRGB = 0;
+
+				/* Create the texture object */
+				cudaTextureObject_t cuda_tex = 0;
+				CUDA_CHECK(CreateTextureObject(&cuda_tex, &res_desc, &tex_desc, nullptr));
+				m_TextureObjects[tex->textureID] = cuda_tex;
+			}
+		}
 	}
 
 
@@ -490,17 +549,56 @@ namespace otx
 		m_SBT.missRecordCount = (int)missRecords.size();
 
 		/* Build hitgroup records */
-		int nObjects = m_Meshes.size();
+		int nObjects = m_Scene->m_Objects.size();
+		int meshID = 0;
 		std::vector<HitgroupRecord> hitgroupRecords;
-		for (int meshID = 0; meshID < nObjects; meshID++)
+		for (int objectID = 0; objectID < nObjects; objectID++)
 		{
+			auto obj = m_Scene->m_Objects[objectID];
+			if (!obj->m_RayTraceRender) continue;
+
 			HitgroupRecord rec;
 			OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[0], &rec)); /* For now, all objects use same code */
+
+			/* Textures... */
+			if (obj->m_DiffuseTexture.textureID >= 0)
+			{
+				rec.data.hasDiffuseTexture = true;
+				rec.data.diffuseTexture = m_TextureObjects[obj->m_DiffuseTexture.textureID];
+			}
+			else
+			{
+				rec.data.hasDiffuseTexture = false;
+			}
+
+			if (obj->m_SpecularTexture.textureID >= 0)
+			{
+				rec.data.hasSpecularTexture = true;
+				rec.data.specularTexture = m_TextureObjects[obj->m_SpecularTexture.textureID];
+			}
+			else
+			{
+				rec.data.hasSpecularTexture = false;
+			}
+
+			if (obj->m_NormalTexture.textureID >= 0)
+			{
+				rec.data.hasNormalTexture = true;
+				rec.data.normalTexture = m_TextureObjects[obj->m_NormalTexture.textureID];
+			}
+			else
+			{
+				rec.data.hasNormalTexture = false;
+			}
+
+			/* Vertex data */
 			rec.data.vertex = (glm::vec3*)m_VertexBuffers[meshID].d_pointer();
 			rec.data.index = (glm::ivec3*)m_IndexBuffers[meshID].d_pointer();
 			rec.data.normal = (glm::vec3*)m_NormalBuffers[meshID].d_pointer();
 			rec.data.texCoord = (glm::vec2*)m_TexCoordBuffers[meshID].d_pointer();
 			hitgroupRecords.push_back(rec);
+
+			meshID++;
 		}
 		m_HitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
 		m_SBT.hitgroupRecordBase = m_HitgroupRecordsBuffer.d_pointer();

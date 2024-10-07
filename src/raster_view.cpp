@@ -37,12 +37,12 @@ void RasterView::OnDetach()
 
 void RasterView::OnUpdate()
 {
+	if (m_ViewportFocused) m_AppHandle->m_FocusedWindow = Application::RasterizedViewport;
+
 	if (m_ViewportHovered)
 	{
 		m_Camera->Inputs(m_WindowHandle);
 	}
-
-	if (m_ViewportFocused) m_AppHandle->m_FocusedWindow = Application::RasterizedViewport;
 }
 
 

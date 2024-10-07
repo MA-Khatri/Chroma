@@ -114,6 +114,10 @@ namespace otx
 
 		/* Buffer that keeps the final, compacted, acceleration structure */
 		CUDABuffer m_ASBuffer;
+
+		/* One texture object and pixel array per used texture */
+		std::vector<cudaArray_t> m_TextureArrays;
+		std::vector<cudaTextureObject_t> m_TextureObjects;
 	};
 
 

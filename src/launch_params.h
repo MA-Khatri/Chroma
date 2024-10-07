@@ -7,9 +7,16 @@ namespace otx
 	struct MeshSBTData
 	{
 		glm::vec3* vertex;
-		glm::ivec3* index;
 		glm::vec3* normal;
 		glm::vec2* texCoord; 
+		glm::ivec3* index;
+
+		bool hasDiffuseTexture;
+		cudaTextureObject_t diffuseTexture;
+		bool hasSpecularTexture;
+		cudaTextureObject_t specularTexture;
+		bool hasNormalTexture;
+		cudaTextureObject_t normalTexture;
 	};
 	
 

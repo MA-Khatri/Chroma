@@ -35,17 +35,17 @@ void RayTraceView::OnDetach()
 
 void RayTraceView::OnUpdate()
 {
-	if (m_ViewportHovered)
-	{
-		m_Camera->Inputs(m_WindowHandle);
-	}
+	if (m_ViewportFocused) m_AppHandle->m_FocusedWindow = Application::RayTracedViewport;
 
 	if (m_ViewportVisible)
 	{
-		m_AppHandle->m_FocusedWindow = Application::RayTracedViewport;
-
 		if (m_AppHandle->m_LinkCameras)	m_Camera = m_AppHandle->GetMainCamera();
 		else m_Camera = m_LocalCamera;
+
+		if (m_ViewportHovered)
+		{
+			m_Camera->Inputs(m_WindowHandle);
+		}
 
 		m_OptixRenderer.SetCamera(*m_Camera);
 		m_OptixRenderer.Render();
