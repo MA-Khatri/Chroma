@@ -1368,7 +1368,7 @@ namespace vk
 	}
 
 
-	void CreateTextureImage(Texture tex, uint32_t & mipLevels, VkImage& textureImage, VkDeviceMemory& textureImageMemory)
+	void CreateTextureImage(const Texture& tex, uint32_t& mipLevels, VkImage& textureImage, VkDeviceMemory& textureImageMemory)
 	{
 		int texWidth = tex.resolution.x;
 		int texHeight = tex.resolution.y;
@@ -1527,7 +1527,7 @@ namespace vk
 
 	void CreateTextureImageView(uint32_t mipLevels, VkImage& textureImage, VkImageView& textureImageView)
 	{
-		CreateImageView(VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, textureImage, textureImageView);
+		CreateImageView(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, textureImage, textureImageView);
 	}
 
 
