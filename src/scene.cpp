@@ -29,17 +29,18 @@ Scene::Scene()
 	//m_RayTraceObjects.push_back(vikingRoom);
 
 	std::shared_ptr<Object> dragon = std::make_shared<Object>(LoadMesh("res/meshes/dragon.obj"), noTextures, Normal);
-	dragon->Translate(0.0f, 0.0f, 1.0f);
-	//dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 90.0f);
-	//dragon->Scale(5.0f);
+	//dragon->Translate(0.0f, 0.0f, 1.0f);
+	dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 45.0f);
+	dragon->Scale(3.0f);
 	m_RasterObjects.push_back(dragon);
 	m_RayTraceObjects.push_back(dragon);
 
 	TexturePaths planeTextures;
-	planeTextures.diffuse = "res/textures/texture.jpg";
+	//planeTextures.diffuse = "res/textures/texture.jpg";
+	planeTextures.diffuse = "res/textures/white.png";
 	std::shared_ptr<Object> plane0 = std::make_shared<Object>(Object(CreatePlane(), planeTextures, Flat));
-	//plane0->Scale(5.0f);
-	plane0->Translate(1.0f, 0.0f, 0.0f);
+	//plane0->Translate(1.0f, 0.0f, 0.0f);
+	plane0->Scale(5.0f);
 	m_RasterObjects.push_back(plane0);
 	m_RayTraceObjects.push_back(plane0);
 

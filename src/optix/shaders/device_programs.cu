@@ -42,10 +42,10 @@ namespace otx
 	/* === Helpers === */
 	/* =============== */
 
-	/* Compute position of ray hit using barycentric coords */
-	extern "C" __device__ float3 HitPosition(const float2& uv, const float3& p0, const float3& p1, const float3& p2)
+	/* Compute position of ray hit */
+	extern "C" __device__ float3 HitPosition()
 	{
-		return (1.0f - uv.x - uv.y) * p0 + uv.x * p1 + uv.y * p2;
+		return optixGetWorldRayOrigin() + optixGetWorldRayDirection() * optixGetRayTmax();
 	}
 	
 	/* Compute interpolated normal using barycentric coords */
@@ -54,7 +54,7 @@ namespace otx
 		return n0 + uv.x * (n1 - n0) + uv.y * (n2 - n0);
 	}
 
-	/* Compute texture coordinate using barycentric coords */
+	/* Compute interpolated texture coordinate using barycentric coords */
 	extern "C" __device__ float2 TexCoord(const float2& uv, const float2& v0, const float2& v1, const float2& v2)
 	{
 		return (1.0f - uv.x - uv.y) * v0 + uv.x * v1 + uv.y * v2;
@@ -89,8 +89,8 @@ namespace otx
 		}
 
 		/* === Compute shadow === */
-		const float3 surfPosn = HitPosition(uv, sbtData.position[index.x], sbtData.position[index.y], sbtData.position[index.z]);
-		const float3 lightPosn = make_float3(0.0f, 0.0f, 100.0f); /* Hard coded light position (for now) */
+		const float3 surfPosn = HitPosition();
+		const float3 lightPosn = make_float3(100.0f, 100.0f, 100.0f); /* Hard coded light position (for now) */
 		const float3 lightDir = lightPosn - surfPosn;
 
 		/* Trace shadow ray*/
