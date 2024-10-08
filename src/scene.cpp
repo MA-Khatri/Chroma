@@ -113,20 +113,20 @@ void Scene::VkSetup(ImVec2 viewportSize, VkSampleCountFlagBits sampleCount, VkRe
 	pInfo.descriptorPool = m_DescriptorPool;
 	pInfo.descriptorSetLayout = m_DescriptorSetLayout;
 
-	std::vector<std::string> shadersFlat = { "res/shaders/Flat.vert", "res/shaders/Flat.frag" };
+	std::vector<std::string> shadersFlat = { "src/vulkan/shaders/Flat.vert", "src/vulkan/shaders/Flat.frag" };
 	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersFlat, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_PipelineLayout);
 	pInfo.pipelineLayout = m_PipelineLayout; /* Note: has to be after pipeline creation bc pipeline layout is created in CreateGraphicsPipeline() */
 	m_Pipelines[Flat] = pInfo;
 
-	std::vector<std::string> shadersSolid = { "res/shaders/Solid.vert", "res/shaders/Solid.frag" };
+	std::vector<std::string> shadersSolid = { "src/vulkan/shaders/Solid.vert", "src/vulkan/shaders/Solid.frag" };
 	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersSolid, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_PipelineLayout);
 	m_Pipelines[Solid] = pInfo;
 
-	std::vector<std::string> shadersNormal = { "res/shaders/Solid.vert", "res/shaders/Normal.frag" };
+	std::vector<std::string> shadersNormal = { "src/vulkan/shaders/Solid.vert", "src/vulkan/shaders/Normal.frag" };
 	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersNormal, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_PipelineLayout);
 	m_Pipelines[Normal] = pInfo;
 
-	std::vector<std::string> shadersLines = { "res/shaders/Lines.vert", "res/shaders/Lines.frag" };
+	std::vector<std::string> shadersLines = { "src/vulkan/shaders/Lines.vert", "src/vulkan/shaders/Lines.frag" };
 	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersLines, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_PipelineLayout);
 	m_Pipelines[Lines] = pInfo;
 

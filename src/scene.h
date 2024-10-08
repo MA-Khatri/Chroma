@@ -2,7 +2,7 @@
 
 #include <map>
 
-#include "vulkan_utils.h"
+#include "vulkan/vulkan_utils.h"
 #include "object.h"
 #include "mesh.h"
 #include "camera.h"

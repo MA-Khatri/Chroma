@@ -5,9 +5,9 @@
 #include <optional>
 #include "vulkan/vulkan.h"
 
-#include "vulkan_utils.h"
+#include "vulkan/vulkan_utils.h"
+#include "vulkan/image.h"
 #include "layer.h"
-#include "image.h"
 #include "camera.h"
 #include "mesh.h"
 #include "object.h"

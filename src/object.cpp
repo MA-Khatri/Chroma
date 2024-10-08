@@ -1,7 +1,7 @@
 #include "object.h"
 
 #include "stb_image.h"
-#include "vulkan_utils.h"
+#include "vulkan/vulkan_utils.h"
 
 
 Object::Object(Mesh mesh, TexturePaths texturePaths, int pipelineType)

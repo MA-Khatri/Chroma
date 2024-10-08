@@ -1,9 +1,9 @@
 #pragma once
 
-#include "optix_renderer.h"
+#include "optix/optix_renderer.h"
 
+#include "vulkan/image.h"
 #include "layer.h"
-#include "image.h"
 #include "camera.h"
 #include "scene.h"
 

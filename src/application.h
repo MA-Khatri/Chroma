@@ -18,7 +18,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "vulkan_utils.h"
+#include "vulkan/vulkan_utils.h"
 #include "layer.h"
 #include "camera.h"
 

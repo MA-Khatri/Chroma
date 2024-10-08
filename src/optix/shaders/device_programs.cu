@@ -1,6 +1,6 @@
 #include <optix_device.h>
 
-#include "launch_params.h" /* Also includes glm */
+#include "../launch_params.h" /* Also includes glm */
 
 namespace otx
 {

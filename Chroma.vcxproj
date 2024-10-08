@@ -23,30 +23,30 @@
     <ClCompile Include="external\stb_image\stb_image.cpp" />
     <ClCompile Include="src\application.cpp" />
     <ClCompile Include="src\camera.cpp" />
-    <ClCompile Include="src\image.cpp" />
+    <ClCompile Include="src\vulkan\image.cpp" />
     <ClCompile Include="src\layer.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\mesh.cpp" />
     <ClCompile Include="src\object.cpp" />
-    <ClCompile Include="src\optix_renderer.cpp" />
+    <ClCompile Include="src\optix\optix_renderer.cpp" />
     <ClCompile Include="src\raster_view.cpp" />
     <ClCompile Include="src\raytrace_view.cpp" />
     <ClCompile Include="src\scene.cpp" />
-    <ClCompile Include="src\shader.cpp" />
-    <ClCompile Include="src\vulkan_utils.cpp" />
+    <ClCompile Include="src\vulkan\shader.cpp" />
+    <ClCompile Include="src\vulkan\vulkan_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
-    <None Include="res\shaders\Flat.frag" />
-    <None Include="res\shaders\Flat.vert" />
-    <None Include="res\shaders\FlatWithSpecular.frag" />
-    <None Include="res\shaders\HelloTriangle.frag" />
-    <None Include="res\shaders\HelloTriangle.vert" />
-    <None Include="res\shaders\Lines.frag" />
-    <None Include="res\shaders\Lines.vert" />
-    <None Include="res\shaders\Normal.frag" />
-    <None Include="res\shaders\Solid.frag" />
-    <None Include="res\shaders\Solid.vert" />
+    <None Include="src\vulkan\shaders\Flat.frag" />
+    <None Include="src\vulkan\shaders\Flat.vert" />
+    <None Include="src\vulkan\shaders\FlatWithSpecular.frag" />
+    <None Include="src\vulkan\shaders\HelloTriangle.frag" />
+    <None Include="src\vulkan\shaders\HelloTriangle.vert" />
+    <None Include="src\vulkan\shaders\Lines.frag" />
+    <None Include="src\vulkan\shaders\Lines.vert" />
+    <None Include="src\vulkan\shaders\Normal.frag" />
+    <None Include="src\vulkan\shaders\Solid.frag" />
+    <None Include="src\vulkan\shaders\Solid.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\imgui-docking\imconfig.h" />
@@ -64,19 +64,19 @@
     <ClInclude Include="external\tiny_obj_loader\tiny_obj_loader.h" />
     <ClInclude Include="src\application.h" />
     <ClInclude Include="src\camera.h" />
-    <ClInclude Include="src\cuda_buffer.h" />
-    <ClInclude Include="src\image.h" />
-    <ClInclude Include="src\launch_params.h" />
+    <ClInclude Include="src\optix\cuda_buffer.h" />
+    <ClInclude Include="src\vulkan\image.h" />
+    <ClInclude Include="src\optix\launch_params.h" />
     <ClInclude Include="src\layer.h" />
     <ClInclude Include="src\mesh.h" />
     <ClInclude Include="src\object.h" />
-    <ClInclude Include="src\optix8.h" />
-    <ClInclude Include="src\optix_renderer.h" />
+    <ClInclude Include="src\optix\optix8.h" />
+    <ClInclude Include="src\optix\optix_renderer.h" />
     <ClInclude Include="src\raster_view.h" />
     <ClInclude Include="src\raytrace_view.h" />
     <ClInclude Include="src\scene.h" />
-    <ClInclude Include="src\shader.h" />
-    <ClInclude Include="src\vulkan_utils.h" />
+    <ClInclude Include="src\vulkan\shader.h" />
+    <ClInclude Include="src\vulkan\vulkan_utils.h" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="external\imgui-docking\fonts\Cousine-Regular.ttf" />
@@ -92,7 +92,7 @@
     <Image Include="res\textures\viking_room_diff.png" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="src\device_programs.cu" />
+    <CudaCompile Include="src\optix\shaders\device_programs.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{90638171-EF99-44F8-A2E3-28D93A30A9C8}</ProjectGuid>
@@ -146,7 +146,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)external\GLFW\lib-vc2022;$(SolutionDir)external\imgui-docking;$(VULKAN_SDK)\Lib;$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
-      <CompileOut>$(ProjectDir)src\%(Filename).optixir</CompileOut>
+      <CompileOut>$(ProjectDir)src\optix\shaders\compiled\%(Filename).optixir</CompileOut>
     </CudaCompile>
     <CudaCompile>
       <NvccCompilation>optix-ir</NvccCompilation>
@@ -187,7 +187,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)external\GLFW\lib-vc2022;$(SolutionDir)external\imgui-docking;$(VULKAN_SDK)\Lib;$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
-      <CompileOut>$(ProjectDir)src\%(Filename).optixir</CompileOut>
+      <CompileOut>$(ProjectDir)src\optix\shaders\compiled\%(Filename).optixir</CompileOut>
     </CudaCompile>
     <CudaCompile>
       <NvccCompilation>optix-ir</NvccCompilation>

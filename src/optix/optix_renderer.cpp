@@ -151,7 +151,7 @@ namespace otx
 
 		m_PipelineLinkOptions.maxTraceDepth = 2;
 
-		std::ifstream input("src/device_programs.optixir", std::ios::binary);
+		std::ifstream input("src/optix/shaders/compiled/device_programs.optixir", std::ios::binary);
 		std::vector<char> optixirCode(std::istreambuf_iterator<char>(input), {});
 		if (optixirCode.empty())
 		{
@@ -598,7 +598,7 @@ namespace otx
 		m_SBT.missRecordCount = static_cast<int>(missRecords.size());
 
 		/* Build hitgroup records */
-		int nObjects = m_Scene->m_RayTraceObjects.size();
+		int nObjects = static_cast<int>(m_Scene->m_RayTraceObjects.size());
 		std::vector<HitgroupRecord> hitgroupRecords;
 		for (int objectID = 0; objectID < nObjects; objectID++)
 		{

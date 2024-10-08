@@ -9,8 +9,8 @@
 #include "cuda_buffer.h"
 #include "launch_params.h"
 
-#include "camera.h"
-#include "scene.h"
+#include "../camera.h"
+#include "../scene.h"
 
 namespace otx
 {
