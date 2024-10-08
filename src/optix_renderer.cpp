@@ -210,16 +210,18 @@ namespace otx
 
 	void Optix::CreateMissPrograms()
 	{
-		m_MissPGs.resize(1);
+		m_MissPGs.resize(RAY_TYPE_COUNT);
+
+		char log[2048];
+		size_t sizeof_log = sizeof(log);
 
 		OptixProgramGroupOptions pgOptions = {};
 		OptixProgramGroupDesc pgDesc = {};
 		pgDesc.kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
 		pgDesc.miss.module = m_Module;
-		pgDesc.miss.entryFunctionName = "__miss__radiance";
 
-		char log[2048];
-		size_t sizeof_log = sizeof(log);
+		/* === Radiance rays === */
+		pgDesc.miss.entryFunctionName = "__miss__radiance";
 		OPTIX_CHECK(optixProgramGroupCreate(
 			m_OptixContext, 
 			&pgDesc, 
@@ -227,7 +229,20 @@ namespace otx
 			&pgOptions, 
 			log, 
 			&sizeof_log, 
-			&m_MissPGs[0]
+			&m_MissPGs[RADIANCE_RAY_TYPE]
+		));
+		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+
+		/* === Shadow rays === */
+		pgDesc.miss.entryFunctionName = "__miss__shadow";
+		OPTIX_CHECK(optixProgramGroupCreate(
+			m_OptixContext,
+			&pgDesc,
+			1,
+			&pgOptions,
+			log,
+			&sizeof_log,
+			&m_MissPGs[SHADOW_RAY_TYPE]
 		));
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 	}
@@ -235,18 +250,20 @@ namespace otx
 
 	void Optix::CreateHitgroupPrograms()
 	{
-		m_HitgroupPGs.resize(1);
+		m_HitgroupPGs.resize(RAY_TYPE_COUNT);
+
+		char log[2048];
+		size_t sizeof_log = sizeof(log);
 
 		OptixProgramGroupOptions pgOptions = {};
 		OptixProgramGroupDesc pgDesc = {};
 		pgDesc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-		pgDesc.hitgroup.moduleCH = m_Module;
-		pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__radiance";
 		pgDesc.hitgroup.moduleAH = m_Module;
-		pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__radiance";
+		pgDesc.hitgroup.moduleCH = m_Module;
 
-		char log[2048];
-		size_t sizeof_log = sizeof(log);
+		/* === Radiance rays === */
+		pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__radiance";
+		pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__radiance";
 		OPTIX_CHECK(optixProgramGroupCreate(
 			m_OptixContext, 
 			&pgDesc, 
@@ -254,7 +271,21 @@ namespace otx
 			&pgOptions, 
 			log, 
 			&sizeof_log, 
-			&m_HitgroupPGs[0]
+			&m_HitgroupPGs[RADIANCE_RAY_TYPE]
+		));
+		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+
+		/* === Shadow rays === */
+		pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__shadow";
+		pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__shadow";
+		OPTIX_CHECK(optixProgramGroupCreate(
+			m_OptixContext,
+			&pgDesc,
+			1,
+			&pgOptions,
+			log,
+			&sizeof_log,
+			&m_HitgroupPGs[SHADOW_RAY_TYPE]
 		));
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 	}
@@ -613,7 +644,7 @@ namespace otx
 			}
 
 			/* Vertex data */
-			rec.data.vertex = (glm::vec3*)m_VertexBuffers[meshID].d_pointer();
+			rec.data.position = (glm::vec3*)m_VertexBuffers[meshID].d_pointer();
 			rec.data.index = (glm::ivec3*)m_IndexBuffers[meshID].d_pointer();
 			rec.data.normal = (glm::vec3*)m_NormalBuffers[meshID].d_pointer();
 			rec.data.texCoord = (glm::vec2*)m_TexCoordBuffers[meshID].d_pointer();

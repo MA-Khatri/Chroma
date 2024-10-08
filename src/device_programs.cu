@@ -7,14 +7,6 @@ namespace otx
 	/* Launch parameters in constant memory, filled in by Optix upon optixLaunch */
 	extern "C" __constant__ LaunchParams optixLaunchParams;
 
-	
-	/* Ray types */
-	enum 
-	{
-		SURFACE_RAY_TYPE = 0,
-		RAY_TYPE_COUNT
-	};
-
 
 	/* 
 	 * To communicate between programs, we pass a pointer to per-ray data (PRD)
@@ -46,28 +38,46 @@ namespace otx
 	}
 
 
-	/* Compute barycentric normal */
-	extern "C" __device__ glm::vec3 BCNormal(const float2& uv, const glm::vec3& n0, const glm::vec3& n1, const glm::vec3& n2)
+	/* =============== */
+	/* === Helpers === */
+	/* =============== */
+
+	/* Compute position of ray hit using barycentric coords */
+	extern "C" __device__ glm::vec3 HitPosition(const float2& uv, const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2)
+	{
+		return (1.0f - uv.x - uv.y) * p0 + uv.x * p1 + uv.y * p2;
+	}
+	
+	/* Compute interpolated normal using barycentric coords */
+	extern "C" __device__ glm::vec3 InterpolateNormals(const float2& uv, const glm::vec3& n0, const glm::vec3& n1, const glm::vec3& n2)
 	{
 		return n0 + uv.x * (n1 - n0) + uv.y * (n2 - n0);
 	}
 
-	/* Compute barycentric texture coordinate */
-	extern "C" __device__ glm::vec2 BCTexCoord(const float2& uv, const glm::vec2& v0, const glm::vec2& v1, const glm::vec2& v2)
+	/* Compute texture coordinate using barycentric coords */
+	extern "C" __device__ glm::vec2 TexCoord(const float2& uv, const glm::vec2& v0, const glm::vec2& v1, const glm::vec2& v2)
 	{
 		return (1.0f - uv.x - uv.y) * v0 + uv.x * v1 + uv.y * v2;
 	}
 
-	/*
-	 * Closest hit and any hit programs for radiance-type rays.
-	 * Eventually, we will need a pair of these for each ray type 
-	 * and geometry type that we want to render.
-	 */
+	extern "C" __device__ float3 ToFloat3(const glm::vec3& v)
+	{
+		return { v.x, v.y, v.z };
+	}
+
+	extern "C" __device__ glm::vec3 ToVec3(const float3& v)
+	{
+		return glm::vec3(v.x, v.y, v.z);
+	}
+
+	/* ===================== */
+	/* === Radiance Rays === */
+	/* ===================== */
 	extern "C" __global__ void __closesthit__radiance()
 	{
 		const MeshSBTData& sbtData = *(const MeshSBTData*)optixGetSbtDataPointer();
 
-		/* Compute normal */
+		/* === Compute normal === */
 		const int primID = optixGetPrimitiveIndex();
 		const glm::ivec3 index = sbtData.index[primID];
 
@@ -75,25 +85,48 @@ namespace otx
 		const glm::vec3& n1 = sbtData.normal[index.y];
 		const glm::vec3& n2 = sbtData.normal[index.z];
 		float2 uv = optixGetTriangleBarycentrics();
-		glm::vec3 iN = BCNormal(uv, n0, n1, n2);
+		glm::vec3 iN = InterpolateNormals(uv, n0, n1, n2);
 
 		/* We need to clamp each element individually or the compiler will complain */
 		glm::vec3 clampedNormals = glm::vec3(glm::clamp(iN.x, 0.0f, 1.0f), glm::clamp(iN.y, 0.0f, 1.0f), glm::clamp(iN.z, 0.0f, 1.0f));
 
 		glm::vec3 diffuseColor = clampedNormals;
 
-		/* Sample texture(s) */
-		glm::vec2 tc = BCTexCoord(uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);
+		/* === Sample texture(s) === */
+		glm::vec2 tc = TexCoord(uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);
 		if (sbtData.hasDiffuseTexture)
 		{
 			float4 tex = tex2D<float4>(sbtData.diffuseTexture, tc.x, tc.y);
 			diffuseColor = glm::vec3(tex.x, tex.y, tex.z);
 		}
 
+		/* === Compute shadow === */
+		const glm::vec3 surfPosn = HitPosition(uv, sbtData.position[index.x], sbtData.position[index.y], sbtData.position[index.z]);
+		const glm::vec3 lightPosn = glm::vec3(0.0f, 0.0f, 100.0f); /* Hard coded light position (for now) */
+		const glm::vec3 lightDir = lightPosn - surfPosn;
 
-		/* Set data */
+		/* Trace shadow ray*/
+		glm::vec3 lightVisibility = glm::vec3(0.5f);
+		uint32_t u0, u1;
+		packPointer(&lightVisibility, u0, u1);
+		optixTrace(
+			optixLaunchParams.traversable,
+			ToFloat3(surfPosn + 1e-3f * iN),
+			ToFloat3(-lightDir),
+			1e-3f, /* tmin */
+			1.0f-1e-3f, /* tmax -- in terms of lightDir length */
+			0.0f, /* ray time */
+			OptixVisibilityMask(255),
+			OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
+			SHADOW_RAY_TYPE, /* SBT offset */
+			RAY_TYPE_COUNT, /* SBT stride */
+			SHADOW_RAY_TYPE, /* missSBT index */
+			u0, u1 /* packed pointer to our PRD */
+		);
+
+		/* === Set data === */
 		glm::vec3& prd = *(glm::vec3*)getPRD<glm::vec3>();
-		prd = diffuseColor;
+		prd = diffuseColor * lightVisibility;
 	}
 
 
@@ -102,16 +135,31 @@ namespace otx
 		// TODO
 	}
 
-
-	/* 
-	 * Miss program that gets called for any ray that did not have a valid intersection.
-	 */
 	extern "C" __global__ void __miss__radiance()
 	{
 		glm::vec3& prd = *(glm::vec3*)getPRD<glm::vec3>();
-		//prd = glm::vec3(0.0f); /* BLACK */
-		//prd = glm::vec3(63.0f / 255.0f, 63.0f / 255.0f, 63.0f / 255.0f); /* match app's m_ViewportClearColor */
 		prd = optixLaunchParams.clearColor;
+	}
+
+
+	/* =================== */
+	/* === Shadow rays === */
+	/* =================== */
+	extern "C" __global__ void __closesthit__shadow()
+	{
+		/* Not going to be used... */
+	}
+
+	extern "C" __global__ void __anyhit__shadow()
+	{
+		/* Not going to be used... */
+	}
+
+	extern "C" __global__ void __miss__shadow()
+	{
+		/* Nothing was hit so the light is visible */
+		glm::vec3& prd = *(glm::vec3*)getPRD<glm::vec3>();
+		prd = glm::vec3(1.0f);
 	}
 
 
@@ -140,23 +188,19 @@ namespace otx
 		/* Generate ray direction */
 		glm::vec3 rayDir = glm::normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical);
 
-		/* Set the origin and direction as float3s */
-		float3 ray_direction = { rayDir.x, rayDir.y, rayDir.z };
-		float3 ray_origin = { camera.position.x, camera.position.y, camera.position.z };
-
 		/* Launch ray */
 		optixTrace(
 			optixLaunchParams.traversable,
-			ray_origin,
-			ray_direction,
+			ToFloat3(camera.position),
+			ToFloat3(rayDir),
 			0.0f, /* tMin */
 			1e20f, /* tMax */
 			0.0f, /* ray time */
 			OptixVisibilityMask(255),
 			OPTIX_RAY_FLAG_DISABLE_ANYHIT, /* OPTIX_RAY_FLAG_NONE */
-			SURFACE_RAY_TYPE, /* SBT offset */
+			RADIANCE_RAY_TYPE, /* SBT offset */
 			RAY_TYPE_COUNT, /* SBT stride */
-			SURFACE_RAY_TYPE, /* miss SBT index */
+			RADIANCE_RAY_TYPE, /* miss SBT index */
 			u0, u1 /* packed pointer to our PRD */
 		);
 

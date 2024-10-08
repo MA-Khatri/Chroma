@@ -4,9 +4,17 @@
 
 namespace otx
 {
+	/* Ray types */
+	enum
+	{
+		RADIANCE_RAY_TYPE = 0,
+		SHADOW_RAY_TYPE,
+		RAY_TYPE_COUNT
+	};
+
 	struct MeshSBTData
 	{
-		glm::vec3* vertex;
+		glm::vec3* position;
 		glm::vec3* normal;
 		glm::vec2* texCoord; 
 		glm::ivec3* index;
