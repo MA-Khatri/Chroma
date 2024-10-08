@@ -98,7 +98,7 @@ namespace otx
 	/* The callback function for the Optix context (set in CreateContext) */
 	static void context_log_cb(unsigned int level, const char* tag, const char* message, void*)
 	{
-		fprintf(stderr, "[%2d][%12s]: %s\n", (int)level, tag, message);
+		fprintf(stderr, "[%2d][%12s]: %s\n", static_cast<int>(level), tag, message);
 	}
 
 	void Optix::CreateContext()
@@ -147,8 +147,8 @@ namespace otx
 		m_PipelineLinkOptions.maxTraceDepth = 2;
 
 		std::ifstream input("src/device_programs.optixir", std::ios::binary);
-		std::vector<char> ptxCode(std::istreambuf_iterator<char>(input), {});
-		if (ptxCode.empty())
+		std::vector<char> optixirCode(std::istreambuf_iterator<char>(input), {});
+		if (optixirCode.empty())
 		{
 			std::cerr << "Optix::CreateModule(): Failed to load optixir code!" << std::endl;
 			exit(-1);
@@ -161,19 +161,21 @@ namespace otx
 			m_OptixContext,
 			&m_ModuleCompileOptions,
 			&m_PipelineCompileOptions, 
-			ptxCode.data(),
-			ptxCode.size(),
+			optixirCode.data(),
+			optixirCode.size(),
 			log,
 			&sizeof_log,
 			&m_Module
 		));
 #else
+		std::cerr << "ERROR: OptiX version is < 7.7. Cannot compile from optixir source code!" << std::endl;
+		/* Below will probably cause the actual error... */
 		OPTIX_CHECK(optixModuleCreateFromPTX(
 			m_OptixContext, 
 			&m_ModuleCompileOptions, 
 			&m_PipelineCompileOptions,
-			ptxCode.c_str(), 
-			ptxCode.size(), 
+			optixirCode.c_str(), 
+			optixirCode.size(), 
 			log, 
 			&sizeof_log, 
 			&m_Module
@@ -314,7 +316,7 @@ namespace otx
 			&m_PipelineCompileOptions, 
 			&m_PipelineLinkOptions, 
 			programGroups.data(), 
-			(int)programGroups.size(), 
+			static_cast<int>(programGroups.size()), 
 			log, 
 			&sizeof_log, 
 			&m_Pipeline
@@ -334,92 +336,83 @@ namespace otx
 
 	OptixTraversableHandle Optix::BuildAccel()
 	{
-		auto& objects = m_Scene->m_Objects;
-		int nObjects = objects.size();
+		auto& objects = m_Scene->m_RayTraceObjects;
+		int nObjects = static_cast<int>(objects.size());
 
-		/* Extract meshes from scene objects */
-		m_Meshes.reserve(nObjects);
+		/* Extract transforms from scene objects */
 		m_Transforms.reserve(nObjects);
 		for (auto& object : objects)
 		{
-			if (object->m_RayTraceRender)
+			std::vector<float> transform;
+			transform.reserve(12);
+			const glm::mat4& t = object->m_ModelMatrix;
+			for (int row = 0; row < 3; row++)
 			{
-				m_Meshes.emplace_back(object->m_Mesh);
-
-				/* Get object transform */
-				std::vector<float> transform;
-				transform.reserve(12);
-				const glm::mat4& t = object->m_ModelMatrix;
-				for (int row = 0; row < 3; row++)
+				for (int col = 0; col < 4; col++)
 				{
-					for (int col = 0; col < 4; col++)
-					{
-						transform.emplace_back(t[col][row]);
-					}
+					transform.emplace_back(t[col][row]);
 				}
-				CUDABuffer transformBuffer;
-				transformBuffer.alloc_and_upload(transform);
-				m_Transforms.emplace_back(transformBuffer);
 			}
+			CUDABuffer transformBuffer;
+			transformBuffer.alloc_and_upload(transform);
+			m_Transforms.emplace_back(transformBuffer);
 		}
-		m_Meshes.shrink_to_fit();
-		int nMeshes = m_Meshes.size();
 
-		/* Upload mesh data to device */
-		m_VertexBuffers.resize(nMeshes);
-		m_IndexBuffers.resize(nMeshes);
-		m_NormalBuffers.resize(nMeshes);
-		m_TexCoordBuffers.resize(nMeshes);
+		/* Get ready to store mesh data on device... */
+		m_VertexBuffers.resize(nObjects);
+		m_IndexBuffers.resize(nObjects);
+		m_NormalBuffers.resize(nObjects);
+		m_TexCoordBuffers.resize(nObjects);
 
 		OptixTraversableHandle asHandle{ 0 };
 
 		/* ======================= */
 		/* === Triangle inputs === */
 		/* ======================= */
-		std::vector<OptixBuildInput> triangleInputs(nMeshes);
-		std::vector<CUdeviceptr> d_vertices(nMeshes);
-		std::vector<CUdeviceptr> d_indices(nMeshes);
-		std::vector<uint32_t> triangleInputFlags(nMeshes);
+		std::vector<OptixBuildInput> triangleInputs(nObjects);
+		std::vector<CUdeviceptr> d_vertices(nObjects);
+		std::vector<CUdeviceptr> d_indices(nObjects);
+		std::vector<uint32_t> triangleInputFlags(nObjects);
 
-		for (int meshID = 0; meshID < nMeshes; meshID++)
+		for (int objectID = 0; objectID < nObjects; objectID++)
 		{
 			/* Upload the mesh to the device */
-			Mesh& mesh = m_Meshes[meshID];
-			m_VertexBuffers[meshID].alloc_and_upload(mesh.posns);
-			m_IndexBuffers[meshID].alloc_and_upload(mesh.ivecIndices);
-			m_NormalBuffers[meshID].alloc_and_upload(mesh.normals);
-			m_TexCoordBuffers[meshID].alloc_and_upload(mesh.texCoords);
+			Mesh& mesh = m_Scene->m_RayTraceObjects[objectID]->m_Mesh;
+			m_VertexBuffers[objectID].alloc_and_upload(mesh.posns);
+			m_IndexBuffers[objectID].alloc_and_upload(mesh.ivecIndices);
+			m_NormalBuffers[objectID].alloc_and_upload(mesh.normals);
+			m_TexCoordBuffers[objectID].alloc_and_upload(mesh.texCoords);
 
-			triangleInputs[meshID] = {};
-			triangleInputs[meshID].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+			triangleInputs[objectID] = {};
+			triangleInputs[objectID].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
 
 			/* Create local variables to store pointers to the device pointers */
-			d_vertices[meshID] = m_VertexBuffers[meshID].d_pointer();
-			d_indices[meshID] = m_IndexBuffers[meshID].d_pointer();
+			d_vertices[objectID] = m_VertexBuffers[objectID].d_pointer();
+			d_indices[objectID] = m_IndexBuffers[objectID].d_pointer();
 
 			/* Set up format for reading vertex and index data */
-			triangleInputs[meshID].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
-			triangleInputs[meshID].triangleArray.vertexStrideInBytes = sizeof(glm::vec3);
-			triangleInputs[meshID].triangleArray.numVertices = (int)mesh.posns.size();
-			triangleInputs[meshID].triangleArray.vertexBuffers = &d_vertices[meshID];
+			triangleInputs[objectID].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
+			triangleInputs[objectID].triangleArray.vertexStrideInBytes = sizeof(glm::vec3);
+			triangleInputs[objectID].triangleArray.numVertices = static_cast<int>(mesh.posns.size());
+			triangleInputs[objectID].triangleArray.vertexBuffers = &d_vertices[objectID];
 
-			triangleInputs[meshID].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
-			triangleInputs[meshID].triangleArray.indexStrideInBytes = sizeof(glm::ivec3);
-			triangleInputs[meshID].triangleArray.numIndexTriplets = (int)mesh.ivecIndices.size();
-			triangleInputs[meshID].triangleArray.indexBuffer = d_indices[meshID];
+			triangleInputs[objectID].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+			triangleInputs[objectID].triangleArray.indexStrideInBytes = sizeof(glm::ivec3);
+			triangleInputs[objectID].triangleArray.numIndexTriplets = static_cast<int>(mesh.ivecIndices.size());
+			triangleInputs[objectID].triangleArray.indexBuffer = d_indices[objectID];
 
-			triangleInputFlags[meshID] = 0;
+			triangleInputFlags[objectID] = 0;
 
 			/* For now, we only have one SBT entry and no per-primitive materials */
-			triangleInputs[meshID].triangleArray.flags = &triangleInputFlags[meshID];
-			triangleInputs[meshID].triangleArray.numSbtRecords = 1;
-			triangleInputs[meshID].triangleArray.sbtIndexOffsetBuffer = 0;
-			triangleInputs[meshID].triangleArray.sbtIndexOffsetSizeInBytes = 0;
-			triangleInputs[meshID].triangleArray.sbtIndexOffsetStrideInBytes = 0;
+			triangleInputs[objectID].triangleArray.flags = &triangleInputFlags[objectID];
+			triangleInputs[objectID].triangleArray.numSbtRecords = 1;
+			triangleInputs[objectID].triangleArray.sbtIndexOffsetBuffer = 0;
+			triangleInputs[objectID].triangleArray.sbtIndexOffsetSizeInBytes = 0;
+			triangleInputs[objectID].triangleArray.sbtIndexOffsetStrideInBytes = 0;
 
 			/* Assign pre-transform */
-			triangleInputs[meshID].triangleArray.preTransform = m_Transforms[meshID].d_pointer();
-			triangleInputs[meshID].triangleArray.transformFormat = OPTIX_TRANSFORM_FORMAT_MATRIX_FLOAT12;
+			triangleInputs[objectID].triangleArray.preTransform = m_Transforms[objectID].d_pointer();
+			triangleInputs[objectID].triangleArray.transformFormat = OPTIX_TRANSFORM_FORMAT_MATRIX_FLOAT12;
 		}
 
 		/* ================== */
@@ -435,7 +428,7 @@ namespace otx
 			m_OptixContext,
 			&accelOptions,
 			triangleInputs.data(),
-			nMeshes,
+			nObjects,
 			&blasBufferSizes
 		));
 
@@ -463,7 +456,7 @@ namespace otx
 			0, /* stream */
 			&accelOptions,
 			triangleInputs.data(),
-			nMeshes,
+			nObjects,
 			tempBuffer.d_pointer(),
 			tempBuffer.sizeInBytes,
 			outputBuffer.d_pointer(),
@@ -504,34 +497,33 @@ namespace otx
 
 	void Optix::CreateTextures()
 	{
+		/* Get the texture count */
 		int nTextures = 0;
-		for (auto obj : m_Scene->m_Objects)
+		for (auto obj : m_Scene->m_RayTraceObjects)
 		{
-			if (obj->m_DiffuseTexture.pixels) nTextures++;
-			if (obj->m_SpecularTexture.pixels) nTextures++;
-			if (obj->m_NormalTexture.pixels) nTextures++;
+			if (obj->m_DiffuseTexture.pixels.size() > 0) nTextures++;
+			if (obj->m_SpecularTexture.pixels.size() > 0) nTextures++;
+			if (obj->m_NormalTexture.pixels.size() > 0) nTextures++;
 		}
 
 		m_TextureArrays.resize(nTextures);
 		m_TextureObjects.resize(nTextures);
 
 		int textureID = 0;
-		for (auto obj : m_Scene->m_Objects)
+		for (auto obj : m_Scene->m_RayTraceObjects)
 		{
-			if (!obj->m_RayTraceRender) continue;
-
 			/* Get all textures for this object */
 			std::vector<Texture*> textures;
 			textures.reserve(3);
 
 			Texture* diffuse = &(obj->m_DiffuseTexture);
-			if (diffuse->pixels) { diffuse->textureID = textureID; textureID++; textures.emplace_back(diffuse); }
+			if (diffuse->pixels.size() > 0) { diffuse->textureID = textureID; textureID++; textures.emplace_back(diffuse); }
 
 			Texture* specular = &(obj->m_SpecularTexture);
-			if (specular->pixels) { specular->textureID = textureID; textureID++; textures.emplace_back(specular); }
+			if (specular->pixels.size() > 0) { specular->textureID = textureID; textureID++; textures.emplace_back(specular); }
 
 			Texture* normal = &(obj->m_NormalTexture);
-			if (normal->pixels) { normal->textureID = textureID; textureID++; textures.emplace_back(normal); }
+			if (normal->pixels.size() > 0) { normal->textureID = textureID; textureID++; textures.emplace_back(normal); }
 
 			/* Create CUDA resources for each texture */
 			for (Texture* tex : textures)
@@ -544,7 +536,7 @@ namespace otx
 
 				cudaArray_t& pixelArray = m_TextureArrays[tex->textureID];
 				CUDA_CHECK(MallocArray(&pixelArray, &channel_desc, width, height));
-				CUDA_CHECK(Memcpy2DToArray(pixelArray, 0, 0, tex->pixels, pitch, pitch, height, cudaMemcpyHostToDevice));
+				CUDA_CHECK(Memcpy2DToArray(pixelArray, 0, 0, tex->pixels.data(), pitch, pitch, height, cudaMemcpyHostToDevice));
 
 				cudaResourceDesc res_desc = {};
 				res_desc.resType = cudaResourceTypeArray;
@@ -598,64 +590,72 @@ namespace otx
 		m_MissRecordsBuffer.alloc_and_upload(missRecords);
 		m_SBT.missRecordBase = m_MissRecordsBuffer.d_pointer();
 		m_SBT.missRecordStrideInBytes = sizeof(MissRecord);
-		m_SBT.missRecordCount = (int)missRecords.size();
+		m_SBT.missRecordCount = static_cast<int>(missRecords.size());
 
 		/* Build hitgroup records */
-		int nObjects = m_Scene->m_Objects.size();
-		int meshID = 0;
+		int nObjects = m_Scene->m_RayTraceObjects.size();
 		std::vector<HitgroupRecord> hitgroupRecords;
 		for (int objectID = 0; objectID < nObjects; objectID++)
 		{
-			auto obj = m_Scene->m_Objects[objectID];
-			if (!obj->m_RayTraceRender) continue;
-
-			HitgroupRecord rec;
-			OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[0], &rec)); /* For now, all objects use same code */
-
-			/* Textures... */
-			if (obj->m_DiffuseTexture.textureID >= 0)
+			for (int rayID = 0; rayID < RAY_TYPE_COUNT; rayID++)
 			{
-				rec.data.hasDiffuseTexture = true;
-				rec.data.diffuseTexture = m_TextureObjects[obj->m_DiffuseTexture.textureID];
-			}
-			else
-			{
-				rec.data.hasDiffuseTexture = false;
-			}
+				auto obj = m_Scene->m_RayTraceObjects[objectID];
 
-			if (obj->m_SpecularTexture.textureID >= 0)
-			{
-				rec.data.hasSpecularTexture = true;
-				rec.data.specularTexture = m_TextureObjects[obj->m_SpecularTexture.textureID];
-			}
-			else
-			{
-				rec.data.hasSpecularTexture = false;
-			}
+				HitgroupRecord rec;
+				OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[rayID], &rec));
 
-			if (obj->m_NormalTexture.textureID >= 0)
-			{
-				rec.data.hasNormalTexture = true;
-				rec.data.normalTexture = m_TextureObjects[obj->m_NormalTexture.textureID];
-			}
-			else
-			{
-				rec.data.hasNormalTexture = false;
-			}
+				/* Textures... */
+				if (rayID == RADIANCE_RAY_TYPE)
+				{
+					if (obj->m_DiffuseTexture.textureID >= 0)
+					{
+						rec.data.hasDiffuseTexture = true;
+						rec.data.diffuseTexture = m_TextureObjects[obj->m_DiffuseTexture.textureID];
+					}
+					else
+					{
+						rec.data.hasDiffuseTexture = false;
+					}
 
-			/* Vertex data */
-			rec.data.position = (glm::vec3*)m_VertexBuffers[meshID].d_pointer();
-			rec.data.index = (glm::ivec3*)m_IndexBuffers[meshID].d_pointer();
-			rec.data.normal = (glm::vec3*)m_NormalBuffers[meshID].d_pointer();
-			rec.data.texCoord = (glm::vec2*)m_TexCoordBuffers[meshID].d_pointer();
-			hitgroupRecords.push_back(rec);
+					if (obj->m_SpecularTexture.textureID >= 0)
+					{
+						rec.data.hasSpecularTexture = true;
+						rec.data.specularTexture = m_TextureObjects[obj->m_SpecularTexture.textureID];
+					}
+					else
+					{
+						rec.data.hasSpecularTexture = false;
+					}
 
-			meshID++;
+					if (obj->m_NormalTexture.textureID >= 0)
+					{
+						rec.data.hasNormalTexture = true;
+						rec.data.normalTexture = m_TextureObjects[obj->m_NormalTexture.textureID];
+					}
+					else
+					{
+						rec.data.hasNormalTexture = false;
+					}
+				}
+
+				/* Vertex data */
+				rec.data.position = (glm::vec3*)m_VertexBuffers[objectID].d_pointer();
+				rec.data.index = (glm::ivec3*)m_IndexBuffers[objectID].d_pointer();
+
+				if (rayID == RADIANCE_RAY_TYPE)
+				{
+					rec.data.normal = (glm::vec3*)m_NormalBuffers[objectID].d_pointer();
+					rec.data.texCoord = (glm::vec2*)m_TexCoordBuffers[objectID].d_pointer();
+				}
+				
+				hitgroupRecords.push_back(rec);
+			}
 		}
+
 		m_HitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
 		m_SBT.hitgroupRecordBase = m_HitgroupRecordsBuffer.d_pointer();
 		m_SBT.hitgroupRecordStrideInBytes = sizeof(HitgroupRecord);
-		m_SBT.hitgroupRecordCount = (int)hitgroupRecords.size();
+		m_SBT.hitgroupRecordCount = static_cast<int>(hitgroupRecords.size());
 	}
 
 

@@ -11,7 +11,7 @@
 
 /* Forward declarations */
 class Object;
-class PipelineInfo;
+struct PipelineInfo;
 
 
 class Scene
@@ -30,8 +30,8 @@ public:
 	/* Scene clear/background color */
 	glm::vec3 m_ClearColor = glm::vec3(63.0f / 255.0f, 63.0f / 255.0f, 63.0f / 255.0f);
 
-	/* List of pipeline types */
-	static enum PipelineType
+	/* List of pipeline types for Vulkan rendering */
+	enum PipelineType
 	{
 		Solid, /* Proxy for Blender's solid viewport shading */
 		Normal, /* View object normals */
@@ -39,7 +39,8 @@ public:
 		Lines, /* Displays line list with color */
 	};
 
-	std::vector<std::shared_ptr<Object>> m_Objects; /* Objects to be drawn */
+	std::vector<std::shared_ptr<Object>> m_RasterObjects; /* Objects to be drawn in RasterView */
+	std::vector<std::shared_ptr<Object>> m_RayTraceObjects; /* Objects to be drawn in RayTraceView */
 
 private:
 	std::map<PipelineType, PipelineInfo> m_Pipelines; /* Pipelines with diff. shaders/draw modes */

@@ -76,11 +76,11 @@ namespace otx
 	extern "C" __global__ void __closesthit__radiance()
 	{
 		const MeshSBTData& sbtData = *(const MeshSBTData*)optixGetSbtDataPointer();
-
-		/* === Compute normal === */
 		const int primID = optixGetPrimitiveIndex();
 		const glm::ivec3 index = sbtData.index[primID];
+		//optixGet
 
+		/* === Compute normal === */
 		const glm::vec3& n0 = sbtData.normal[index.x];
 		const glm::vec3& n1 = sbtData.normal[index.y];
 		const glm::vec3& n2 = sbtData.normal[index.z];
@@ -112,7 +112,7 @@ namespace otx
 		optixTrace(
 			optixLaunchParams.traversable,
 			ToFloat3(surfPosn + 1e-3f * iN),
-			ToFloat3(-lightDir),
+			ToFloat3(lightDir),
 			1e-3f, /* tmin */
 			1.0f-1e-3f, /* tmax -- in terms of lightDir length */
 			0.0f, /* ray time */

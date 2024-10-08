@@ -59,6 +59,7 @@
     <ClInclude Include="external\imgui-docking\imstb_rectpack.h" />
     <ClInclude Include="external\imgui-docking\imstb_textedit.h" />
     <ClInclude Include="external\imgui-docking\imstb_truetype.h" />
+    <ClInclude Include="external\optix_utils\vector_math.h" />
     <ClInclude Include="external\stb_image\stb_image.h" />
     <ClInclude Include="external\tiny_obj_loader\tiny_obj_loader.h" />
     <ClInclude Include="src\application.h" />
@@ -135,7 +136,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;__CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__=1;NOMINMAX;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\GLFW\include;$(SolutionDir)external\imgui-docking;$(SolutionDir)external\glm;$(SolutionDir)external\stb_image;$(SolutionDir)external\tiny_obj_loader;$(CUDA_PATH)\include;C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\GLFW\include;$(SolutionDir)external\imgui-docking;$(SolutionDir)external\glm;$(SolutionDir)external\stb_image;$(SolutionDir)external\tiny_obj_loader;$(SolutionDir)external\optix_utils;$(CUDA_PATH)\include;C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -150,7 +151,7 @@
     <CudaCompile>
       <NvccCompilation>optix-ir</NvccCompilation>
       <Keep>false</Keep>
-      <Include>$(CUDA_PATH)\include;C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include;$(ProjectDir)external</Include>
+      <Include>$(CUDA_PATH)\include;C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include;$(ProjectDir)external;$(SolutionDir)external\optix_utils</Include>
       <UseHostInclude>false</UseHostInclude>
       <FastMath>true</FastMath>
       <KeepDir>$(IntDir)</KeepDir>
@@ -174,7 +175,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;__CUDA_INCLUDE_COMPILER_INTERNAL_HEADERS__=1;NOMINMAX;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\GLFW\include;$(SolutionDir)external\imgui-docking;$(SolutionDir)external\glm;$(SolutionDir)external\stb_image;$(SolutionDir)external\tiny_obj_loader;$(CUDA_PATH)\include;C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(SolutionDir)external\GLFW\include;$(SolutionDir)external\imgui-docking;$(SolutionDir)external\glm;$(SolutionDir)external\stb_image;$(SolutionDir)external\tiny_obj_loader;$(SolutionDir)external\optix_utils;$(CUDA_PATH)\include;C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -191,7 +192,7 @@
     <CudaCompile>
       <NvccCompilation>optix-ir</NvccCompilation>
       <Keep>false</Keep>
-      <Include>$(CUDA_PATH)\include;C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include;$(ProjectDir)external</Include>
+      <Include>$(CUDA_PATH)\include;C:\ProgramData\NVIDIA Corporation\OptiX SDK 8.0.0\include;$(ProjectDir)external;$(SolutionDir)external\optix_utils</Include>
       <UseHostInclude>false</UseHostInclude>
       <FastMath>true</FastMath>
       <KeepDir>$(IntDir)</KeepDir>

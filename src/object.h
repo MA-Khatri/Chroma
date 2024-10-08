@@ -32,10 +32,8 @@ struct TexturePaths
 /* Local texture storage */
 struct Texture
 {
-	~Texture() { if (pixels) delete[] pixels; }
-
 	std::string filePath;
-	uint32_t* pixels{ nullptr };
+	std::vector<uint8_t> pixels; /* local storage of pixels */
 	glm::ivec3 resolution; /* x = width, y = height, z = channels */
 	int textureID = -1; /* textureID set in optix_renderer -> CreateTextures() */
 };
@@ -76,7 +74,6 @@ public:
 	glm::mat4 m_ModelMatrix = glm::mat4(1.0f);
 	glm::mat3 m_ModelNormalMatrix = glm::mat3(1.0f);
 	bool m_DepthTest = true;
-	bool m_RayTraceRender = true; /* Should this object be rendered in the ray traced view? */
 	int m_PipelineType = 0; /* Used to access the Scene::PipelineType enum */
 
 	/* Uniform buffer contains all necessary drawing info for this object */

@@ -10,30 +10,48 @@ Scene::Scene()
 	/* ======================== */
 	std::shared_ptr<Object> grid = std::make_shared<Object>(Object(CreateGroundGrid(), noTextures, Lines));
 	grid->m_DepthTest = false;
-	grid->m_RayTraceRender = false;
 	grid->m_ModelNormalMatrix = glm::mat3(m_ClearColor, glm::vec3(0.0f), glm::vec3(0.0f)); /* We'll store the clear color in the grid's normal matrix... */
-	m_Objects.push_back(grid);
+	m_RasterObjects.push_back(grid);
 
 	std::shared_ptr<Object> axes = std::make_shared<Object>(Object(CreateXYAxes(), noTextures, Lines));
 	axes->m_DepthTest = false;
-	axes->m_RayTraceRender = false;
 	axes->m_ModelNormalMatrix = glm::mat3(m_ClearColor, glm::vec3(0.0f), glm::vec3(0.0f));
-	m_Objects.push_back(axes);
+	m_RasterObjects.push_back(axes);
 
 	/* ===================== */
 	/* === Scene Objects === */
 	/* ===================== */
-	TexturePaths vikingRoomTextures;
-	vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
-	std::shared_ptr<Object> vikingRoom = std::make_shared<Object>(Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, Flat));
-	vikingRoom->Scale(5.0f);
-	m_Objects.push_back(vikingRoom);
+	//TexturePaths vikingRoomTextures;
+	//vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
+	//std::shared_ptr<Object> vikingRoom = std::make_shared<Object>(Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, Flat));
+	//vikingRoom->Scale(5.0f);
+	//m_RasterObjects.push_back(vikingRoom);
+	//m_RayTraceObjects.push_back(vikingRoom);
 
-	//std::shared_ptr<Object> dragon = std::make_shared<Object>(LoadMesh("res/meshes/dragon.obj"), noTextures, Normal);
-	//dragon->Translate(0.0f, 10.0f, 0.0f);
+	std::shared_ptr<Object> dragon = std::make_shared<Object>(LoadMesh("res/meshes/dragon.obj"), noTextures, Normal);
+	dragon->Translate(0.0f, 0.0f, 1.0f);
 	//dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 90.0f);
 	//dragon->Scale(5.0f);
-	//m_Objects.push_back(dragon);
+	m_RasterObjects.push_back(dragon);
+	m_RayTraceObjects.push_back(dragon);
+
+	TexturePaths planeTextures;
+	planeTextures.diffuse = "res/textures/texture.jpg";
+	std::shared_ptr<Object> plane0 = std::make_shared<Object>(Object(CreatePlane(), planeTextures, Flat));
+	//plane0->Scale(5.0f);
+	plane0->Translate(1.0f, 0.0f, 0.0f);
+	m_RasterObjects.push_back(plane0);
+	m_RayTraceObjects.push_back(plane0);
+
+	//std::shared_ptr<Object> plane1 = std::make_shared<Object>(Object(CreatePlane(), planeTextures, Flat));
+	//plane1->Translate(0.5f, 0.5f, 0.5f);
+	//m_RasterObjects.push_back(plane1);
+	//m_RayTraceObjects.push_back(plane1);
+
+	//std::shared_ptr<Object> plane2 = std::make_shared<Object>(Object(CreatePlane(), planeTextures, Flat));
+	//plane2->Translate(-0.5f, -0.5f, 0.5f);
+	//m_RasterObjects.push_back(plane2);
+	//m_RayTraceObjects.push_back(plane2);
 }
 
 
@@ -114,7 +132,7 @@ void Scene::VkSetup(ImVec2 viewportSize, VkSampleCountFlagBits sampleCount, VkRe
 
 	
 	/* Setup objects for rendering with Vulkan */
-	for (auto& obj : m_Objects)
+	for (auto& obj : m_RasterObjects)
 	{
 		obj->VkSetup(m_Pipelines[static_cast<PipelineType>(obj->m_PipelineType)]);
 		obj->VkUpdateUniformBuffer();
@@ -171,7 +189,7 @@ void Scene::VkDraw(const Camera& camera)
 	vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
 
 	/* Draw the objects */
-	for (auto object : m_Objects)
+	for (auto object : m_RasterObjects)
 	{
 		object->VkDraw(commandBuffer);
 	}

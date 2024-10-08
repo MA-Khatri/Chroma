@@ -1,6 +1,8 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <vector_math.h>
+
 
 namespace otx
 {
@@ -14,10 +16,10 @@ namespace otx
 
 	struct MeshSBTData
 	{
-		glm::vec3* position;
-		glm::vec3* normal;
-		glm::vec2* texCoord; 
-		glm::ivec3* index;
+		float3* position;
+		float3* normal;
+		float2* texCoord; 
+		int3* index;
 
 		bool hasDiffuseTexture;
 		cudaTextureObject_t diffuseTexture;
@@ -34,18 +36,18 @@ namespace otx
 
 		struct {
 			uint32_t* colorBuffer;
-			glm::ivec2 size;
+			int2 size;
 		} frame;
 
 		struct {
-			glm::vec3 position;
-			glm::vec3 direction;
-			glm::vec3 horizontal;
-			glm::vec3 vertical;
+			float3 position;
+			float3 direction;
+			float3 horizontal;
+			float3 vertical;
 			float verticalFOVdeg;
 		} camera;
 
-		glm::vec3 clearColor;
+		float3 clearColor;
 
 		OptixTraversableHandle traversable;
 	};

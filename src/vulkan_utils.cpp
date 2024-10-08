@@ -1386,7 +1386,7 @@ namespace vk
 		/* Copy pixel data to the staging buffer */
 		void* data;
 		vkMapMemory(Device, stagingBufferMemory, 0, imageSize, 0, &data);
-		memcpy(data, tex.pixels, static_cast<size_t>(imageSize));
+		memcpy(data, tex.pixels.data(), static_cast<size_t>(imageSize));
 		vkUnmapMemory(Device, stagingBufferMemory);
 
 		/* Create the texture image */
