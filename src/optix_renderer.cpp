@@ -16,6 +16,11 @@ bool debug_mode = false;
 
 namespace otx
 {
+	float3 ToFloat3(const glm::vec3& v)
+	{
+		return { v.x, v.y, v.z };
+	}
+
 	/* SBT record for a raygen program */
 	struct __align__(OPTIX_SBT_RECORD_ALIGNMENT) RaygenRecord
 	{
@@ -639,13 +644,13 @@ namespace otx
 				}
 
 				/* Vertex data */
-				rec.data.position = (glm::vec3*)m_VertexBuffers[objectID].d_pointer();
-				rec.data.index = (glm::ivec3*)m_IndexBuffers[objectID].d_pointer();
+				rec.data.position = (float3*)m_VertexBuffers[objectID].d_pointer();
+				rec.data.index = (int3*)m_IndexBuffers[objectID].d_pointer();
 
 				if (rayID == RADIANCE_RAY_TYPE)
 				{
-					rec.data.normal = (glm::vec3*)m_NormalBuffers[objectID].d_pointer();
-					rec.data.texCoord = (glm::vec2*)m_TexCoordBuffers[objectID].d_pointer();
+					rec.data.normal = (float3*)m_NormalBuffers[objectID].d_pointer();
+					rec.data.texCoord = (float2*)m_TexCoordBuffers[objectID].d_pointer();
 				}
 				
 				hitgroupRecords.push_back(rec);
@@ -680,19 +685,19 @@ namespace otx
 	void Optix::SetCamera(const Camera& camera)
 	{
 		/* Note: we set the clear/background color here too! */
-		m_LaunchParams.clearColor = m_Scene->m_ClearColor;
+		m_LaunchParams.clearColor = ToFloat3(m_Scene->m_ClearColor);
 
 		m_LastSetCamera = camera;
-		m_LaunchParams.camera.position = camera.position;
-		m_LaunchParams.camera.direction = glm::normalize(camera.orientation);
+		m_LaunchParams.camera.position = ToFloat3(camera.position);
+		m_LaunchParams.camera.direction = ToFloat3(glm::normalize(camera.orientation));
 
 		float aspect = m_LaunchParams.frame.size.x / float(m_LaunchParams.frame.size.y);
 		float focal_length = glm::length(camera.orientation);
 		float h = glm::tan(glm::radians(camera.vfov) / 2.0f);
 		float height = 2.0f * h * focal_length;
 		float width = height * aspect;
-		m_LaunchParams.camera.horizontal = width * glm::normalize(glm::cross(m_LaunchParams.camera.direction, camera.up));
-		m_LaunchParams.camera.vertical = height * glm::normalize(glm::cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
+		m_LaunchParams.camera.horizontal = width * normalize(cross(m_LaunchParams.camera.direction, ToFloat3(camera.up)));
+		m_LaunchParams.camera.vertical = height * normalize(cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
 	}
 
 

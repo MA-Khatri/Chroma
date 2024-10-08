@@ -43,31 +43,21 @@ namespace otx
 	/* =============== */
 
 	/* Compute position of ray hit using barycentric coords */
-	extern "C" __device__ glm::vec3 HitPosition(const float2& uv, const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2)
+	extern "C" __device__ float3 HitPosition(const float2& uv, const float3& p0, const float3& p1, const float3& p2)
 	{
 		return (1.0f - uv.x - uv.y) * p0 + uv.x * p1 + uv.y * p2;
 	}
 	
 	/* Compute interpolated normal using barycentric coords */
-	extern "C" __device__ glm::vec3 InterpolateNormals(const float2& uv, const glm::vec3& n0, const glm::vec3& n1, const glm::vec3& n2)
+	extern "C" __device__ float3 InterpolateNormals(const float2& uv, const float3& n0, const float3& n1, const float3& n2)
 	{
 		return n0 + uv.x * (n1 - n0) + uv.y * (n2 - n0);
 	}
 
 	/* Compute texture coordinate using barycentric coords */
-	extern "C" __device__ glm::vec2 TexCoord(const float2& uv, const glm::vec2& v0, const glm::vec2& v1, const glm::vec2& v2)
+	extern "C" __device__ float2 TexCoord(const float2& uv, const float2& v0, const float2& v1, const float2& v2)
 	{
 		return (1.0f - uv.x - uv.y) * v0 + uv.x * v1 + uv.y * v2;
-	}
-
-	extern "C" __device__ float3 ToFloat3(const glm::vec3& v)
-	{
-		return { v.x, v.y, v.z };
-	}
-
-	extern "C" __device__ glm::vec3 ToVec3(const float3& v)
-	{
-		return glm::vec3(v.x, v.y, v.z);
 	}
 
 	/* ===================== */
@@ -77,42 +67,40 @@ namespace otx
 	{
 		const MeshSBTData& sbtData = *(const MeshSBTData*)optixGetSbtDataPointer();
 		const int primID = optixGetPrimitiveIndex();
-		const glm::ivec3 index = sbtData.index[primID];
+		const int3 index = sbtData.index[primID];
 		//optixGet
 
 		/* === Compute normal === */
-		const glm::vec3& n0 = sbtData.normal[index.x];
-		const glm::vec3& n1 = sbtData.normal[index.y];
-		const glm::vec3& n2 = sbtData.normal[index.z];
+		const float3& n0 = sbtData.normal[index.x];
+		const float3& n1 = sbtData.normal[index.y];
+		const float3& n2 = sbtData.normal[index.z];
 		float2 uv = optixGetTriangleBarycentrics();
-		glm::vec3 iN = InterpolateNormals(uv, n0, n1, n2);
+		float3 iN = InterpolateNormals(uv, n0, n1, n2);
+		float3 clampedNormals = clamp(iN, 0.0f, 1.0f);
 
-		/* We need to clamp each element individually or the compiler will complain */
-		glm::vec3 clampedNormals = glm::vec3(glm::clamp(iN.x, 0.0f, 1.0f), glm::clamp(iN.y, 0.0f, 1.0f), glm::clamp(iN.z, 0.0f, 1.0f));
-
-		glm::vec3 diffuseColor = clampedNormals;
+		float3 diffuseColor = clampedNormals;
 
 		/* === Sample texture(s) === */
-		glm::vec2 tc = TexCoord(uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);
+		float2 tc = TexCoord(uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);
 		if (sbtData.hasDiffuseTexture)
 		{
 			float4 tex = tex2D<float4>(sbtData.diffuseTexture, tc.x, tc.y);
-			diffuseColor = glm::vec3(tex.x, tex.y, tex.z);
+			diffuseColor = make_float3(tex.x, tex.y, tex.z);
 		}
 
 		/* === Compute shadow === */
-		const glm::vec3 surfPosn = HitPosition(uv, sbtData.position[index.x], sbtData.position[index.y], sbtData.position[index.z]);
-		const glm::vec3 lightPosn = glm::vec3(0.0f, 0.0f, 100.0f); /* Hard coded light position (for now) */
-		const glm::vec3 lightDir = lightPosn - surfPosn;
+		const float3 surfPosn = HitPosition(uv, sbtData.position[index.x], sbtData.position[index.y], sbtData.position[index.z]);
+		const float3 lightPosn = make_float3(0.0f, 0.0f, 100.0f); /* Hard coded light position (for now) */
+		const float3 lightDir = lightPosn - surfPosn;
 
 		/* Trace shadow ray*/
-		glm::vec3 lightVisibility = glm::vec3(0.5f);
+		float3 lightVisibility = make_float3(0.5f);
 		uint32_t u0, u1;
 		packPointer(&lightVisibility, u0, u1);
 		optixTrace(
 			optixLaunchParams.traversable,
-			ToFloat3(surfPosn + 1e-3f * iN),
-			ToFloat3(lightDir),
+			surfPosn + 1e-3f * iN,
+			lightDir,
 			1e-3f, /* tmin */
 			1.0f-1e-3f, /* tmax -- in terms of lightDir length */
 			0.0f, /* ray time */
@@ -125,7 +113,7 @@ namespace otx
 		);
 
 		/* === Set data === */
-		glm::vec3& prd = *(glm::vec3*)getPRD<glm::vec3>();
+		float3& prd = *(float3*)getPRD<float3>();
 		prd = diffuseColor * lightVisibility;
 	}
 
@@ -137,7 +125,7 @@ namespace otx
 
 	extern "C" __global__ void __miss__radiance()
 	{
-		glm::vec3& prd = *(glm::vec3*)getPRD<glm::vec3>();
+		float3& prd = *(float3*)getPRD<float3>();
 		prd = optixLaunchParams.clearColor;
 	}
 
@@ -158,8 +146,8 @@ namespace otx
 	extern "C" __global__ void __miss__shadow()
 	{
 		/* Nothing was hit so the light is visible */
-		glm::vec3& prd = *(glm::vec3*)getPRD<glm::vec3>();
-		prd = glm::vec3(1.0f);
+		float3& prd = *(float3*)getPRD<float3>();
+		prd = make_float3(1.0f);
 	}
 
 
@@ -176,23 +164,23 @@ namespace otx
 		const auto& camera = optixLaunchParams.camera;
 
 		/* The per-ray data is just a color (for now) */
-		glm::vec3 pixelColorPRD = glm::vec3(0.0f);
+		float3 pixelColorPRD = make_float3(0.0f);
 
 		/* The ints we store the PRD pointer in */
 		uint32_t u0, u1;
 		packPointer(&pixelColorPRD, u0, u1);
 
 		/* Normalized screen plane position in [0, 1]^2 */
-		const glm::vec2 screen = glm::vec2(ix + 0.5f, iy + 0.5f) / glm::vec2(optixLaunchParams.frame.size);
+		const float2 screen = make_float2(ix + 0.5f, iy + 0.5f) / make_float2(optixLaunchParams.frame.size.x, optixLaunchParams.frame.size.y);
 
 		/* Generate ray direction */
-		glm::vec3 rayDir = glm::normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical);
+		float3 rayDir = normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical);
 
 		/* Launch ray */
 		optixTrace(
 			optixLaunchParams.traversable,
-			ToFloat3(camera.position),
-			ToFloat3(rayDir),
+			camera.position,
+			rayDir,
 			0.0f, /* tMin */
 			1e20f, /* tMax */
 			0.0f, /* ray time */
