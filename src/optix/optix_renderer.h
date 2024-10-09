@@ -56,7 +56,8 @@ namespace otx
 
 
 		/* Build an acceleration structure for all meshes in m_Meshes */
-		OptixTraversableHandle BuildAccel();
+		OptixTraversableHandle BuildGasAndIas();
+		OptixTraversableHandle BuildAccel(OptixBuildInput& buildInput,CUDABuffer& buffer);
 
 		/* Constructs the shader binding table */
 		void BuildSBT();
@@ -111,6 +112,14 @@ namespace otx
 		std::vector<CUDABuffer> m_IndexBuffers;
 		std::vector<CUDABuffer> m_NormalBuffers;
 		std::vector<CUDABuffer> m_TexCoordBuffers;
+
+		/* Buffers that keep the geometry acceleration structures (per scene object) */
+		std::vector<CUDABuffer> m_GASBuffers;
+		/* Buffers that keep the instance acceleration structures (per scene object) */
+		std::vector<CUDABuffer> m_IASBuffers;
+		std::vector<OptixTraversableHandle> m_InstanceHandles;
+
+		CUDABuffer m_TopIAS;
 
 		/* Buffer that keeps the final, compacted, acceleration structure */
 		CUDABuffer m_ASBuffer;

@@ -43,19 +43,19 @@ namespace otx
 	/* =============== */
 
 	/* Compute world position of ray hit */
-	extern "C" __device__ float3 HitPosition()
+	extern "C" __inline__ __device__ float3 HitPosition()
 	{
 		return optixGetWorldRayOrigin() + optixGetWorldRayDirection() * optixGetRayTmax();
 	}
 	
 	/* Compute interpolated normal using barycentric coords */
-	extern "C" __device__ float3 InterpolateNormals(const float2& uv, const float3& n0, const float3& n1, const float3& n2)
+	extern "C" __inline__ __device__ float3 InterpolateNormals(const float2& uv, const float3& n0, const float3& n1, const float3& n2)
 	{
 		return n0 + uv.x * (n1 - n0) + uv.y * (n2 - n0);
 	}
 
 	/* Compute interpolated texture coordinate using barycentric coords */
-	extern "C" __device__ float2 TexCoord(const float2& uv, const float2& v0, const float2& v1, const float2& v2)
+	extern "C" __inline__ __device__ float2 TexCoord(const float2& uv, const float2& v0, const float2& v1, const float2& v2)
 	{
 		return (1.0f - uv.x - uv.y) * v0 + uv.x * v1 + uv.y * v2;
 	}

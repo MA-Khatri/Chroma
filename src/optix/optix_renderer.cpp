@@ -65,7 +65,7 @@ namespace otx
 		CreateHitgroupPrograms();
 
 		Debug("[Optix] Building acceleration structures...");
-		m_LaunchParams.traversable = BuildAccel();
+		m_LaunchParams.traversable = BuildGasAndIas();
 		
 		Debug("[Optix] Setting up Optix pipeline...");
 		CreatePipeline();
@@ -339,7 +339,80 @@ namespace otx
 	}
 
 
-	OptixTraversableHandle Optix::BuildAccel()
+	OptixTraversableHandle Optix::BuildAccel(OptixBuildInput& buildInput, CUDABuffer& buffer)
+	{
+		OptixAccelBuildOptions accelOptions = {};
+		accelOptions.buildFlags = OPTIX_BUILD_FLAG_NONE | OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+		accelOptions.motionOptions.numKeys = 0; /* No motion blur */
+		accelOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
+
+		OptixAccelBufferSizes asBufferSizes;
+		OPTIX_CHECK(optixAccelComputeMemoryUsage(
+			m_OptixContext,
+			&accelOptions,
+			&buildInput,
+			1,
+			&asBufferSizes
+		));
+
+		/* === Prepare compaction === */
+		CUDABuffer compactedSizeBuffer;
+		compactedSizeBuffer.alloc(sizeof(uint64_t));
+
+		OptixAccelEmitDesc emitDesc;
+		emitDesc.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
+		emitDesc.result = compactedSizeBuffer.d_pointer();
+
+		/* === Execute build === */
+		OptixTraversableHandle asHandle{ 0 };
+
+		CUDABuffer tempBuffer;
+		tempBuffer.alloc(asBufferSizes.tempSizeInBytes);
+
+		CUDABuffer outputBuffer;
+		outputBuffer.alloc(asBufferSizes.outputSizeInBytes);
+
+		OPTIX_CHECK(optixAccelBuild(
+			m_OptixContext,
+			0, /* stream */
+			&accelOptions,
+			&buildInput,
+			1,
+			tempBuffer.d_pointer(),
+			tempBuffer.sizeInBytes,
+			outputBuffer.d_pointer(),
+			outputBuffer.sizeInBytes,
+			&asHandle,
+			&emitDesc,
+			1
+		));
+		CUDA_SYNC_CHECK();
+
+		/* === Perform compaction === */
+		uint64_t compactedSize;
+		compactedSizeBuffer.download(&compactedSize, 1);
+
+		buffer.alloc(compactedSize);
+		OPTIX_CHECK(optixAccelCompact(
+			m_OptixContext,
+			0,
+			asHandle,
+			buffer.d_pointer(),
+			buffer.sizeInBytes,
+			&asHandle
+		));
+		CUDA_SYNC_CHECK();
+
+		/* === Clean up === */
+		outputBuffer.free(); /* Free the temporary, uncompacted buffer */
+		tempBuffer.free();
+		compactedSizeBuffer.free();
+
+		return asHandle;
+	}
+
+
+	OptixTraversableHandle Optix::BuildGasAndIas()
 	{
 		auto& objects = m_Scene->m_RayTraceObjects;
 		int nObjects = static_cast<int>(objects.size());
@@ -369,16 +442,21 @@ namespace otx
 		m_NormalBuffers.resize(nObjects);
 		m_TexCoordBuffers.resize(nObjects);
 
-		/* ======================= */
-		/* === Triangle inputs === */
-		/* ======================= */
-		std::vector<OptixBuildInput> triangleInputs(nObjects);
-		std::vector<CUdeviceptr> d_vertices(nObjects);
-		std::vector<CUdeviceptr> d_indices(nObjects);
-		std::vector<uint32_t> triangleInputFlags(nObjects);
+		m_GASBuffers.resize(nObjects);
+		m_IASBuffers.resize(nObjects);
+		m_InstanceHandles.resize(nObjects);
 
+		/* ==================================== */
+		/* === GAS and IAS per scene object === */
+		/* ==================================== */
 		for (int objectID = 0; objectID < nObjects; objectID++)
 		{
+			/* === GAS Setup === */
+			OptixBuildInput triangleInput;
+			CUdeviceptr d_vertices;
+			CUdeviceptr d_indices;
+			uint32_t triangleInputFlags;
+
 			/* Upload the mesh to the device */
 			Mesh& mesh = m_Scene->m_RayTraceObjects[objectID]->m_Mesh;
 			m_VertexBuffers[objectID].alloc_and_upload(mesh.posns);
@@ -386,115 +464,72 @@ namespace otx
 			m_NormalBuffers[objectID].alloc_and_upload(mesh.normals);
 			m_TexCoordBuffers[objectID].alloc_and_upload(mesh.texCoords);
 
-			triangleInputs[objectID] = {};
-			triangleInputs[objectID].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+			triangleInput = {};
+			triangleInput.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
 
 			/* Create local variables to store pointers to the device pointers */
-			d_vertices[objectID] = m_VertexBuffers[objectID].d_pointer();
-			d_indices[objectID] = m_IndexBuffers[objectID].d_pointer();
+			d_vertices = m_VertexBuffers[objectID].d_pointer();
+			d_indices = m_IndexBuffers[objectID].d_pointer();
 
 			/* Set up format for reading vertex and index data */
-			triangleInputs[objectID].triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
-			triangleInputs[objectID].triangleArray.vertexStrideInBytes = sizeof(glm::vec3);
-			triangleInputs[objectID].triangleArray.numVertices = static_cast<int>(mesh.posns.size());
-			triangleInputs[objectID].triangleArray.vertexBuffers = &d_vertices[objectID];
+			triangleInput.triangleArray.vertexFormat = OPTIX_VERTEX_FORMAT_FLOAT3;
+			triangleInput.triangleArray.vertexStrideInBytes = sizeof(glm::vec3);
+			triangleInput.triangleArray.numVertices = static_cast<int>(mesh.posns.size());
+			triangleInput.triangleArray.vertexBuffers = &d_vertices;
 
-			triangleInputs[objectID].triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
-			triangleInputs[objectID].triangleArray.indexStrideInBytes = sizeof(glm::ivec3);
-			triangleInputs[objectID].triangleArray.numIndexTriplets = static_cast<int>(mesh.ivecIndices.size());
-			triangleInputs[objectID].triangleArray.indexBuffer = d_indices[objectID];
+			triangleInput.triangleArray.indexFormat = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+			triangleInput.triangleArray.indexStrideInBytes = sizeof(glm::ivec3);
+			triangleInput.triangleArray.numIndexTriplets = static_cast<int>(mesh.ivecIndices.size());
+			triangleInput.triangleArray.indexBuffer = d_indices;
 
-			triangleInputFlags[objectID] = 0;
+			triangleInputFlags = 0;
 
 			/* For now, we only have one SBT entry and no per-primitive materials */
-			triangleInputs[objectID].triangleArray.flags = &triangleInputFlags[objectID];
-			triangleInputs[objectID].triangleArray.numSbtRecords = 1;
-			triangleInputs[objectID].triangleArray.sbtIndexOffsetBuffer = 0;
-			triangleInputs[objectID].triangleArray.sbtIndexOffsetSizeInBytes = 0;
-			triangleInputs[objectID].triangleArray.sbtIndexOffsetStrideInBytes = 0;
+			triangleInput.triangleArray.flags = &triangleInputFlags;
+			triangleInput.triangleArray.numSbtRecords = 1;
+			triangleInput.triangleArray.sbtIndexOffsetBuffer = 0;
+			triangleInput.triangleArray.sbtIndexOffsetSizeInBytes = 0;
+			triangleInput.triangleArray.sbtIndexOffsetStrideInBytes = 0;
 
-			/* Assign pre-transform */
-			triangleInputs[objectID].triangleArray.preTransform = m_Transforms[objectID].d_pointer();
-			triangleInputs[objectID].triangleArray.transformFormat = OPTIX_TRANSFORM_FORMAT_MATRIX_FLOAT12;
+			/* === Build GAS === */
+			OptixTraversableHandle gasHandle = BuildAccel(triangleInput, m_GASBuffers[objectID]);
+
+
+			/* === IAS Setup === */
+			OptixInstance instance = {};
+			memcpy(instance.transform, &m_Transforms[objectID], sizeof(float) * 12); /* Copy over the object's transform */
+			instance.instanceId = objectID;
+			instance.visibilityMask = 255;
+			instance.sbtOffset = 0;
+			instance.flags = OPTIX_INSTANCE_FLAG_NONE;
+			instance.traversableHandle = gasHandle;
+
+			CUDABuffer d_instance;
+			d_instance.alloc(sizeof(OptixInstance));
+			cudaMemcpy(d_instance.d_ptr, &instance, sizeof(OptixInstance), cudaMemcpyHostToDevice);
+			
+			OptixBuildInput iasInput = {};
+			iasInput.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
+			iasInput.instanceArray.instances = d_instance.d_pointer();
+			iasInput.instanceArray.numInstances = 1;
+			iasInput.instanceArray.instanceStride = sizeof(OptixInstance);
+
+			OptixTraversableHandle iasHandle = BuildAccel(iasInput, m_IASBuffers[objectID]);
+			m_InstanceHandles.push_back(iasHandle);
 		}
 
-		/* ================== */
-		/* === BLAS Setup === */
-		/* ================== */
-		OptixAccelBuildOptions accelOptions = {};
-		accelOptions.buildFlags = OPTIX_BUILD_FLAG_NONE | OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
-		accelOptions.motionOptions.numKeys = 1;
-		accelOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
+		/* === Top level IAS Setup === */
+		void* d_instances;
+		cudaMalloc(&d_instances, m_InstanceHandles.size() * sizeof(OptixTraversableHandle));
+		cudaMemcpy(d_instances, m_InstanceHandles.data(), m_InstanceHandles.size() * sizeof(OptixTraversableHandle), cudaMemcpyHostToDevice);
 
-		OptixAccelBufferSizes blasBufferSizes;
-		OPTIX_CHECK(optixAccelComputeMemoryUsage(
-			m_OptixContext,
-			&accelOptions,
-			triangleInputs.data(),
-			nObjects,
-			&blasBufferSizes
-		));
+		OptixBuildInput topIasInput = {};
+		topIasInput.type = OPTIX_BUILD_INPUT_TYPE_INSTANCE_POINTERS;
+		topIasInput.instanceArray.instances = (CUdeviceptr)d_instances;
+		topIasInput.instanceArray.numInstances = m_InstanceHandles.size();
+		topIasInput.instanceArray.instanceStride = 0;
 
-		/* ========================== */
-		/* === Prepare compaction === */
-		/* ========================== */
-		CUDABuffer compactedSizeBuffer;
-		compactedSizeBuffer.alloc(sizeof(uint64_t));
-
-		OptixAccelEmitDesc emitDesc;
-		emitDesc.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
-		emitDesc.result = compactedSizeBuffer.d_pointer();
-
-		/* ===================== */
-		/* === Execute build === */
-		/* ===================== */
-		OptixTraversableHandle asHandle{ 0 };
-
-		CUDABuffer tempBuffer;
-		tempBuffer.alloc(blasBufferSizes.tempSizeInBytes);
-
-		CUDABuffer outputBuffer;
-		outputBuffer.alloc(blasBufferSizes.outputSizeInBytes);
-
-		OPTIX_CHECK(optixAccelBuild(
-			m_OptixContext,
-			0, /* stream */
-			&accelOptions,
-			triangleInputs.data(),
-			nObjects,
-			tempBuffer.d_pointer(),
-			tempBuffer.sizeInBytes,
-			outputBuffer.d_pointer(),
-			outputBuffer.sizeInBytes,
-			&asHandle,
-			&emitDesc,
-			1
-		));
-		CUDA_SYNC_CHECK();
-
-		/* ========================== */
-		/* === Perform compaction === */
-		/* ========================== */
-		uint64_t compactedSize;
-		compactedSizeBuffer.download(&compactedSize, 1);
-
-		m_ASBuffer.alloc(compactedSize);
-		OPTIX_CHECK(optixAccelCompact(
-			m_OptixContext,
-			0,
-			asHandle,
-			m_ASBuffer.d_pointer(),
-			m_ASBuffer.sizeInBytes,
-			&asHandle
-		));
-		CUDA_SYNC_CHECK();
-
-		/* ================ */
-		/* === Clean up === */
-		/* ================ */
-		outputBuffer.free(); /* Free the temporary, uncompacted buffer */
-		tempBuffer.free();
-		compactedSizeBuffer.free();
+		OptixTraversableHandle asHandle = BuildAccel(topIasInput, m_TopIAS);
 
 		return asHandle;
 	}
