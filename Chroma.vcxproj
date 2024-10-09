@@ -162,7 +162,7 @@
       <UseHostLibraryDependencies>false</UseHostLibraryDependencies>
     </CudaLink>
     <PreBuildEvent>
-      <Command>del $(ProjectDir)src\*.optixir</Command>
+      <Command>del $(ProjectDir)src\optix\shaders\compiled\*.optixir</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Deleting existing optixir files...</Message>
@@ -203,7 +203,7 @@
       <UseHostLibraryDependencies>false</UseHostLibraryDependencies>
     </CudaLink>
     <PreBuildEvent>
-      <Command>del $(ProjectDir)src\*.optixir</Command>
+      <Command>del $(ProjectDir)src\optix\shaders\compiled\*.optixir</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Deleting existing optixir files...</Message>

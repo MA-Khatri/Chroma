@@ -1,6 +1,6 @@
 #include <optix_device.h>
 
-#include "../launch_params.h" /* Also includes glm */
+#include "../launch_params.h"
 
 namespace otx
 {
@@ -42,7 +42,7 @@ namespace otx
 	/* === Helpers === */
 	/* =============== */
 
-	/* Compute position of ray hit */
+	/* Compute world position of ray hit */
 	extern "C" __device__ float3 HitPosition()
 	{
 		return optixGetWorldRayOrigin() + optixGetWorldRayDirection() * optixGetRayTmax();
@@ -68,17 +68,33 @@ namespace otx
 		const MeshSBTData& sbtData = *(const MeshSBTData*)optixGetSbtDataPointer();
 		const int primID = optixGetPrimitiveIndex();
 		const int3 index = sbtData.index[primID];
-		//optixGet
+		float2 uv = optixGetTriangleBarycentrics();
+		float3 rayDir = optixGetWorldRayDirection();
 
 		/* === Compute normal === */
+		/* Use shading normal if available, else use geometry normal */
+		const float3& v0 = sbtData.position[index.x];
+		const float3& v1 = sbtData.position[index.y];
+		const float3& v2 = sbtData.position[index.z];
 		const float3& n0 = sbtData.normal[index.x];
 		const float3& n1 = sbtData.normal[index.y];
 		const float3& n2 = sbtData.normal[index.z];
-		float2 uv = optixGetTriangleBarycentrics();
-		float3 iN = InterpolateNormals(uv, n0, n1, n2);
-		float3 clampedNormals = clamp(iN, 0.0f, 1.0f);
 
-		float3 diffuseColor = clampedNormals;
+		float3 Ng = cross(v1 - v0, v2 - v0);
+		float3 Ns = (sbtData.normal) ? InterpolateNormals(uv, n0, n1, n2) : Ng;
+		
+		///* Face forward and normalize normals */
+		//if (dot(rayDir, Ng) > 0.0f) Ng = -Ng;
+		//Ng = normalize(Ng);
+
+		//if (dot(rayDir, Ns) > 0.0f) Ns = -Ns;
+		//Ns = normalize(Ns);
+
+		/* Compute world-space normal and normalize */
+		Ns = normalize(optixTransformNormalFromObjectToWorldSpace(Ns));
+
+		/* If no texture, default to white for diffuse color */
+		float3 diffuseColor = make_float3(1.0f);
 
 		/* === Sample texture(s) === */
 		float2 tc = TexCoord(uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);
@@ -99,7 +115,7 @@ namespace otx
 		packPointer(&lightVisibility, u0, u1);
 		optixTrace(
 			optixLaunchParams.traversable,
-			surfPosn + 1e-3f * iN,
+			surfPosn + 1e-3f * Ns,
 			lightDir,
 			1e-3f, /* tmin */
 			1.0f-1e-3f, /* tmax -- in terms of lightDir length */
@@ -112,9 +128,22 @@ namespace otx
 			u0, u1 /* packed pointer to our PRD */
 		);
 
+
+		/* Calculate shading */
+		const float ambient = 0.2f;
+		const float diffuse = 0.5f;
+		const float specular = 0.1f;
+		const float exponent = 16.0f;
+
+		const float3 reflectDir = reflect(rayDir, Ns);
+		const float diffuseContrib = clamp(dot(-rayDir, Ns), 0.0f, 1.0f);
+		const float specularContrib = pow(max(dot(-rayDir, reflectDir), 0.0f), exponent);
+		const float lc = ambient + diffuse * diffuseContrib + specular * specularContrib;
+
 		/* === Set data === */
 		float3& prd = *(float3*)getPRD<float3>();
-		prd = diffuseColor * lightVisibility;
+		//prd = diffuseColor * (lightVisibility * lc);
+		prd = diffuseColor * lc;
 	}
 
 

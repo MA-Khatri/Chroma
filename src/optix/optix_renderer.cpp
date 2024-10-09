@@ -369,8 +369,6 @@ namespace otx
 		m_NormalBuffers.resize(nObjects);
 		m_TexCoordBuffers.resize(nObjects);
 
-		OptixTraversableHandle asHandle{ 0 };
-
 		/* ======================= */
 		/* === Triangle inputs === */
 		/* ======================= */
@@ -450,6 +448,8 @@ namespace otx
 		/* ===================== */
 		/* === Execute build === */
 		/* ===================== */
+		OptixTraversableHandle asHandle{ 0 };
+
 		CUDABuffer tempBuffer;
 		tempBuffer.alloc(blasBufferSizes.tempSizeInBytes);
 
