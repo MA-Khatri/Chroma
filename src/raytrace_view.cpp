@@ -1,5 +1,5 @@
 #include "raytrace_view.h"
-
+#include <algorithm>
 
 RayTraceView::RayTraceView(std::shared_ptr<Scene> scene)
 	: m_OptixRenderer(otx::Optix(scene))
@@ -104,9 +104,29 @@ void RayTraceView::OnUIRender()
 
 void RayTraceView::TakeScreenshot()
 {
+	/* Get a copy of the rendered pixels */
+	std::vector<uint32_t> src = m_RenderedImagePixels;
+	std::vector<uint32_t> dst(src.size());
+
+	int width = static_cast<int>(m_ViewportSize.x);
+	int height = static_cast<int>(m_ViewportSize.y);
+
+	/* Rotate image ? */
+	std::reverse(src.begin(), src.end());
+
+	/* Flip image horizontally */
+	for (int j = 0; j < height; j++)
+	{
+		for (int i = 0; i < width; i++)
+		{
+			dst[(j * width) + i] = src[(j * width) + (width - i)];
+		}
+	}
+
+	/* Write to file */
 	WriteImageToFile(
-		m_RenderedImagePixels.data(), 
-		static_cast<int>(m_ViewportSize.x), static_cast<int>(m_ViewportSize.y), 
+		dst.data(), 
+		width, height,
 		"output/" + GetDateTimeStr() + "_raytrace.png"
 	);
 }
