@@ -73,6 +73,6 @@ public:
 	void UpdateProjectionMatrix(int width, int height);
 	void UpdateProjectionMatrix(float vFOVdeg);
 
-	/* Handles camera movement inputs */
-	void Inputs(GLFWwindow* window);
+	/* Handles camera movement inputs. Returns boolean indicating if any inputs were recorded. */
+	bool Inputs(GLFWwindow* window);
 };

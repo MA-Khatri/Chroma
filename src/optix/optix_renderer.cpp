@@ -733,6 +733,9 @@ namespace otx
 		float width = height * aspect;
 		m_LaunchParams.camera.horizontal = width * normalize(cross(m_LaunchParams.camera.direction, ToFloat3(camera.up)));
 		m_LaunchParams.camera.vertical = height * normalize(cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
+
+		/* Reset accumulation */
+		m_LaunchParams.frame.accumID = 0;
 	}
 
 

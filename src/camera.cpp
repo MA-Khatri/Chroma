@@ -73,34 +73,42 @@ void Camera::UpdateProjectionMatrix(float vFOVdeg)
 	matrix = projection_matrix * view_matrix;
 }
 
-void Camera::Inputs(GLFWwindow* window)
+bool Camera::Inputs(GLFWwindow* window)
 {
+	bool updated = false;
+
 	/* WASD keys for basic motion front/back, strafe left/right */ 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	{
 		position += m_Speed * orientation;
+		updated = true;
 	}
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 	{
 		position += m_Speed * -orientation;
+		updated = true;
 	}
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 	{
 		position += m_Speed * -glm::normalize(glm::cross(orientation, up));
+		updated = true;
 	}
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 	{
 		position += m_Speed * glm::normalize(glm::cross(orientation, up));
+		updated = true;
 	}
 
 	/* SPACE/CTRL moves up/down along up vector */
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
 	{
 		position += m_Speed * up;
+		updated = true;
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
 	{
 		position += m_Speed * -up;
+		updated = true;
 	}
 
 	/* Holding down shift increases m_Speed */
@@ -136,6 +144,7 @@ void Camera::Inputs(GLFWwindow* window)
 		/* Mouse drag amounts for rotation */
 		float rotX = m_Sensitivity * (float)(mouseY - m_PrevMousePosn.y) / m_Height;
 		float rotY = m_Sensitivity * (float)(mouseX - m_PrevMousePosn.x) / m_Width;
+		if (fabsf(rotX) > 0.0f || fabsf(rotY) > 0.0f) updated = true;
 
 		/* Get new orientation for the camera */
 		glm::vec3 newOrientation = glm::rotate(orientation, glm::radians(-rotX), glm::normalize(glm::cross(orientation, up)));
@@ -179,4 +188,6 @@ void Camera::Inputs(GLFWwindow* window)
 
 	/* Update the view matrix accounting for changed to camera position/orientation */
 	UpdateViewMatrix();
+
+	return updated;
 }

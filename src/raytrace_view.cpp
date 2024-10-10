@@ -25,6 +25,9 @@ void RayTraceView::OnAttach(Application* app)
 
 	if (m_AppHandle->m_LinkCameras)	m_Camera = m_AppHandle->GetMainCamera();
 	else m_Camera = m_LocalCamera;
+
+	m_OptixRenderer.SetCamera(*m_Camera);
+	m_OptixRenderer.SetSamplesPerRender(1);
 }
 
 void RayTraceView::OnDetach()
@@ -44,10 +47,10 @@ void RayTraceView::OnUpdate()
 
 		if (m_ViewportHovered)
 		{
-			m_Camera->Inputs(m_WindowHandle);
+			bool updated = m_Camera->Inputs(m_WindowHandle);
+			if (updated) m_OptixRenderer.SetCamera(*m_Camera);
 		}
 
-		m_OptixRenderer.SetCamera(*m_Camera);
 		m_OptixRenderer.Render();
 		m_OptixRenderer.DownloadPixels(m_RenderedImagePixels.data()); /* Instead of downloading to host then re-uploading to GPU, can we upload directly? */
 		m_RenderedImage.SetData(m_RenderedImagePixels.data());
