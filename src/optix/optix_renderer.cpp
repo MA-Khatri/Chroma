@@ -150,7 +150,7 @@ namespace otx
 		m_PipelineCompileOptions.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
 		m_PipelineCompileOptions.pipelineLaunchParamsVariableName = "optixLaunchParams";
 
-		m_PipelineLinkOptions.maxTraceDepth = 2;
+		m_PipelineLinkOptions.maxTraceDepth = 8; /* HERE */
 
 		std::ifstream input("src/optix/shaders/compiled/device_programs.optixir", std::ios::binary);
 		std::vector<char> optixirCode(std::istreambuf_iterator<char>(input), {});

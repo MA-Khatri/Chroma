@@ -27,7 +27,7 @@ void RayTraceView::OnAttach(Application* app)
 	else m_Camera = m_LocalCamera;
 
 	m_OptixRenderer.SetCamera(*m_Camera);
-	m_OptixRenderer.SetSamplesPerRender(16);
+	m_OptixRenderer.SetSamplesPerRender(4);
 }
 
 void RayTraceView::OnDetach()

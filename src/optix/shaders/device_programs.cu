@@ -2,7 +2,9 @@
 #include <cuda_runtime.h>
 
 #include "../launch_params.h"
-#include "../random.h"
+
+#include "math.cuh"
+#include "random.cuh"
 
 namespace otx
 {
@@ -17,6 +19,7 @@ namespace otx
 	{
 		Random random;
 		float3 pixelColor;
+		int depth = 0;
 	};
 
 
@@ -95,8 +98,8 @@ namespace otx
 		/* Compute world-space normal and normalize */
 		Ns = normalize(optixTransformNormalFromObjectToWorldSpace(Ns));
 
-		/* If no texture, default to white for diffuse color */
-		float3 diffuseColor = make_float3(1.0f);
+		/* Default diffuse color if no diffuse texture */
+		float3 diffuseColor = make_float3(0.7f);
 
 		/* === Sample texture(s) === */
 		float2 tc = TexCoord(uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);
@@ -106,44 +109,86 @@ namespace otx
 			diffuseColor = make_float3(tex.x, tex.y, tex.z);
 		}
 
-		/* === Compute shadow === */
-		const float3 surfPosn = HitPosition();
-		const float3 lightPosn = make_float3(100.0f, 100.0f, 100.0f); /* Hard coded light position (for now) */
-		const float3 lightDir = lightPosn - surfPosn;
-
-		/* Trace shadow ray*/
-		float3 lightVisibility = make_float3(0.5f);
-		uint32_t u0, u1;
-		packPointer(&lightVisibility, u0, u1);
-		optixTrace(
-			optixLaunchParams.traversable,
-			surfPosn + 1e-3f * Ns,
-			lightDir,
-			1e-3f, /* tmin */
-			1.0f-1e-3f, /* tmax -- in terms of lightDir length */
-			0.0f, /* ray time */
-			OptixVisibilityMask(255),
-			OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
-			SHADOW_RAY_TYPE, /* SBT offset */
-			RAY_TYPE_COUNT, /* SBT stride */
-			SHADOW_RAY_TYPE, /* missSBT index */
-			u0, u1 /* packed pointer to our PRD */
-		);
+		/* === Trace diffuse ray === */
+		if (prd.depth < 8)
+		{
+			/* Determine diffuse ray origin and reflection direction */
+			OrthonormalBasis basis = OrthonormalBasis(Ns);
+			float3 reflectDir = basis.Local(prd.random.RandomOnUnitHemisphere());
+			float3 reflectOrigin = HitPosition() + 1e-3f * Ns;
 
 
-		/* Calculate shading */
-		const float ambient = 0.2f;
-		const float diffuse = 0.5f;
-		const float specular = 0.1f;
-		const float exponent = 16.0f;
+			/* Launch reflected ray */
+			PRD reflectPRD;
+			reflectPRD.random = prd.random;
+			reflectPRD.pixelColor = make_float3(1.0f);
+			reflectPRD.depth = prd.depth + 1;
 
-		const float3 reflectDir = reflect(rayDir, Ns);
-		const float diffuseContrib = clamp(dot(-rayDir, Ns), 0.0f, 1.0f);
-		const float specularContrib = pow(max(dot(-rayDir, reflectDir), 0.0f), exponent);
-		const float lc = ambient + diffuse * diffuseContrib + specular * specularContrib;
+			uint32_t u0, u1;
+			packPointer(&reflectPRD, u0, u1);
 
-		/* === Set data === */
-		prd.pixelColor = diffuseColor * (lightVisibility * lc);
+			optixTrace(
+				optixLaunchParams.traversable,
+				reflectOrigin,
+				reflectDir,
+				0.0f, /* tMin */
+				1e20f, /* tMax */
+				0.0f, /* ray time */
+				OptixVisibilityMask(255),
+				OPTIX_RAY_FLAG_DISABLE_ANYHIT, /* OPTIX_RAY_FLAG_NONE */
+				RADIANCE_RAY_TYPE, /* SBT offset */
+				RAY_TYPE_COUNT, /* SBT stride */
+				RADIANCE_RAY_TYPE, /* miss SBT index */
+				u0, u1 /* packed pointer to our PRD */
+			);
+
+			/* Multiply ray colors together */
+			prd.pixelColor = diffuseColor * reflectPRD.pixelColor;
+		}
+		else
+		{
+			prd.pixelColor = diffuseColor;
+		}
+		
+
+		///* === Compute shadow === */
+		//const float3 surfPosn = HitPosition();
+		//const float3 lightPosn = make_float3(100.0f, 100.0f, 100.0f); /* Hard coded light position (for now) */
+		//const float3 lightDir = lightPosn - surfPosn;
+
+		///* Trace shadow ray*/
+		//float3 lightVisibility = make_float3(0.5f);
+		//uint32_t u0, u1;
+		//packPointer(&lightVisibility, u0, u1);
+		//optixTrace(
+		//	optixLaunchParams.traversable,
+		//	surfPosn + 1e-3f * Ns,
+		//	lightDir,
+		//	1e-3f, /* tmin */
+		//	1.0f-1e-3f, /* tmax -- in terms of lightDir length */
+		//	0.0f, /* ray time */
+		//	OptixVisibilityMask(255),
+		//	OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
+		//	SHADOW_RAY_TYPE, /* SBT offset */
+		//	RAY_TYPE_COUNT, /* SBT stride */
+		//	SHADOW_RAY_TYPE, /* missSBT index */
+		//	u0, u1 /* packed pointer to our PRD */
+		//);
+
+
+		///* Calculate shading */
+		//const float ambient = 0.2f;
+		//const float diffuse = 0.5f;
+		//const float specular = 0.1f;
+		//const float exponent = 16.0f;
+
+		//const float3 reflectDir = reflect(rayDir, Ns);
+		//const float diffuseContrib = clamp(dot(-rayDir, Ns), 0.0f, 1.0f);
+		//const float specularContrib = pow(max(dot(-rayDir, reflectDir), 0.0f), exponent);
+		//const float lc = ambient + diffuse * diffuseContrib + specular * specularContrib;
+
+		///* === Set data === */
+		//prd.pixelColor = diffuseColor * (lightVisibility * lc);
 	}
 
 
@@ -210,7 +255,7 @@ namespace otx
 		PRD prd;
 		/* Random seed is current frame count * frame size + current (1D) pixel position such that every pixel for every accumulated frame has a unique seed. */
 		prd.random.Init(accumID * optixLaunchParams.frame.size.x * optixLaunchParams.frame.size.y + iy * optixLaunchParams.frame.size.x + ix);
-		prd.pixelColor = make_float3(0.0f);
+		prd.pixelColor = make_float3(1.0f);
 
 		/* The ints we store the PRD pointer in */
 		uint32_t u0, u1;

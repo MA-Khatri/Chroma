@@ -65,7 +65,8 @@
     <ClInclude Include="src\application.h" />
     <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\optix\cuda_buffer.h" />
-    <ClInclude Include="src\optix\random.h" />
+    <ClInclude Include="src\optix\shaders\math.cuh" />
+    <ClInclude Include="src\optix\shaders\random.cuh" />
     <ClInclude Include="src\vulkan\image.h" />
     <ClInclude Include="src\optix\launch_params.h" />
     <ClInclude Include="src\layer.h" />
