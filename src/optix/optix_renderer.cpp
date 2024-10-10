@@ -702,8 +702,8 @@ namespace otx
 		if (newSize.x == 0 || newSize.y == 0) return;
 
 		/* Resize our CUDA framebuffer */
-		m_ColorBuffer.resize(static_cast<size_t>(newSize.x * newSize.y * sizeof(uint32_t)));
-		m_AccumBuffer.resize(static_cast<size_t>(newSize.x * newSize.y * sizeof(float)));
+		m_ColorBuffer.resize(static_cast<size_t>(newSize.x * newSize.y * sizeof(uint32_t))); /* Store RGBA channels as 8bit components of uint32_t */
+		m_AccumBuffer.resize(static_cast<size_t>(newSize.x * newSize.y * sizeof(float) * 3)); /* Store RGB channels as floats */
 
 		/* Update our launch parameters */
 		m_LaunchParams.frame.size.x = static_cast<int>(newSize.x);
@@ -736,13 +736,20 @@ namespace otx
 	}
 
 
+	void Optix::SetSamplesPerRender(int nSamples)
+	{
+		m_SamplesPerRender = nSamples;
+	}
+
+
 	void Optix::Render()
 	{
 		/* Sanity check: make sure we launch only after first resize is already done */
 		if (m_LaunchParams.frame.size.x == 0 || m_LaunchParams.frame.size.y == 0) return;
 
+		m_LaunchParams.frame.samples = m_SamplesPerRender;
 		m_LaunchParamsBuffer.upload(&m_LaunchParams, 1);
-		m_LaunchParams.frame.accumID++;
+		m_LaunchParams.frame.accumID++; /* Must increment *after* upload */
 
 		OPTIX_CHECK(optixLaunch(
 			m_Pipeline,

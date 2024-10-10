@@ -26,6 +26,9 @@ namespace otx
 		/* Set camera for Optix */
 		void SetCamera(const Camera& camera);
 
+		/* Set the number of samples per pixel per call to Render() (updates Launch params) */
+		void SetSamplesPerRender(int nSamples);
+
 		/* Render one frame */
 		void Render();
 
@@ -96,6 +99,7 @@ namespace otx
 		OptixShaderBindingTable m_SBT = {};
 
 		/* Our launch parameters on the host, and the buffer to store them on the device */
+		int m_SamplesPerRender = 1;
 		LaunchParams m_LaunchParams;
 		CUDABuffer m_LaunchParamsBuffer;
 

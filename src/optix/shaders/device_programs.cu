@@ -208,16 +208,14 @@ namespace otx
 		const auto& camera = optixLaunchParams.camera;
 
 		/* Get the current pixel's accumulated color */
-		uint32_t clr;
+		float3 aclr = make_float3(0.0f);
 		if (accumID > 0)
 		{
-			clr = optixLaunchParams.frame.colorBuffer[fbIndex];
+			float r = optixLaunchParams.frame.accumBuffer[fbIndex * 3 + 0];
+			float g = optixLaunchParams.frame.accumBuffer[fbIndex * 3 + 1];
+			float b = optixLaunchParams.frame.accumBuffer[fbIndex * 3 + 2];
+			aclr = make_float3(r, g, b);
 		}
-		else
-		{
-			clr = 0;
-		}
-
 
 		/* Initialize per-ray data */
 		PRD prd;
@@ -229,7 +227,7 @@ namespace otx
 		uint32_t u0, u1;
 		packPointer(&prd, u0, u1);
 
-		int numPixelSamples = 16;
+		const int numPixelSamples = optixLaunchParams.frame.samples; /* Pixel samples per call to render */
 		float3 pixelColor = make_float3(0.0f);
 		for (int sampleID = 0; sampleID < numPixelSamples; sampleID++)
 		{
@@ -257,15 +255,30 @@ namespace otx
 			pixelColor += prd.pixelColor;
 		}
 		
-		const int r = int(255.99f * min(pixelColor.x / numPixelSamples, 1.0f));
-		const int g = int(255.99f * min(pixelColor.y / numPixelSamples, 1.0f));
-		const int b = int(255.99f * min(pixelColor.z / numPixelSamples, 1.0f));
+		/* Determine average color for this call */
+		const float cr = min(pixelColor.x / numPixelSamples, 1.0f);
+		const float cg = min(pixelColor.y / numPixelSamples, 1.0f);
+		const float cb = min(pixelColor.z / numPixelSamples, 1.0f);
+		const float3 cclr = make_float3(cr, cg, cb);
+
+		/* Determine the new accumulated color */
+		float3 tclr = (cclr + accumID * aclr) / (accumID + 1);
+		tclr = make_float3(min(tclr.x, 1.0f), min(tclr.y, 1.0f), min(tclr.z, 1.0f));
+
+		/* Update the accumulated color buffer */
+		optixLaunchParams.frame.accumBuffer[fbIndex * 3 + 0] = tclr.x;
+		optixLaunchParams.frame.accumBuffer[fbIndex * 3 + 1] = tclr.y;
+		optixLaunchParams.frame.accumBuffer[fbIndex * 3 + 2] = tclr.z;
+
+		/* Convert accumulated color to ints */
+		const int r = int(255.99f * tclr.x);
+		const int g = int(255.99f * tclr.y);
+		const int b = int(255.99f * tclr.z);
 
 		/* Convert to 32-bit RGBA value, explicitly setting alpha to 0xff */
 		const uint32_t rgba = 0xff000000 | (r << 0) | (g << 8) | (b << 16);
 
 		/* Write to the frame buffer */
-		
 		optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
 	}
 
