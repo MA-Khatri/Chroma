@@ -74,11 +74,11 @@ std::vector<T> arange(T start, T stop, T step = 1)
 }
 
 
-/* Get a string representing the current time in the format "YYYY-MM-DD_HH:MM:SS" */
+/* Get a string representing the current time in the format "YYYY-MM-DD_HH-MM-SS" */
 std::string GetDateTimeStr();
 
 /* Use stb to write image data to provided filename */
-void WriteImageToFile(const char* data, int width, int height, std::string filename);
+void WriteImageToFile(const void* data, int width, int height, std::string filename);
 
 class Layer
 {

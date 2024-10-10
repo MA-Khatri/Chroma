@@ -3,15 +3,22 @@
 
 std::string GetDateTimeStr()
 {
+	/* Get time */
 	std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
+	/* Format string */
 	std::string s(30, '\0');
-	std::strftime(&s[0], s.size(), "%Y-%m-%d_%H:%M:%S", std::localtime(&now));
+	std::strftime(&s[0], s.size(), "%Y-%m-%d_%H-%M-%S", std::localtime(&now));
+
+	/* Remove extra blank characters */
+	std::string::iterator end_pos = std::remove(s.begin(), s.end(), '\0');
+	s.erase(end_pos, s.end());
+
 	return s;
 }
 
 
-void WriteImageToFile(const char* data, int width, int height, std::string filename)
+void WriteImageToFile(const void* data, int width, int height, std::string filename)
 {
 	if (stbi_write_png(filename.c_str(), width, height, 4, data, width * 4))
 	{

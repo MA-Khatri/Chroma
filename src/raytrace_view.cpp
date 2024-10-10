@@ -104,7 +104,11 @@ void RayTraceView::OnUIRender()
 
 void RayTraceView::TakeScreenshot()
 {
-
+	WriteImageToFile(
+		m_RenderedImagePixels.data(), 
+		static_cast<int>(m_ViewportSize.x), static_cast<int>(m_ViewportSize.y), 
+		"output/" + GetDateTimeStr() + "_raytrace.png"
+	);
 }
 
 

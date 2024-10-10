@@ -689,10 +689,13 @@ namespace otx
 			}
 		}
 
-		m_HitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
-		m_SBT.hitgroupRecordBase = m_HitgroupRecordsBuffer.d_pointer();
-		m_SBT.hitgroupRecordStrideInBytes = sizeof(HitgroupRecord);
-		m_SBT.hitgroupRecordCount = static_cast<int>(hitgroupRecords.size());
+		if (nObjects > 0)
+		{
+			m_HitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
+			m_SBT.hitgroupRecordBase = m_HitgroupRecordsBuffer.d_pointer();
+			m_SBT.hitgroupRecordStrideInBytes = sizeof(HitgroupRecord);
+			m_SBT.hitgroupRecordCount = static_cast<int>(hitgroupRecords.size());
+		}
 	}
 
 

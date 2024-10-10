@@ -107,9 +107,9 @@ void RasterView::TakeScreenshot()
 		1,
 		VK_SAMPLE_COUNT_1_BIT, 
 		VK_FORMAT_R8G8B8A8_UNORM, 
-		VK_IMAGE_TILING_OPTIMAL, 
-		VK_IMAGE_USAGE_TRANSFER_DST_BIT, 
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+		VK_IMAGE_TILING_LINEAR, 
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
 		cptImage, cptImageMemory
 	);
 
@@ -153,11 +153,16 @@ void RasterView::TakeScreenshot()
 	vk::FlushGraphicsCommandBuffer(commandBuffer);
 
 	/* Copy cpt image to host */
-	const char* data;
-	vkMapMemory(vk::Device, cptImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&data);
+	uint32_t size = static_cast<uint32_t>(m_ViewportSize.x) * static_cast<uint32_t>(m_ViewportSize.y) * 4;
+	void* data;
+	vkMapMemory(vk::Device, cptImageMemory, 0, size, 0, &data);
 
 	/* Save cpt image to file */
-	WriteImageToFile(data, static_cast<int>(m_ViewportSize.x), static_cast<int>(m_ViewportSize.y), GetDateTimeStr()+"_raster.png");
+	WriteImageToFile(
+		data, 
+		static_cast<int>(m_ViewportSize.x), static_cast<int>(m_ViewportSize.y), 
+		"output/" + GetDateTimeStr() + "_raster.png"
+	);
 
 	/* Cleanup cpt image */
 	vkUnmapMemory(vk::Device, cptImageMemory);
