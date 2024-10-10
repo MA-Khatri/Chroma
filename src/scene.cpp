@@ -21,38 +21,27 @@ Scene::Scene()
 	/* ===================== */
 	/* === Scene Objects === */
 	/* ===================== */
-	//TexturePaths vikingRoomTextures;
-	//vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
-	//std::shared_ptr<Object> vikingRoom = std::make_shared<Object>(Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, Flat));
-	//vikingRoom->Scale(5.0f);
-	//m_RasterObjects.push_back(vikingRoom);
-	//m_RayTraceObjects.push_back(vikingRoom);
+	TexturePaths vikingRoomTextures;
+	vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
+	std::shared_ptr<Object> vikingRoom = std::make_shared<Object>(Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, Flat));
+	vikingRoom->Translate(0.0f, 0.0f, 0.5f);
+	vikingRoom->Scale(5.0f);
+	m_RasterObjects.push_back(vikingRoom);
+	m_RayTraceObjects.push_back(vikingRoom);
 
 	std::shared_ptr<Object> dragon = std::make_shared<Object>(LoadMesh("res/meshes/dragon.obj"), noTextures, Solid);
-	//dragon->Translate(0.0f, 0.0f, 1.0f);
-	dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 180.0f);
-	dragon->Scale(3.0f);
+	dragon->Translate(10.0f, 0.0f, 0.0f);
+	dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 45.0f);
+	dragon->Scale(5.0f);
 	m_RasterObjects.push_back(dragon);
 	m_RayTraceObjects.push_back(dragon);
 
 	TexturePaths planeTextures;
-	//planeTextures.diffuse = "res/textures/texture.jpg";
 	planeTextures.diffuse = "res/textures/white.png";
-	std::shared_ptr<Object> plane0 = std::make_shared<Object>(Object(CreatePlane(), noTextures, Solid));
-	//plane0->Translate(1.0f, 0.0f, 0.0f);
-	plane0->Scale(5.0f);
+	std::shared_ptr<Object> plane0 = std::make_shared<Object>(Object(CreatePlane(), planeTextures, Flat));
+	plane0->Scale(100.0f);
 	m_RasterObjects.push_back(plane0);
 	m_RayTraceObjects.push_back(plane0);
-
-	//std::shared_ptr<Object> plane1 = std::make_shared<Object>(Object(CreatePlane(), planeTextures, Flat));
-	//plane1->Translate(0.5f, 0.5f, 0.5f);
-	//m_RasterObjects.push_back(plane1);
-	//m_RayTraceObjects.push_back(plane1);
-
-	//std::shared_ptr<Object> plane2 = std::make_shared<Object>(Object(CreatePlane(), planeTextures, Flat));
-	//plane2->Translate(-0.5f, -0.5f, 0.5f);
-	//m_RasterObjects.push_back(plane2);
-	//m_RayTraceObjects.push_back(plane2);
 }
 
 

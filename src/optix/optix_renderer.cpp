@@ -320,7 +320,7 @@ namespace otx
 		OPTIX_CHECK(optixPipelineCreate(
 			m_OptixContext, 
 			&m_PipelineCompileOptions, 
-			&m_PipelineLinkOptions, 
+			&m_PipelineLinkOptions,
 			programGroups.data(), 
 			static_cast<int>(programGroups.size()), 
 			log, 
@@ -509,7 +509,7 @@ namespace otx
 			memcpy(instance.transform, m_Transforms[objectID].data(), sizeof(float) * 12); /* Copy over the object's transform */
 			instance.instanceId = objectID;
 			instance.visibilityMask = 255;
-			instance.sbtOffset = 0;
+			instance.sbtOffset = RAY_TYPE_COUNT * objectID;
 			instance.flags = OPTIX_INSTANCE_FLAG_NONE;
 			instance.traversableHandle = gasHandle;
 

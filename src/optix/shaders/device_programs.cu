@@ -150,7 +150,6 @@ namespace otx
 			prd.pixelColor = diffuseColor;
 		}
 		
-
 		///* === Compute shadow === */
 		//const float3 surfPosn = HitPosition();
 		//const float3 lightPosn = make_float3(100.0f, 100.0f, 100.0f); /* Hard coded light position (for now) */
@@ -187,8 +186,7 @@ namespace otx
 		//const float specularContrib = pow(max(dot(-rayDir, reflectDir), 0.0f), exponent);
 		//const float lc = ambient + diffuse * diffuseContrib + specular * specularContrib;
 
-		///* === Set data === */
-		//prd.pixelColor = diffuseColor * (lightVisibility * lc);
+		//prd.pixelColor *= (lightVisibility * lc);
 	}
 
 
@@ -200,7 +198,8 @@ namespace otx
 	extern "C" __global__ void __miss__radiance()
 	{
 		PRD& prd = *getPRD<PRD>();
-		prd.pixelColor = optixLaunchParams.clearColor;
+		//prd.pixelColor = optixLaunchParams.clearColor;
+		prd.pixelColor = make_float3(1.0f);
 	}
 
 
