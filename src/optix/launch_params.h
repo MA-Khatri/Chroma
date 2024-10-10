@@ -32,11 +32,11 @@ namespace otx
 
 	struct LaunchParams
 	{
-		int frameID{ 0 };
-
 		struct {
-			uint32_t* colorBuffer;
+			uint32_t* colorBuffer; /* Where final result is stored */
+			float* accumBuffer; /* Where accumulated color is stored before conversion to colorBuffer */
 			int2 size;
+			int accumID{ 0 };
 		} frame;
 
 		struct {

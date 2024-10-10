@@ -57,7 +57,7 @@ namespace otx
 
 		/* Build an acceleration structure for all meshes in m_Meshes */
 		OptixTraversableHandle BuildGasAndIas();
-		OptixTraversableHandle BuildAccel(OptixBuildInput& buildInput,CUDABuffer& buffer);
+		OptixTraversableHandle BuildAccel(OptixBuildInput& buildInput, CUDABuffer& buffer, bool compact = true);
 
 		/* Constructs the shader binding table */
 		void BuildSBT();
@@ -102,12 +102,15 @@ namespace otx
 		/* Our output color buffer */
 		CUDABuffer m_ColorBuffer;
 
+		/* Our accumulated color buffer (where colors are accumulated as floats before conversion to ints) */
+		CUDABuffer m_AccumBuffer;
+
 		/* The camera we are using to render */
 		Camera m_LastSetCamera;
 
 		/* The scene we are tracing rays against */
 		std::shared_ptr<Scene> m_Scene;
-		std::vector<CUDABuffer> m_Transforms; /* (static) mesh (pre-)transforms */
+		std::vector<std::vector<float>> m_Transforms; /* (static) mesh (pre-)transforms */
 		std::vector<CUDABuffer> m_VertexBuffers;
 		std::vector<CUDABuffer> m_IndexBuffers;
 		std::vector<CUDABuffer> m_NormalBuffers;
@@ -115,11 +118,9 @@ namespace otx
 
 		/* Buffers that keep the geometry acceleration structures (per scene object) */
 		std::vector<CUDABuffer> m_GASBuffers;
-		/* Buffers that keep the instance acceleration structures (per scene object) */
-		std::vector<CUDABuffer> m_IASBuffers;
-		std::vector<OptixTraversableHandle> m_InstanceHandles;
-
-		CUDABuffer m_TopIAS;
+		
+		/* Keep the instance of each object... */
+		std::vector<OptixInstance> m_Instances;
 
 		/* Buffer that keeps the final, compacted, acceleration structure */
 		CUDABuffer m_ASBuffer;

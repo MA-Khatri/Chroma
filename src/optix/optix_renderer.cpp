@@ -142,7 +142,8 @@ namespace otx
 #endif
 
 		m_PipelineCompileOptions = {};
-		m_PipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
+		//m_PipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
+		m_PipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
 		m_PipelineCompileOptions.usesMotionBlur = false;
 		m_PipelineCompileOptions.numPayloadValues = 2;
 		m_PipelineCompileOptions.numAttributeValues = 2;
@@ -339,7 +340,7 @@ namespace otx
 	}
 
 
-	OptixTraversableHandle Optix::BuildAccel(OptixBuildInput& buildInput, CUDABuffer& buffer)
+	OptixTraversableHandle Optix::BuildAccel(OptixBuildInput& buildInput, CUDABuffer& buffer, bool compact /* = true*/)
 	{
 		OptixAccelBuildOptions accelOptions = {};
 		accelOptions.buildFlags = OPTIX_BUILD_FLAG_NONE | OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
@@ -357,11 +358,15 @@ namespace otx
 
 		/* === Prepare compaction === */
 		CUDABuffer compactedSizeBuffer;
-		compactedSizeBuffer.alloc(sizeof(uint64_t));
-
 		OptixAccelEmitDesc emitDesc;
-		emitDesc.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
-		emitDesc.result = compactedSizeBuffer.d_pointer();
+
+		if (compact)
+		{
+			compactedSizeBuffer.alloc(sizeof(uint64_t));
+
+			emitDesc.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
+			emitDesc.result = compactedSizeBuffer.d_pointer();
+		}
 
 		/* === Execute build === */
 		OptixTraversableHandle asHandle{ 0 };
@@ -370,7 +375,8 @@ namespace otx
 		tempBuffer.alloc(asBufferSizes.tempSizeInBytes);
 
 		CUDABuffer outputBuffer;
-		outputBuffer.alloc(asBufferSizes.outputSizeInBytes);
+		if (compact) outputBuffer.alloc(asBufferSizes.outputSizeInBytes);
+		else buffer.alloc(asBufferSizes.outputSizeInBytes);
 
 		OPTIX_CHECK(optixAccelBuild(
 			m_OptixContext,
@@ -380,33 +386,39 @@ namespace otx
 			1,
 			tempBuffer.d_pointer(),
 			tempBuffer.sizeInBytes,
-			outputBuffer.d_pointer(),
-			outputBuffer.sizeInBytes,
+			compact ? outputBuffer.d_pointer() : buffer.d_pointer(),
+			compact ? outputBuffer.sizeInBytes : buffer.sizeInBytes,
 			&asHandle,
-			&emitDesc,
-			1
+			compact ? &emitDesc : nullptr,
+			compact ? 1 : 0
 		));
 		CUDA_SYNC_CHECK();
 
 		/* === Perform compaction === */
-		uint64_t compactedSize;
-		compactedSizeBuffer.download(&compactedSize, 1);
+		if (compact)
+		{
+			uint64_t compactedSize;
+			compactedSizeBuffer.download(&compactedSize, 1);
 
-		buffer.alloc(compactedSize);
-		OPTIX_CHECK(optixAccelCompact(
-			m_OptixContext,
-			0,
-			asHandle,
-			buffer.d_pointer(),
-			buffer.sizeInBytes,
-			&asHandle
-		));
-		CUDA_SYNC_CHECK();
+			buffer.alloc(compactedSize);
+			OPTIX_CHECK(optixAccelCompact(
+				m_OptixContext,
+				0,
+				asHandle,
+				buffer.d_pointer(),
+				buffer.sizeInBytes,
+				&asHandle
+			));
+			CUDA_SYNC_CHECK();
+		}
 
 		/* === Clean up === */
-		outputBuffer.free(); /* Free the temporary, uncompacted buffer */
+		if (compact)
+		{
+			outputBuffer.free();
+			compactedSizeBuffer.free();
+		}
 		tempBuffer.free();
-		compactedSizeBuffer.free();
 
 		return asHandle;
 	}
@@ -431,9 +443,7 @@ namespace otx
 					transform.emplace_back(t[col][row]);
 				}
 			}
-			CUDABuffer transformBuffer;
-			transformBuffer.alloc_and_upload(transform);
-			m_Transforms.emplace_back(transformBuffer);
+			m_Transforms.emplace_back(transform);
 		}
 
 		/* Get ready to store mesh data on device... */
@@ -443,8 +453,7 @@ namespace otx
 		m_TexCoordBuffers.resize(nObjects);
 
 		m_GASBuffers.resize(nObjects);
-		m_IASBuffers.resize(nObjects);
-		m_InstanceHandles.resize(nObjects);
+		m_Instances.resize(nObjects);
 
 		/* ==================================== */
 		/* === GAS and IAS per scene object === */
@@ -497,39 +506,27 @@ namespace otx
 
 			/* === IAS Setup === */
 			OptixInstance instance = {};
-			memcpy(instance.transform, &m_Transforms[objectID], sizeof(float) * 12); /* Copy over the object's transform */
+			memcpy(instance.transform, m_Transforms[objectID].data(), sizeof(float) * 12); /* Copy over the object's transform */
 			instance.instanceId = objectID;
 			instance.visibilityMask = 255;
 			instance.sbtOffset = 0;
 			instance.flags = OPTIX_INSTANCE_FLAG_NONE;
 			instance.traversableHandle = gasHandle;
 
-			CUDABuffer d_instance;
-			d_instance.alloc(sizeof(OptixInstance));
-			cudaMemcpy(d_instance.d_ptr, &instance, sizeof(OptixInstance), cudaMemcpyHostToDevice);
-			
-			OptixBuildInput iasInput = {};
-			iasInput.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
-			iasInput.instanceArray.instances = d_instance.d_pointer();
-			iasInput.instanceArray.numInstances = 1;
-			iasInput.instanceArray.instanceStride = sizeof(OptixInstance);
-
-			OptixTraversableHandle iasHandle = BuildAccel(iasInput, m_IASBuffers[objectID]);
-			m_InstanceHandles.push_back(iasHandle);
+			m_Instances[objectID] = instance;
 		}
 
 		/* === Top level IAS Setup === */
 		void* d_instances;
-		cudaMalloc(&d_instances, m_InstanceHandles.size() * sizeof(OptixTraversableHandle));
-		cudaMemcpy(d_instances, m_InstanceHandles.data(), m_InstanceHandles.size() * sizeof(OptixTraversableHandle), cudaMemcpyHostToDevice);
+		cudaMalloc(&d_instances, m_Instances.size() * sizeof(m_Instances[0]));
+		cudaMemcpy(d_instances, m_Instances.data(), m_Instances.size() * sizeof(m_Instances[0]), cudaMemcpyHostToDevice);
 
 		OptixBuildInput topIasInput = {};
-		topIasInput.type = OPTIX_BUILD_INPUT_TYPE_INSTANCE_POINTERS;
+		topIasInput.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
 		topIasInput.instanceArray.instances = (CUdeviceptr)d_instances;
-		topIasInput.instanceArray.numInstances = m_InstanceHandles.size();
-		topIasInput.instanceArray.instanceStride = 0;
+		topIasInput.instanceArray.numInstances = (int)m_Instances.size();
 
-		OptixTraversableHandle asHandle = BuildAccel(topIasInput, m_TopIAS);
+		OptixTraversableHandle asHandle = BuildAccel(topIasInput, m_ASBuffer, false);
 
 		return asHandle;
 	}
@@ -706,11 +703,14 @@ namespace otx
 
 		/* Resize our CUDA framebuffer */
 		m_ColorBuffer.resize(static_cast<size_t>(newSize.x * newSize.y * sizeof(uint32_t)));
+		m_AccumBuffer.resize(static_cast<size_t>(newSize.x * newSize.y * sizeof(float)));
 
 		/* Update our launch parameters */
 		m_LaunchParams.frame.size.x = static_cast<int>(newSize.x);
 		m_LaunchParams.frame.size.y = static_cast<int>(newSize.y);
 		m_LaunchParams.frame.colorBuffer = (uint32_t*)m_ColorBuffer.d_ptr;
+		m_LaunchParams.frame.accumBuffer = (float*)m_AccumBuffer.d_ptr;
+		m_LaunchParams.frame.accumID = 0;
 
 		/* Reset the camera because our aspect ratio may have changed */
 		SetCamera(m_LastSetCamera);
@@ -742,7 +742,7 @@ namespace otx
 		if (m_LaunchParams.frame.size.x == 0 || m_LaunchParams.frame.size.y == 0) return;
 
 		m_LaunchParamsBuffer.upload(&m_LaunchParams, 1);
-		m_LaunchParams.frameID++;
+		m_LaunchParams.frame.accumID++;
 
 		OPTIX_CHECK(optixLaunch(
 			m_Pipeline,

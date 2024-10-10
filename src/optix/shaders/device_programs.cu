@@ -1,11 +1,23 @@
 #include <optix_device.h>
+#include <cuda_runtime.h>
 
 #include "../launch_params.h"
+#include "../random.h"
 
 namespace otx
 {
+	typedef PCG Random;
+
 	/* Launch parameters in constant memory, filled in by Optix upon optixLaunch */
 	extern "C" __constant__ LaunchParams optixLaunchParams;
+
+
+	/* Per-ray data */
+	struct PRD
+	{
+		Random random;
+		float3 pixelColor;
+	};
 
 
 	/* 
@@ -41,8 +53,18 @@ namespace otx
 	/* =============== */
 	/* === Helpers === */
 	/* =============== */
+	
+	///* Convert uint32 representation of RGBA values to three ints for RGB */
+	//extern "C" __inline__ __device__ int3 Uint32ToInt3(uint32_t c)
+	//{
+	//	int r = (0x000000ff & c) >> 0;
+	//	int g = (0x0000ff00 & c) >> 8;
+	//	int b = (0x00ff0000 & c) >> 16;
+	//	return make_int3(r, g, b);
+	//}
 
-	/* Compute world position of ray hit */
+
+	/* Compute world position of (current) ray hit */
 	extern "C" __inline__ __device__ float3 HitPosition()
 	{
 		return optixGetWorldRayOrigin() + optixGetWorldRayDirection() * optixGetRayTmax();
@@ -66,6 +88,8 @@ namespace otx
 	extern "C" __global__ void __closesthit__radiance()
 	{
 		const MeshSBTData& sbtData = *(const MeshSBTData*)optixGetSbtDataPointer();
+		PRD& prd = *getPRD<PRD>();
+
 		const int primID = optixGetPrimitiveIndex();
 		const int3 index = sbtData.index[primID];
 		float2 uv = optixGetTriangleBarycentrics();
@@ -76,19 +100,8 @@ namespace otx
 		const float3& v0 = sbtData.position[index.x];
 		const float3& v1 = sbtData.position[index.y];
 		const float3& v2 = sbtData.position[index.z];
-		const float3& n0 = sbtData.normal[index.x];
-		const float3& n1 = sbtData.normal[index.y];
-		const float3& n2 = sbtData.normal[index.z];
-
 		float3 Ng = cross(v1 - v0, v2 - v0);
-		float3 Ns = (sbtData.normal) ? InterpolateNormals(uv, n0, n1, n2) : Ng;
-		
-		///* Face forward and normalize normals */
-		//if (dot(rayDir, Ng) > 0.0f) Ng = -Ng;
-		//Ng = normalize(Ng);
-
-		//if (dot(rayDir, Ns) > 0.0f) Ns = -Ns;
-		//Ns = normalize(Ns);
+		float3 Ns = (sbtData.normal) ? InterpolateNormals(uv, sbtData.normal[index.x], sbtData.normal[index.y], sbtData.normal[index.z]) : Ng;
 
 		/* Compute world-space normal and normalize */
 		Ns = normalize(optixTransformNormalFromObjectToWorldSpace(Ns));
@@ -141,9 +154,7 @@ namespace otx
 		const float lc = ambient + diffuse * diffuseContrib + specular * specularContrib;
 
 		/* === Set data === */
-		float3& prd = *(float3*)getPRD<float3>();
-		//prd = diffuseColor * (lightVisibility * lc);
-		prd = diffuseColor * lc;
+		prd.pixelColor = diffuseColor * (lightVisibility * lc);
 	}
 
 
@@ -154,8 +165,8 @@ namespace otx
 
 	extern "C" __global__ void __miss__radiance()
 	{
-		float3& prd = *(float3*)getPRD<float3>();
-		prd = optixLaunchParams.clearColor;
+		PRD& prd = *getPRD<PRD>();
+		prd.pixelColor = optixLaunchParams.clearColor;
 	}
 
 
@@ -185,51 +196,76 @@ namespace otx
 	 */
 	extern "C" __global__ void __raygen__renderFrame()
 	{
-		/* Get pixel position */
+		/* Get pixel position and framebuffer index */
 		const int ix = optixGetLaunchIndex().x;
 		const int iy = optixGetLaunchIndex().y;
+		const uint32_t fbIndex = ix + iy * optixLaunchParams.frame.size.x;
+
+		/* Get the current frame's accumulation ID */
+		const int accumID = optixLaunchParams.frame.accumID;
 
 		/* Get the camera from launchParams */
 		const auto& camera = optixLaunchParams.camera;
 
-		/* The per-ray data is just a color (for now) */
-		float3 pixelColorPRD = make_float3(0.0f);
+		/* Get the current pixel's accumulated color */
+		uint32_t clr;
+		if (accumID > 0)
+		{
+			clr = optixLaunchParams.frame.colorBuffer[fbIndex];
+		}
+		else
+		{
+			clr = 0;
+		}
+
+
+		/* Initialize per-ray data */
+		PRD prd;
+		/* Random seed is current frame count * frame size + current (1D) pixel position such that every pixel for every accumulated frame has a unique seed. */
+		prd.random.Init(accumID * optixLaunchParams.frame.size.x * optixLaunchParams.frame.size.y + iy * optixLaunchParams.frame.size.x + ix);
+		prd.pixelColor = make_float3(0.0f);
 
 		/* The ints we store the PRD pointer in */
 		uint32_t u0, u1;
-		packPointer(&pixelColorPRD, u0, u1);
+		packPointer(&prd, u0, u1);
 
-		/* Normalized screen plane position in [0, 1]^2 */
-		const float2 screen = make_float2(ix + 0.5f, iy + 0.5f) / make_float2(optixLaunchParams.frame.size.x, optixLaunchParams.frame.size.y);
+		int numPixelSamples = 16;
+		float3 pixelColor = make_float3(0.0f);
+		for (int sampleID = 0; sampleID < numPixelSamples; sampleID++)
+		{
+			/* Normalized screen plane position in [0, 1]^2 with randomized sub-pixel position */
+			const float2 screen = make_float2(ix + prd.random(), iy + prd.random()) / make_float2(optixLaunchParams.frame.size.x, optixLaunchParams.frame.size.y);
 
-		/* Generate ray direction */
-		float3 rayDir = normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical);
+			/* Generate ray direction */
+			float3 rayDir = normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical);
 
-		/* Launch ray */
-		optixTrace(
-			optixLaunchParams.traversable,
-			camera.position,
-			rayDir,
-			0.0f, /* tMin */
-			1e20f, /* tMax */
-			0.0f, /* ray time */
-			OptixVisibilityMask(255),
-			OPTIX_RAY_FLAG_DISABLE_ANYHIT, /* OPTIX_RAY_FLAG_NONE */
-			RADIANCE_RAY_TYPE, /* SBT offset */
-			RAY_TYPE_COUNT, /* SBT stride */
-			RADIANCE_RAY_TYPE, /* miss SBT index */
-			u0, u1 /* packed pointer to our PRD */
-		);
-
-		const int r = int(255.99f*pixelColorPRD.x);
-		const int g = int(255.99f * pixelColorPRD.y);
-		const int b = int(255.99f * pixelColorPRD.z);
+			/* Launch ray */
+			optixTrace(
+				optixLaunchParams.traversable,
+				camera.position,
+				rayDir,
+				0.0f, /* tMin */
+				1e20f, /* tMax */
+				0.0f, /* ray time */
+				OptixVisibilityMask(255),
+				OPTIX_RAY_FLAG_DISABLE_ANYHIT, /* OPTIX_RAY_FLAG_NONE */
+				RADIANCE_RAY_TYPE, /* SBT offset */
+				RAY_TYPE_COUNT, /* SBT stride */
+				RADIANCE_RAY_TYPE, /* miss SBT index */
+				u0, u1 /* packed pointer to our PRD */
+			);
+			pixelColor += prd.pixelColor;
+		}
+		
+		const int r = int(255.99f * min(pixelColor.x / numPixelSamples, 1.0f));
+		const int g = int(255.99f * min(pixelColor.y / numPixelSamples, 1.0f));
+		const int b = int(255.99f * min(pixelColor.z / numPixelSamples, 1.0f));
 
 		/* Convert to 32-bit RGBA value, explicitly setting alpha to 0xff */
 		const uint32_t rgba = 0xff000000 | (r << 0) | (g << 8) | (b << 16);
 
 		/* Write to the frame buffer */
-		const uint32_t fbIndex = ix + iy * optixLaunchParams.frame.size.x;
+		
 		optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
 	}
 
