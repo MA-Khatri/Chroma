@@ -21,6 +21,7 @@
     <ClCompile Include="external\imgui-docking\implot.cpp" />
     <ClCompile Include="external\imgui-docking\implot_items.cpp" />
     <ClCompile Include="external\stb_image\stb_image.cpp" />
+    <ClCompile Include="external\stb_image\stb_image_write.cpp" />
     <ClCompile Include="src\application.cpp" />
     <ClCompile Include="src\camera.cpp" />
     <ClCompile Include="src\vulkan\image.cpp" />
@@ -61,6 +62,7 @@
     <ClInclude Include="external\imgui-docking\imstb_truetype.h" />
     <ClInclude Include="external\optix_utils\vector_math.h" />
     <ClInclude Include="external\stb_image\stb_image.h" />
+    <ClInclude Include="external\stb_image\stb_image_write.h" />
     <ClInclude Include="external\tiny_obj_loader\tiny_obj_loader.h" />
     <ClInclude Include="src\application.h" />
     <ClInclude Include="src\camera.h" />

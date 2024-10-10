@@ -26,6 +26,7 @@ public:
 	virtual void OnUpdate();
 	virtual void OnUIRender();
 
+	virtual void TakeScreenshot();
 
 private:
 

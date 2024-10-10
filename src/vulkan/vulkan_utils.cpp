@@ -1473,6 +1473,34 @@ namespace vk
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		}
+
+		/* Screenshot related layout transfers */
+		else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+		{
+			barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+			sourceStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT; /* After all graphics operations... */
+			destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+		{
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+
+			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT; /* Before any new graphics operations... */
+			destinationStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		}
+		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+		{
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+
+			sourceStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT; /* Doesn't matter when... */
+			destinationStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+		}
+		
+		
 		else
 		{
 			std::cerr << "TransitionImageLayout(): Unsupported layout transition! Old layout: " << oldLayout << ", new layout: " << newLayout << std::endl;
@@ -1522,6 +1550,21 @@ namespace vk
 		VkCommandBuffer commandBuffer = GetTransferCommandBuffer();
 		CopyBufferToImage(commandBuffer, buffer, image, width, height);
 		FlushTransferCommandBuffer(commandBuffer);
+	}
+
+
+	void CopyImageToImage(VkCommandBuffer& commandBuffer, const ImVec2& extent, VkImage& srcImage, VkImage& dstImage)
+	{
+		VkImageCopy imageCopyRegion{};
+		imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageCopyRegion.srcSubresource.layerCount = 1;
+		imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageCopyRegion.dstSubresource.layerCount = 1;
+		imageCopyRegion.extent.width = static_cast<uint32_t>(extent.x);
+		imageCopyRegion.extent.height = static_cast<uint32_t>(extent.y);
+		imageCopyRegion.extent.depth = 1;
+
+		vkCmdCopyImage(commandBuffer, srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopyRegion);
 	}
 
 

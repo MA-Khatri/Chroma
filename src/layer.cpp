@@ -1,4 +1,28 @@
 #include "layer.h"
+#include "stb_image_write.h"
+
+std::string GetDateTimeStr()
+{
+	std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
+	std::string s(30, '\0');
+	std::strftime(&s[0], s.size(), "%Y-%m-%d_%H:%M:%S", std::localtime(&now));
+	return s;
+}
+
+
+void WriteImageToFile(const char* data, int width, int height, std::string filename)
+{
+	if (stbi_write_png(filename.c_str(), width, height, 4, data, width * 4))
+	{
+		std::cout << "Saved image: " << filename << std::endl;
+	}
+	else
+	{
+		std::cerr << "Error! Failed to save image: " << filename << std::endl;
+	}
+}
+
 
 void Layer::CommonDebug(Application* app, ImVec2 viewport_size, const Camera& camera)
 {
@@ -34,4 +58,8 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, const Camera& ca
 	ImGui::Text("\tCamera Position: X=%.3f, Y=%.3f, Z=%.3f", camera.position.x, camera.position.y, camera.position.z);
 	ImGui::Text("\tCamera Orientation: X=%.3f, Y=%.3f, Z=%.3f", camera.orientation.x, camera.orientation.y, camera.orientation.z);
 
+	if (ImGui::Button("Take Screenshot"))
+	{
+		TakeScreenshot();
+	}
 }

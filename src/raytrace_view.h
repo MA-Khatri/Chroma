@@ -19,6 +19,7 @@ public:
 	virtual void OnUpdate();
 	virtual void OnUIRender();
 
+	virtual void TakeScreenshot();
 
 private:
 	void OnResize(ImVec2 newSize);

@@ -47,14 +47,14 @@ void RayTraceView::OnUpdate()
 		if (updated) m_OptixRenderer.SetCamera(*m_Camera);
 	}
 
-	if (m_ViewportFocused)
+	if (m_ViewportFocused && m_AppHandle->m_FocusedWindow != Application::RayTracedViewport)
 	{
-		if (m_AppHandle->m_FocusedWindow != Application::RayTracedViewport)
-		{
-			m_AppHandle->m_FocusedWindow = Application::RayTracedViewport;
-			m_OptixRenderer.SetCamera(*m_Camera); /* Reset camera when we switch back to raytraced view */
-		}
+		m_AppHandle->m_FocusedWindow = Application::RayTracedViewport;
+		m_OptixRenderer.SetCamera(*m_Camera); /* Reset camera when we switch back to raytraced view */
+	}
 
+	if (m_AppHandle->m_FocusedWindow == Application::RayTracedViewport)
+	{
 		m_OptixRenderer.Render();
 		m_OptixRenderer.DownloadPixels(m_RenderedImagePixels.data()); /* Instead of downloading to host then re-uploading to GPU, can we upload directly? */
 		m_RenderedImage.SetData(m_RenderedImagePixels.data());
@@ -99,6 +99,12 @@ void RayTraceView::OnUIRender()
 		}
 		ImGui::End();
 	}
+}
+
+
+void RayTraceView::TakeScreenshot()
+{
+
 }
 
 

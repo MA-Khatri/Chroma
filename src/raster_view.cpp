@@ -65,7 +65,7 @@ void RasterView::OnUIRender()
 					OnResize(newSize);
 				}
 
-				if (m_ViewportFocused)
+				if (m_AppHandle->m_FocusedWindow == Application::RasterizedViewport)
 				{
 					m_Scene->VkDraw(*m_Camera);
 
@@ -94,6 +94,75 @@ void RasterView::OnUIRender()
 		}
 		ImGui::End();
 	}
+}
+
+
+void RasterView::TakeScreenshot()
+{
+	/* Create a temporary image to store screenshot data */
+	VkImage cptImage;
+	VkDeviceMemory cptImageMemory;
+	vk::CreateImage(
+		static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), 
+		1,
+		VK_SAMPLE_COUNT_1_BIT, 
+		VK_FORMAT_R8G8B8A8_UNORM, 
+		VK_IMAGE_TILING_OPTIMAL, 
+		VK_IMAGE_USAGE_TRANSFER_DST_BIT, 
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+		cptImage, cptImageMemory
+	);
+
+	VkImage& srcImage = m_ViewportImages[vk::MainWindowData.FrameIndex];
+
+	VkCommandBuffer commandBuffer = vk::GetGraphicsCommandBuffer();
+	{
+		/* Transition viewport image to transfer src optimal */
+		vk::TransitionImageLayout(
+			commandBuffer,
+			srcImage, 
+			vk::MainWindowData.SurfaceFormat.format,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 
+			1
+		);
+
+		/* Copy viewport image to cpt image */
+		vk::CopyImageToImage(commandBuffer, m_ViewportSize, srcImage, cptImage);
+
+		/* Transition viewport image back to color attachment optimal */
+		vk::TransitionImageLayout(
+			commandBuffer,
+			srcImage,
+			vk::MainWindowData.SurfaceFormat.format,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			1
+		);
+
+		/* Transition cpt image to transfer src optimal */
+		vk::TransitionImageLayout(
+			commandBuffer,
+			cptImage,
+			VK_FORMAT_R8G8B8A8_UNORM,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			1
+		);
+	}
+	vk::FlushGraphicsCommandBuffer(commandBuffer);
+
+	/* Copy cpt image to host */
+	const char* data;
+	vkMapMemory(vk::Device, cptImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)&data);
+
+	/* Save cpt image to file */
+	WriteImageToFile(data, static_cast<int>(m_ViewportSize.x), static_cast<int>(m_ViewportSize.y), GetDateTimeStr()+"_raster.png");
+
+	/* Cleanup cpt image */
+	vkUnmapMemory(vk::Device, cptImageMemory);
+	vkFreeMemory(vk::Device, cptImageMemory, nullptr);
+	vkDestroyImage(vk::Device, cptImage, nullptr);
 }
 
 

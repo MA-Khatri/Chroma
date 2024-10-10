@@ -3,13 +3,20 @@
 #include <deque>
 #include <memory>
 
+#include <iostream>
+#include <ctime>
+#include <chrono>
+
 #include "application.h"
 #include "camera.h"
 
 /* Forward decleration */
 class Application;
 
-
+/* 
+ * A sliding buffer with m_MaxCount elements such that adding an element past 
+ * m_MaxCount appends to the end and removes the first element
+ */
 template <typename T> 
 class SlidingBuffer
 {
@@ -54,6 +61,7 @@ private:
 };
 
 
+/* Generate a vector of values from [start, stop) with the provided step size */
 template<typename T>
 std::vector<T> arange(T start, T stop, T step = 1)
 {
@@ -66,6 +74,12 @@ std::vector<T> arange(T start, T stop, T step = 1)
 }
 
 
+/* Get a string representing the current time in the format "YYYY-MM-DD_HH:MM:SS" */
+std::string GetDateTimeStr();
+
+/* Use stb to write image data to provided filename */
+void WriteImageToFile(const char* data, int width, int height, std::string filename);
+
 class Layer
 {
 public:
@@ -76,6 +90,8 @@ public:
 
 	virtual void OnUpdate() {}
 	virtual void OnUIRender() {}
+
+	virtual void TakeScreenshot() {}
 
 protected:
 	void CommonDebug(Application* app, ImVec2 viewport_size, const Camera& camera);

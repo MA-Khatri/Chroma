@@ -174,6 +174,8 @@ namespace vk
 	void CopyBufferToImage(VkCommandBuffer& commandBuffer, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
+	void CopyImageToImage(VkCommandBuffer& commandBuffer, const ImVec2& extent, VkImage& srcImage, VkImage& dstImage);
+
 	void CreateTextureImage(const Texture& tex, uint32_t& mipLevels, VkImage& textureImage, VkDeviceMemory& textureImageMemory);
 	void CreateTextureImageView(uint32_t mipLevels, VkImage& textureImage, VkImageView& textureImageView);
 	void CreateTextureSampler(uint32_t mipLevels, VkSampler& textureSampler);
