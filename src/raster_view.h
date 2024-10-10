@@ -51,7 +51,6 @@ private:
 	
 	bool m_ViewportFocused = false;
 	bool m_ViewportHovered = false;
-	bool m_ViewportVisible = false;
 	ImVec2 m_ViewportSize = ImVec2(400.0f, 400.0f);
 
 	std::vector<VkImage> m_ViewportImages;

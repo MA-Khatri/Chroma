@@ -53,17 +53,6 @@ namespace otx
 	/* =============== */
 	/* === Helpers === */
 	/* =============== */
-	
-	///* Convert uint32 representation of RGBA values to three ints for RGB */
-	//extern "C" __inline__ __device__ int3 Uint32ToInt3(uint32_t c)
-	//{
-	//	int r = (0x000000ff & c) >> 0;
-	//	int g = (0x0000ff00 & c) >> 8;
-	//	int b = (0x00ff0000 & c) >> 16;
-	//	return make_int3(r, g, b);
-	//}
-
-
 	/* Compute world position of (current) ray hit */
 	extern "C" __inline__ __device__ float3 HitPosition()
 	{

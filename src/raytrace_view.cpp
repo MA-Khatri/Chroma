@@ -27,7 +27,7 @@ void RayTraceView::OnAttach(Application* app)
 	else m_Camera = m_LocalCamera;
 
 	m_OptixRenderer.SetCamera(*m_Camera);
-	m_OptixRenderer.SetSamplesPerRender(1);
+	m_OptixRenderer.SetSamplesPerRender(16);
 }
 
 void RayTraceView::OnDetach()
@@ -38,17 +38,21 @@ void RayTraceView::OnDetach()
 
 void RayTraceView::OnUpdate()
 {
-	if (m_ViewportFocused) m_AppHandle->m_FocusedWindow = Application::RayTracedViewport;
+	if (m_AppHandle->m_LinkCameras)	m_Camera = m_AppHandle->GetMainCamera();
+	else m_Camera = m_LocalCamera;
 
-	if (m_ViewportVisible)
+	if (m_ViewportHovered)
 	{
-		if (m_AppHandle->m_LinkCameras)	m_Camera = m_AppHandle->GetMainCamera();
-		else m_Camera = m_LocalCamera;
+		bool updated = m_Camera->Inputs(m_WindowHandle);
+		if (updated) m_OptixRenderer.SetCamera(*m_Camera);
+	}
 
-		if (m_ViewportHovered)
+	if (m_ViewportFocused)
+	{
+		if (m_AppHandle->m_FocusedWindow != Application::RayTracedViewport)
 		{
-			bool updated = m_Camera->Inputs(m_WindowHandle);
-			if (updated) m_OptixRenderer.SetCamera(*m_Camera);
+			m_AppHandle->m_FocusedWindow = Application::RayTracedViewport;
+			m_OptixRenderer.SetCamera(*m_Camera); /* Reset camera when we switch back to raytraced view */
 		}
 
 		m_OptixRenderer.Render();
@@ -65,12 +69,11 @@ void RayTraceView::OnUIRender()
 	{
 		ImGui::Begin("Ray Traced Viewport");
 		{
+			m_ViewportFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
+
 			ImGui::BeginChild("Ray Traced");
 			{
-				m_ViewportFocused = ImGui::IsWindowFocused();
 				m_ViewportHovered = ImGui::IsWindowHovered();
-				if (ImGui::IsWindowAppearing()) m_ViewportVisible = true;
-				if (ImGui::IsWindowCollapsed()) m_ViewportVisible = false;
 
 				ImVec2 newSize = ImGui::GetContentRegionAvail();
 				if (m_ViewportSize.x != newSize.x || m_ViewportSize.y != newSize.y)

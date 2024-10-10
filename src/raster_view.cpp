@@ -53,12 +53,11 @@ void RasterView::OnUIRender()
 	{
 		ImGui::Begin("Rasterized Viewport");
 		{
+			m_ViewportFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
+
 			ImGui::BeginChild("Rasterized");
 			{
-				m_ViewportFocused = ImGui::IsWindowFocused();
 				m_ViewportHovered = ImGui::IsWindowHovered();
-				if (ImGui::IsWindowAppearing()) m_ViewportVisible = true;
-				if (ImGui::IsWindowCollapsed()) m_ViewportVisible = false;
 
 				ImVec2 newSize = ImGui::GetContentRegionAvail();
 				if (m_ViewportSize.x != newSize.x || m_ViewportSize.y != newSize.y)
@@ -66,7 +65,7 @@ void RasterView::OnUIRender()
 					OnResize(newSize);
 				}
 
-				if (m_ViewportVisible)
+				if (m_ViewportFocused)
 				{
 					m_Scene->VkDraw(*m_Camera);
 
