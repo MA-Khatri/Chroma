@@ -41,9 +41,20 @@ void RasterView::OnUpdate()
 	{
 		m_Camera->UpdateViewMatrix();
 		m_Camera->UpdateProjectionMatrix();
+		if (m_Camera->m_ControlMode == Camera::ORBIT)
+		{
+			m_Camera->UpdateOrbit();
+		}
 	}
 
-	if (m_ViewportFocused) m_AppHandle->m_FocusedWindow = Application::RasterizedViewport;
+	if (m_ViewportFocused && m_AppHandle->m_FocusedWindow != Application::RasterizedViewport)
+	{
+		m_AppHandle->m_FocusedWindow = Application::RasterizedViewport;
+
+		/* Set scroll callback for current camera */
+		glfwSetWindowUserPointer(m_WindowHandle, m_Camera);
+		glfwSetScrollCallback(m_WindowHandle, Camera::ScrollCallback);
+	}
 
 	if (m_ViewportHovered)
 	{

@@ -110,11 +110,10 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 		if (selectedMode != camera.m_ControlMode) camera.m_CameraUIUpdate = true;
 		camera.m_ControlMode = selectedMode;
 
-
 		if (camera.m_ProjectionMode == Camera::PERSPECTIVE)
 		{
 			float fov = camera.m_VFoV;
-			ImGui::DragFloat("Vertical FoV", &fov, 0.1f, 5.0f, 135.0f);
+			ImGui::DragFloat("Vertical FoV", &fov, 0.1f, camera.m_MinFoV, camera.m_MaxFoV);
 			if (fov != camera.m_VFoV) camera.m_CameraUIUpdate = true;
 			camera.m_VFoV = fov;
 		}
@@ -135,9 +134,27 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 		}
 		else if (camera.m_ControlMode == Camera::ORBIT)
 		{
+			float orig[3] = { camera.m_OrbitOrigin.x, camera.m_OrbitOrigin.y, camera.m_OrbitOrigin.z };
+			ImGui::DragFloat3("Orbit Origin", orig, 0.1f);
+			glm::vec3 newOrig = glm::vec3(orig[0], orig[1], orig[2]);
+			if (newOrig != camera.m_OrbitOrigin)camera.m_CameraUIUpdate = true;
+			camera.m_OrbitOrigin = newOrig;
 
+			float dist = camera.m_OrbitDistance;
+			ImGui::DragFloat("Orbit Distance", &dist, 0.1f, 0.1f);
+			if (dist != camera.m_OrbitDistance) camera.m_CameraUIUpdate = true;
+			camera.m_OrbitDistance = dist;
+
+			float theta = camera.m_OrbitTheta;
+			ImGui::DragFloat("Theta", &theta);
+			if (theta != camera.m_OrbitTheta) camera.m_CameraUIUpdate = true;
+			camera.m_OrbitTheta = theta;
+
+			float phi = camera.m_OrbitPhi;
+			ImGui::DragFloat("Phi", &phi);
+			if (phi != camera.m_OrbitPhi) camera.m_CameraUIUpdate = true;
+			camera.m_OrbitPhi = phi;
 		}
-
 	}	
 
 	if (ImGui::Button("Take Screenshot"))

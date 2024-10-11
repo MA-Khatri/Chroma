@@ -47,7 +47,7 @@ private:
 private:
 	Application* m_AppHandle;
 	GLFWwindow* m_WindowHandle;
-
+	
 	Camera* m_Camera;
 	
 	bool m_ViewportFocused = false;

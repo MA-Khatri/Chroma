@@ -50,7 +50,14 @@ public:
 	glm::vec3 m_Up;
 
 	/* For orbit camera, the point the camera orbits around */
-	glm::vec3 m_OrbitOrigin;
+	glm::vec3 m_OrbitOrigin = glm::vec3(0.0f);
+
+	/* For orbit camera, the distance the camera is from the orbit origin */
+	float m_OrbitDistance = 10.0f;
+
+	/* For orbit camera, the angles */
+	float m_OrbitTheta = 0.0f; /* Degrees around z-axis, from +x, (0, 360) */
+	float m_OrbitPhi = 45.0f; /* Degrees from xy-plane, ~(-90, 90) */
 
 	/* The camera matrix (initialized to identity matrix) -- will store the combined view-projection matrix */
 	glm::mat4 m_Matrix = glm::mat4(1.0f);
@@ -63,6 +70,10 @@ public:
 
 	/* The vertical field of view (in degrees) */
 	float m_VFoV;
+
+	/* FoV limits */
+	float m_MinFoV = 5.0f;
+	float m_MaxFoV = 135.0f;
 
 	/* Viewport bounds in pixels used to wrap the cursor when dragging */
 	ImVec2 m_ViewportContentMin = ImVec2(0.0f, 0.0f);
@@ -89,12 +100,20 @@ public:
 	/* Updates the view and projection matrices */
 	void Update(float vFOVdeg, float nearPlane, float farPlane, int inWidth, int inHeight);
 
+	/* Calculate the camera position and orientation for orbit mode */
+	void UpdateOrbit();
+
 	void UpdateViewMatrix();
 	void UpdateProjectionMatrix(int width, int height);
 	void UpdateProjectionMatrix(float vFOVdeg);
 	void UpdateProjectionMatrix();
 
-
 	/* Handles camera movement inputs. Returns boolean indicating if any inputs were recorded. */
 	bool Inputs(GLFWwindow* window);
-};
+
+	/* Called on scrollwheel */
+	static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+
+}; /* class Camera */
+
+

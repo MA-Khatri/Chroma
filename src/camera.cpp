@@ -1,4 +1,5 @@
 #include "camera.h"
+#include <iostream>
 
 Camera::Camera(int width, int height, glm::vec3 position, glm::vec3 orientation, glm::vec3 up, float vfov /* = 45.0f */, float near_plane /* = 0.1f */, float far_plane /* = 1000.0f */)
 {
@@ -50,6 +51,15 @@ void Camera::Update(float vFOVdeg, float nearPlane, float farPlane, int inWidth,
 	m_Matrix = m_ProjectionMatrix * m_ViewMatrix;
 }
 
+void Camera::UpdateOrbit()
+{
+	/* Determine direction camera is looking */
+	m_Orientation = -glm::normalize(glm::vec3(glm::cos(glm::radians(m_OrbitTheta)), glm::sin(glm::radians(m_OrbitTheta)), glm::tan(glm::radians(m_OrbitPhi))));
+
+	/* Camera position is origin - orientation * distance */
+	m_Position = m_OrbitOrigin - m_OrbitDistance * m_Orientation;
+}
+
 void Camera::UpdateViewMatrix()
 {
 	m_ViewMatrix = glm::lookAt(m_Position, m_Position + m_Orientation, m_Up);
@@ -79,48 +89,51 @@ bool Camera::Inputs(GLFWwindow* window)
 {
 	bool updated = false;
 
-	/* WASD keys for basic motion front/back, strafe left/right */ 
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	if (m_ControlMode == FREE_FLY)
 	{
-		m_Position += m_Speed * m_Orientation;
-		updated = true;
-	}
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-	{
-		m_Position += m_Speed * -m_Orientation;
-		updated = true;
-	}
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-	{
-		m_Position += m_Speed * -glm::normalize(glm::cross(m_Orientation, m_Up));
-		updated = true;
-	}
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-	{
-		m_Position += m_Speed * glm::normalize(glm::cross(m_Orientation, m_Up));
-		updated = true;
-	}
+		/* WASD keys for basic motion front/back, strafe left/right */
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		{
+			m_Position += m_Speed * m_Orientation;
+			updated = true;
+		}
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		{
+			m_Position += m_Speed * -m_Orientation;
+			updated = true;
+		}
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		{
+			m_Position += m_Speed * -glm::normalize(glm::cross(m_Orientation, m_Up));
+			updated = true;
+		}
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		{
+			m_Position += m_Speed * glm::normalize(glm::cross(m_Orientation, m_Up));
+			updated = true;
+		}
 
-	/* SPACE/CTRL moves up/down along up vector */
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-	{
-		m_Position += m_Speed * m_Up;
-		updated = true;
-	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-	{
-		m_Position += m_Speed * -m_Up;
-		updated = true;
-	}
+		/* SPACE/CTRL moves up/down along up vector */
+		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+		{
+			m_Position += m_Speed * m_Up;
+			updated = true;
+		}
+		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+		{
+			m_Position += m_Speed * -m_Up;
+			updated = true;
+		}
 
-	/* Holding down shift increases m_Speed */
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-	{
-		m_Speed = 0.2f;
-	}
-	else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
-	{
-		m_Speed = 0.05f;
+		/* Holding down shift increases m_Speed */
+		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+		{
+			m_Speed = 0.2f;
+		}
+		else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
+		{
+			m_Speed = 0.05f;
+		}
 	}
 
 	/* Mouse drag for orientation */
@@ -144,21 +157,55 @@ bool Camera::Inputs(GLFWwindow* window)
 		glfwGetCursorPos(window, &mouseX, &mouseY);
 
 		/* Mouse drag amounts for rotation */
-		float rotX = m_Sensitivity * (float)(mouseY - m_PrevMousePosn.y) / m_Height;
-		float rotY = m_Sensitivity * (float)(mouseX - m_PrevMousePosn.x) / m_Width;
-		if (fabsf(rotX) > 0.0f || fabsf(rotY) > 0.0f) updated = true;
+		float yDrag = m_Sensitivity * (float)(mouseY - m_PrevMousePosn.y) / m_Height;
+		float xDrag = m_Sensitivity * (float)(mouseX - m_PrevMousePosn.x) / m_Width;
+		if (fabsf(yDrag) > 0.0f || fabsf(xDrag) > 0.0f) updated = true;
 
-		/* Get new orientation for the camera */
-		glm::vec3 newOrientation = glm::rotate(m_Orientation, glm::radians(-rotX), glm::normalize(glm::cross(m_Orientation, m_Up)));
-
-		/* Bound the up/down tilt between -5 to 5 radians */
-		if (!(glm::angle(newOrientation, m_Up) <= glm::radians(5.0f) or glm::angle(newOrientation, -m_Up) <= glm::radians(5.0f)))
+		if (m_ControlMode == FREE_FLY)
 		{
-			m_Orientation = newOrientation;
-		}
+			/* Get new orientation for the camera */
+			glm::vec3 newOrientation = glm::rotate(m_Orientation, glm::radians(-yDrag), glm::normalize(glm::cross(m_Orientation, m_Up)));
 
-		/* Right/Left rotate (allowed to fully spin around) */
-		m_Orientation = glm::rotate(m_Orientation, glm::radians(-rotY), m_Up);
+			/* Bound the up/down tilt between -5 to 5 radians */
+			if (!(glm::angle(newOrientation, m_Up) <= glm::radians(5.0f) or glm::angle(newOrientation, -m_Up) <= glm::radians(5.0f)))
+			{
+				m_Orientation = newOrientation;
+			}
+
+			/* Right/Left rotate (allowed to fully spin around) */
+			m_Orientation = glm::rotate(m_Orientation, glm::radians(-xDrag), m_Up);
+		}
+		else if (m_ControlMode == ORBIT)
+		{
+			/* If control is pressed while clicking & dragging, vertical drag moves distance in/out */
+			if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+			{
+				m_OrbitDistance += yDrag;
+				if (m_OrbitDistance < 0.01f) m_OrbitDistance = 0.01f;
+			}
+			/* If shift key is pressed while clicking & dragging, move the orbit origin along the plane orthogonal to the view direction */
+			else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+			{
+				glm::vec3 uAxis = glm::normalize(glm::cross(m_Orientation, m_Up));
+				glm::vec3 vAxis = m_Up;
+				m_OrbitOrigin += 0.1f * (uAxis * -xDrag + vAxis * yDrag);
+			}
+			/* Otherwise, normal camera orbit */
+			else
+			{
+				/* Keep theta in (0, 360) */
+				m_OrbitTheta -= xDrag;
+				if (m_OrbitTheta < 0.0f) m_OrbitTheta = 360.0f + fmodf(m_OrbitTheta, 360.0f);
+				else m_OrbitTheta = fmodf(m_OrbitTheta, 360.0f);
+
+				/* Keep phi in (-89, 89) */
+				m_OrbitPhi += yDrag;
+				if (m_OrbitPhi > 89.0f) m_OrbitPhi = 89.0f;
+				if (m_OrbitPhi < -89.0f) m_OrbitPhi = -89.0f;
+			}
+
+			UpdateOrbit();
+		}
 
 		/* Wrap mouse around viewport if LMB is still pressed */
 		int padding = 2; /* We add some padding to the viewport bc we're using ImGui::IsWindowHovered() to check for inputs */
@@ -192,4 +239,15 @@ bool Camera::Inputs(GLFWwindow* window)
 	UpdateViewMatrix();
 
 	return updated;
+}
+
+void Camera::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	Camera* camera = (Camera*)glfwGetWindowUserPointer(window);
+	camera->m_VFoV -= static_cast<float>(yoffset);	
+	if (camera->m_VFoV < camera->m_MinFoV) camera->m_VFoV = camera->m_MinFoV;
+	if (camera->m_VFoV > camera->m_MaxFoV) camera->m_VFoV = camera->m_MaxFoV;
+
+	/* Set this to true so that camera is updated */
+	camera->m_CameraUIUpdate = true;
 }

@@ -45,6 +45,10 @@ void RayTraceView::OnUpdate()
 	{
 		m_Camera->UpdateViewMatrix();
 		m_Camera->UpdateProjectionMatrix();
+		if (m_Camera->m_ControlMode == Camera::ORBIT)
+		{
+			m_Camera->UpdateOrbit();
+		}
 		m_OptixRenderer.SetCamera(*m_Camera);
 	}
 
@@ -57,6 +61,11 @@ void RayTraceView::OnUpdate()
 	if (m_ViewportFocused && m_AppHandle->m_FocusedWindow != Application::RayTracedViewport)
 	{
 		m_AppHandle->m_FocusedWindow = Application::RayTracedViewport;
+
+		/* Set scroll callback for current camera */
+		glfwSetWindowUserPointer(m_WindowHandle, m_Camera);
+		glfwSetScrollCallback(m_WindowHandle, Camera::ScrollCallback);
+		
 		m_OptixRenderer.SetCamera(*m_Camera); /* Reset camera when we switch back to raytraced view */
 	}
 
