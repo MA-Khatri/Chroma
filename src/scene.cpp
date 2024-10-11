@@ -174,8 +174,8 @@ void Scene::VkDraw(const Camera& camera)
 
 	/* Set push constants */
 	PushConstants constants;
-	constants.view = camera.view_matrix;
-	constants.proj = camera.projection_matrix;
+	constants.view = camera.m_ViewMatrix;
+	constants.proj = camera.m_ProjectionMatrix;
 	vkCmdPushConstants(commandBuffer, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
 
 	/* Draw the objects */

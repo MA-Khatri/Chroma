@@ -95,7 +95,7 @@ public:
 	virtual std::string TakeScreenshot() { return ""; }
 
 protected:
-	void CommonDebug(Application* app, ImVec2 viewport_size, const Camera& camera);
+	void CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera);
 
 	int m_FrameStorageCount = 1001;
 	SlidingBuffer<float> m_FrameTimes = SlidingBuffer<float>(m_FrameStorageCount);

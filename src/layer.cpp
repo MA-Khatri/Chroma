@@ -58,7 +58,7 @@ std::string WriteImageToFile(std::string filename, int width, int height, int ch
 }
 
 
-void Layer::CommonDebug(Application* app, ImVec2 viewport_size, const Camera& camera)
+void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 {
 	ImGuiIO io = ImGui::GetIO();
 
@@ -85,12 +85,60 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, const Camera& ca
 
 	ImGui::Text("Viewport Size :  %.1i x %.1i ", (int)viewport_size.x, (int)viewport_size.y);
 
+	//if (ImGui::CollapsingHeader("Camera Settings"))
+	ImGui::SeparatorText("Camera Settings");
+	{
+		ImGui::Checkbox("Link Cameras", &app->m_LinkCameras);
+		
+		camera.m_CameraUIUpdate = false;
 
-	ImGui::Text("Camera Settings");
-	ImGui::Checkbox("Link Cameras", &app->m_LinkCameras);
-	ImGui::Text("\tVertical Field of View: %.1f deg", camera.vfov);
-	ImGui::Text("\tCamera Position: X=%.3f, Y=%.3f, Z=%.3f", camera.position.x, camera.position.y, camera.position.z);
-	ImGui::Text("\tCamera Orientation: X=%.3f, Y=%.3f, Z=%.3f", camera.orientation.x, camera.orientation.y, camera.orientation.z);
+		/* Choose camera control mode */
+		const char* controlModes[] = { "Free fly", "Orbit" }; /* Make sure this matches order in Camera::ControlMode */
+		static int selectedMode = camera.m_ControlMode;
+		const char* preview = controlModes[selectedMode];
+		if (ImGui::BeginCombo("Control Mode", preview))
+		{
+			for (int n = 0; n < IM_ARRAYSIZE(controlModes); n++)
+			{
+				const bool isSelected = (selectedMode == n);
+				if (ImGui::Selectable(controlModes[n], isSelected)) selectedMode = n;
+
+				if (isSelected) ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+		if (selectedMode != camera.m_ControlMode) camera.m_CameraUIUpdate = true;
+		camera.m_ControlMode = selectedMode;
+
+
+		if (camera.m_ProjectionMode == Camera::PERSPECTIVE)
+		{
+			float fov = camera.m_VFoV;
+			ImGui::DragFloat("Vertical FoV", &fov, 0.1f, 5.0f, 135.0f);
+			if (fov != camera.m_VFoV) camera.m_CameraUIUpdate = true;
+			camera.m_VFoV = fov;
+		}
+
+		if (camera.m_ControlMode == Camera::FREE_FLY)
+		{
+			float posn[3] = { camera.m_Position.x, camera.m_Position.y, camera.m_Position.z };
+			ImGui::DragFloat3("Camera Position", posn, 0.1f);
+			glm::vec3 newPosn = glm::vec3(posn[0], posn[1], posn[2]);
+			if (newPosn != camera.m_Position)camera.m_CameraUIUpdate = true;
+			camera.m_Position = newPosn;
+
+			float ornt[3] = { camera.m_Orientation.x, camera.m_Orientation.y, camera.m_Orientation.z };
+			ImGui::DragFloat3("Camera Orientation", ornt, 0.01f, -1.0f, 1.0f);
+			glm::vec3 newOrnt = glm::normalize(glm::vec3(ornt[0], ornt[1], ornt[2]));
+			if (newOrnt != camera.m_Orientation) camera.m_CameraUIUpdate = true;
+			camera.m_Orientation = newOrnt;
+		}
+		else if (camera.m_ControlMode == Camera::ORBIT)
+		{
+
+		}
+
+	}	
 
 	if (ImGui::Button("Take Screenshot"))
 	{

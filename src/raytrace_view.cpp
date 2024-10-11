@@ -41,6 +41,13 @@ void RayTraceView::OnUpdate()
 	if (m_AppHandle->m_LinkCameras)	m_Camera = m_AppHandle->GetMainCamera();
 	else m_Camera = m_LocalCamera;
 
+	if (m_Camera->m_CameraUIUpdate)
+	{
+		m_Camera->UpdateViewMatrix();
+		m_Camera->UpdateProjectionMatrix();
+		m_OptixRenderer.SetCamera(*m_Camera);
+	}
+
 	if (m_ViewportHovered)
 	{
 		bool updated = m_Camera->Inputs(m_WindowHandle);
@@ -128,15 +135,15 @@ void RayTraceView::OnResize(ImVec2 newSize)
 	ImVec2 rPos = ImVec2(viewportPos.x - mainWindowPos.x, viewportPos.y - mainWindowPos.y);
 	ImVec2 minR = ImGui::GetWindowContentRegionMin();
 	ImVec2 maxR = ImGui::GetWindowContentRegionMax();
-	m_Camera->viewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
-	m_Camera->viewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
+	m_Camera->m_ViewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
+	m_Camera->m_ViewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
 	m_Camera->UpdateProjectionMatrix(static_cast<int>(m_ViewportSize.x), static_cast<int>(m_ViewportSize.y));
 
 	/* If cameras are linked, we still need to update the local camera */
 	if (m_AppHandle->m_LinkCameras)
 	{
-		m_LocalCamera->viewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
-		m_LocalCamera->viewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
+		m_LocalCamera->m_ViewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
+		m_LocalCamera->m_ViewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
 		m_LocalCamera->UpdateProjectionMatrix(static_cast<int>(m_ViewportSize.x), static_cast<int>(m_ViewportSize.y));
 	}
 

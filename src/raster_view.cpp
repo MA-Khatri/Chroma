@@ -37,6 +37,12 @@ void RasterView::OnDetach()
 
 void RasterView::OnUpdate()
 {
+	if (m_Camera->m_CameraUIUpdate)
+	{
+		m_Camera->UpdateViewMatrix();
+		m_Camera->UpdateProjectionMatrix();
+	}
+
 	if (m_ViewportFocused) m_AppHandle->m_FocusedWindow = Application::RasterizedViewport;
 
 	if (m_ViewportHovered)
@@ -258,8 +264,8 @@ void RasterView::OnResize(ImVec2 newSize)
 	ImVec2 rPos = ImVec2(viewportPos.x - mainWindowPos.x, viewportPos.y - mainWindowPos.y);
 	ImVec2 minR = ImGui::GetWindowContentRegionMin();
 	ImVec2 maxR = ImGui::GetWindowContentRegionMax();
-	m_Camera->viewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
-	m_Camera->viewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
+	m_Camera->m_ViewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
+	m_Camera->m_ViewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
 	m_Camera->UpdateProjectionMatrix(static_cast<int>(m_ViewportSize.x), static_cast<int>(m_ViewportSize.y));
 
 	/* Before re-creating the images, we MUST wait for the device to be done using them */

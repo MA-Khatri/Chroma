@@ -63,10 +63,10 @@ namespace otx
 
 		Debug("[Optix] Creating hitgroup programs...");
 		CreateHitgroupPrograms();
-
+		
 		Debug("[Optix] Building acceleration structures...");
 		m_LaunchParams.traversable = BuildGasAndIas();
-		
+
 		Debug("[Optix] Setting up Optix pipeline...");
 		CreatePipeline();
 
@@ -509,7 +509,7 @@ namespace otx
 			memcpy(instance.transform, m_Transforms[objectID].data(), sizeof(float) * 12); /* Copy over the object's transform */
 			instance.instanceId = objectID;
 			instance.visibilityMask = 255;
-			instance.sbtOffset = RAY_TYPE_COUNT * objectID;
+			instance.sbtOffset = objectID * RAY_TYPE_COUNT;
 			instance.flags = OPTIX_INSTANCE_FLAG_NONE;
 			instance.traversableHandle = gasHandle;
 
@@ -726,15 +726,15 @@ namespace otx
 		m_LaunchParams.clearColor = ToFloat3(m_Scene->m_ClearColor);
 
 		m_LastSetCamera = camera;
-		m_LaunchParams.camera.position = ToFloat3(camera.position);
-		m_LaunchParams.camera.direction = ToFloat3(glm::normalize(camera.orientation));
+		m_LaunchParams.camera.position = ToFloat3(camera.m_Position);
+		m_LaunchParams.camera.direction = ToFloat3(glm::normalize(camera.m_Orientation));
 
 		float aspect = m_LaunchParams.frame.size.x / float(m_LaunchParams.frame.size.y);
-		float focal_length = glm::length(camera.orientation);
-		float h = glm::tan(glm::radians(camera.vfov) / 2.0f);
+		float focal_length = glm::length(camera.m_Orientation);
+		float h = glm::tan(glm::radians(camera.m_VFoV) / 2.0f);
 		float height = 2.0f * h * focal_length;
 		float width = height * aspect;
-		m_LaunchParams.camera.horizontal = width * normalize(cross(m_LaunchParams.camera.direction, ToFloat3(camera.up)));
+		m_LaunchParams.camera.horizontal = width * normalize(cross(m_LaunchParams.camera.direction, ToFloat3(camera.m_Up)));
 		m_LaunchParams.camera.vertical = height * normalize(cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
 
 		/* Reset accumulation */

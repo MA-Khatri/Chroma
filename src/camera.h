@@ -23,30 +23,50 @@ private:
 
 
 public:
+	enum ControlMode
+	{
+		FREE_FLY,
+		ORBIT
+	};
+
+	enum ProjectionMode
+	{
+		PERSPECTIVE,
+		ORTHOGRAPHIC,
+	};
+
+	int m_ControlMode = FREE_FLY;
+	int m_ProjectionMode = PERSPECTIVE;
+
+	bool m_CameraUIUpdate = false; /* Set to true if camera values changed by UI */
+
 	/* The position of the camera */
-	glm::vec3 position;
+	glm::vec3 m_Position;
 
 	/* The direction the camera is looking. Internally, the lookAt point is position + this orientation */
-	glm::vec3 orientation;
+	glm::vec3 m_Orientation;
 
 	/* The up vector(think orientation of the viewport) */
-	glm::vec3 up;
+	glm::vec3 m_Up;
+
+	/* For orbit camera, the point the camera orbits around */
+	glm::vec3 m_OrbitOrigin;
 
 	/* The camera matrix (initialized to identity matrix) -- will store the combined view-projection matrix */
-	glm::mat4 matrix = glm::mat4(1.0f);
+	glm::mat4 m_Matrix = glm::mat4(1.0f);
 
 	/* The matrix representing the camera's position and orientation */
-	glm::mat4 view_matrix = glm::mat4(1.0f);
+	glm::mat4 m_ViewMatrix = glm::mat4(1.0f);
 
 	/* The matrix representing the projection of the camera */
-	glm::mat4 projection_matrix = glm::mat4(1.0f);
+	glm::mat4 m_ProjectionMatrix = glm::mat4(1.0f);
 
 	/* The vertical field of view (in degrees) */
-	float vfov;
+	float m_VFoV;
 
 	/* Viewport bounds in pixels used to wrap the cursor when dragging */
-	ImVec2 viewportContentMin = ImVec2(0.0f, 0.0f);
-	ImVec2 viewportContentMax = ImVec2(0.0f, 0.0f);
+	ImVec2 m_ViewportContentMin = ImVec2(0.0f, 0.0f);
+	ImVec2 m_ViewportContentMax = ImVec2(0.0f, 0.0f);
 
 	/* Width and Height of the viewport */
 	int m_Width;
@@ -72,6 +92,8 @@ public:
 	void UpdateViewMatrix();
 	void UpdateProjectionMatrix(int width, int height);
 	void UpdateProjectionMatrix(float vFOVdeg);
+	void UpdateProjectionMatrix();
+
 
 	/* Handles camera movement inputs. Returns boolean indicating if any inputs were recorded. */
 	bool Inputs(GLFWwindow* window);
