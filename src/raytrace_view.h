@@ -19,7 +19,7 @@ public:
 	virtual void OnUpdate();
 	virtual void OnUIRender();
 
-	virtual void TakeScreenshot();
+	virtual std::string TakeScreenshot();
 
 private:
 	void OnResize(ImVec2 newSize);

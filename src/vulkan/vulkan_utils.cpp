@@ -1568,6 +1568,14 @@ namespace vk
 	}
 
 
+	void CopyImageToImage(const ImVec2& extent, VkImage& srcImage, VkImage& dstImage)
+	{
+		VkCommandBuffer commandBuffer = GetTransferCommandBuffer();
+		CopyImageToImage(commandBuffer, extent, srcImage, dstImage);
+		FlushTransferCommandBuffer(commandBuffer);
+	}
+
+
 	void CreateTextureImageView(uint32_t mipLevels, VkImage& textureImage, VkImageView& textureImageView)
 	{
 		CreateImageView(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, textureImage, textureImageView);

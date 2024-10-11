@@ -1,6 +1,10 @@
 #include "layer.h"
 #include "stb_image_write.h"
 
+#include <ctime>
+#include <chrono>
+#include <sstream>
+
 std::string GetDateTimeStr()
 {
 	/* Get time */
@@ -18,16 +22,39 @@ std::string GetDateTimeStr()
 }
 
 
-void WriteImageToFile(const void* data, int width, int height, std::string filename)
+std::vector<uint32_t> RotateAndFlip(const std::vector<uint32_t>& in, uint32_t width, uint32_t height)
 {
-	if (stbi_write_png(filename.c_str(), width, height, 4, data, width * 4))
+	/* Rotate image ? */
+	std::vector<uint32_t> copy = in;
+	std::reverse(copy.begin(), copy.end());
+	std::vector<uint32_t> out;
+	out.resize(copy.size());
+
+	/* Flip image horizontally */
+	for (uint32_t j = 0; j < height; j++)
 	{
-		std::cout << "Saved image: " << filename << std::endl;
+		for (uint32_t i = 0; i < width; i++)
+		{
+			out[(j * width) + i] = copy[(j * width) + (width - i - 1)];
+		}
+	}
+
+	return out;
+}
+
+
+std::string WriteImageToFile(std::string filename, int width, int height, int channels, const void* data, int stride)
+{
+	std::stringstream ss;
+	if (stbi_write_png(filename.c_str(), width, height, channels, data, stride))
+	{
+		ss << "Saved image: " << filename << std::endl;
 	}
 	else
 	{
-		std::cerr << "Error! Failed to save image: " << filename << std::endl;
+		ss << "Error! Failed to save image: " << filename << std::endl;
 	}
+	return ss.str();
 }
 
 
@@ -38,8 +65,8 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, const Camera& ca
 	float frame_time = io.DeltaTime * 1000.0f;
 	float frame_rate = 1.0f / io.DeltaTime;
 
-	frame_times.Add(frame_time);
-	frame_rates.Add(frame_rate);
+	m_FrameTimes.Add(frame_time);
+	m_FrameRates.Add(frame_rate);
 
 	ImGui::Text("Frame Time: %.3f ms/frame (%.1f FPS)", frame_time, frame_rate);
 
@@ -51,7 +78,7 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, const Camera& ca
 	{
 		//ImPlot::SetupAxes("", "FPS");
 		//ImPlot::SetupAxisTicks(ImAxis_X1, 0, 1000, 11);
-		ImPlot::PlotLine("##FrameRate", x_axis.data(), frame_rates.GetItems().data(), frame_storage_count);
+		ImPlot::PlotLine("##FrameRate", m_FrameGraphX.data(), m_FrameRates.GetItems().data(), m_FrameStorageCount);
 
 		ImPlot::EndPlot();
 	}
@@ -67,6 +94,8 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, const Camera& ca
 
 	if (ImGui::Button("Take Screenshot"))
 	{
-		TakeScreenshot();
+		m_ScreenshotString = TakeScreenshot();
 	}
+	ImGui::Text(m_ScreenshotString.c_str());
+
 }

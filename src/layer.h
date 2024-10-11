@@ -4,8 +4,6 @@
 #include <memory>
 
 #include <iostream>
-#include <ctime>
-#include <chrono>
 
 #include "application.h"
 #include "camera.h"
@@ -77,8 +75,11 @@ std::vector<T> arange(T start, T stop, T step = 1)
 /* Get a string representing the current time in the format "YYYY-MM-DD_HH-MM-SS" */
 std::string GetDateTimeStr();
 
-/* Use stb to write image data to provided filename */
-void WriteImageToFile(const void* data, int width, int height, std::string filename);
+/* Rotate 180 deg and flip the image that is represented as a vector of uint32s */
+std::vector<uint32_t> RotateAndFlip(const std::vector<uint32_t>& in, uint32_t width, uint32_t height);
+
+/* Use stb to write image data to provided filename. Returns saved image filepath or error message. */
+std::string WriteImageToFile(std::string filename, int width, int height, int channels, const void* data, int stride);
 
 class Layer
 {
@@ -91,13 +92,14 @@ public:
 	virtual void OnUpdate() {}
 	virtual void OnUIRender() {}
 
-	virtual void TakeScreenshot() {}
+	virtual std::string TakeScreenshot() { return ""; }
 
 protected:
 	void CommonDebug(Application* app, ImVec2 viewport_size, const Camera& camera);
 
-	int frame_storage_count = 1001;
-	SlidingBuffer<float> frame_times = SlidingBuffer<float>(frame_storage_count);
-	SlidingBuffer<float> frame_rates = SlidingBuffer<float>(frame_storage_count);
-	std::vector<float> x_axis = arange<float>(0, (float)frame_storage_count, 1);
+	int m_FrameStorageCount = 1001;
+	SlidingBuffer<float> m_FrameTimes = SlidingBuffer<float>(m_FrameStorageCount);
+	SlidingBuffer<float> m_FrameRates = SlidingBuffer<float>(m_FrameStorageCount);
+	std::vector<float> m_FrameGraphX = arange<float>(0, (float)m_FrameStorageCount, 1);
+	std::string m_ScreenshotString = "";
 };

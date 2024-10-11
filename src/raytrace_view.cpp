@@ -102,32 +102,19 @@ void RayTraceView::OnUIRender()
 }
 
 
-void RayTraceView::TakeScreenshot()
+std::string RayTraceView::TakeScreenshot()
 {
-	/* Get a copy of the rendered pixels */
-	std::vector<uint32_t> src = m_RenderedImagePixels;
-	std::vector<uint32_t> dst(src.size());
-
 	int width = static_cast<int>(m_ViewportSize.x);
 	int height = static_cast<int>(m_ViewportSize.y);
 
-	/* Rotate image ? */
-	std::reverse(src.begin(), src.end());
-
-	/* Flip image horizontally */
-	for (int j = 0; j < height; j++)
-	{
-		for (int i = 0; i < width; i++)
-		{
-			dst[(j * width) + i] = src[(j * width) + (width - i)];
-		}
-	}
+	std::vector<uint32_t> out = RotateAndFlip(m_RenderedImagePixels, width, height);
 
 	/* Write to file */
-	WriteImageToFile(
-		dst.data(), 
-		width, height,
-		"output/" + GetDateTimeStr() + "_raytrace.png"
+	return WriteImageToFile(
+		"output/" + GetDateTimeStr() + "_raytrace.png",
+		width, height, 4,
+		out.data(),
+		width * 4
 	);
 }
 

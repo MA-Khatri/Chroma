@@ -26,7 +26,7 @@ public:
 	virtual void OnUpdate();
 	virtual void OnUIRender();
 
-	virtual void TakeScreenshot();
+	virtual std::string TakeScreenshot();
 
 private:
 
