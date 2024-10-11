@@ -45,7 +45,7 @@ namespace otx
 			float3 direction;
 			float3 horizontal;
 			float3 vertical;
-			float verticalFOVdeg;
+			int projectionMode;
 		} camera;
 
 		float3 clearColor;

@@ -15,8 +15,8 @@
 class Camera
 {
 private:
-	float m_NearPlane;
-	float m_FarPlane;
+	float m_NearPlane = 0.1f;
+	float m_FarPlane = 1000.0f;
 
 	/* Previous mouse position */
 	glm::vec2 m_PrevMousePosn;
@@ -68,20 +68,23 @@ public:
 	/* The matrix representing the projection of the camera */
 	glm::mat4 m_ProjectionMatrix = glm::mat4(1.0f);
 
-	/* The vertical field of view (in degrees) */
-	float m_VFoV;
+	/* The vertical field of view (in degrees) -- for perspective camera */
+	float m_VFoV = 45.0f;
 
 	/* FoV limits */
-	float m_MinFoV = 5.0f;
-	float m_MaxFoV = 135.0f;
+	float m_MinFoV = 5.0f; /* Minimum vertical FoV */
+	float m_MaxFoV = 135.0f; /* Maximum vertical FoV */
+	
+	/* Scaling of the orthographic camera's view frustum w.r.t. the viewport size */
+	float m_OrthoScale = 0.01f;
+	float m_MinOrthoScale = 0.001f;
 
 	/* Viewport bounds in pixels used to wrap the cursor when dragging */
 	ImVec2 m_ViewportContentMin = ImVec2(0.0f, 0.0f);
 	ImVec2 m_ViewportContentMax = ImVec2(0.0f, 0.0f);
 
-	/* Width and Height of the viewport */
-	int m_Width;
-	int m_Height;
+	int m_Width; /* Viewport width (in pixels) */
+	int m_Height; /* Viewport height (in pixels) */
 
 	/* Is the left mouse key pressed? */
 	bool m_LMB = false;
@@ -111,7 +114,7 @@ public:
 	/* Handles camera movement inputs. Returns boolean indicating if any inputs were recorded. */
 	bool Inputs(GLFWwindow* window);
 
-	/* Called on scrollwheel */
+	/* Called on scrollwheel input */
 	static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 }; /* class Camera */

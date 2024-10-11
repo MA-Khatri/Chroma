@@ -94,22 +94,41 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 
 		/* Choose camera control mode */
 		const char* controlModes[] = { "Free fly", "Orbit" }; /* Make sure this matches order in Camera::ControlMode */
-		static int selectedMode = camera.m_ControlMode;
-		const char* preview = controlModes[selectedMode];
-		if (ImGui::BeginCombo("Control Mode", preview))
+		static int selectedControlMode = camera.m_ControlMode;
+		const char* controlModePreview = controlModes[selectedControlMode];
+		if (ImGui::BeginCombo("Control Mode", controlModePreview))
 		{
 			for (int n = 0; n < IM_ARRAYSIZE(controlModes); n++)
 			{
-				const bool isSelected = (selectedMode == n);
-				if (ImGui::Selectable(controlModes[n], isSelected)) selectedMode = n;
+				const bool isSelected = (selectedControlMode == n);
+				if (ImGui::Selectable(controlModes[n], isSelected)) selectedControlMode = n;
 
 				if (isSelected) ImGui::SetItemDefaultFocus();
 			}
 			ImGui::EndCombo();
 		}
-		if (selectedMode != camera.m_ControlMode) camera.m_CameraUIUpdate = true;
-		camera.m_ControlMode = selectedMode;
+		if (selectedControlMode != camera.m_ControlMode) camera.m_CameraUIUpdate = true;
+		camera.m_ControlMode = selectedControlMode;
 
+		/* Choose camera projection mode */
+		const char* projectionModes[] = { "Perspective", "Orthographic" }; /* Make sure this matches order in Camera::ProjectionMode */
+		static int selectedProjectionMode = camera.m_ProjectionMode;
+		const char* projectionModePreview = projectionModes[selectedProjectionMode];
+		if (ImGui::BeginCombo("Projection Mode", projectionModePreview))
+		{
+			for (int n = 0; n < IM_ARRAYSIZE(projectionModes); n++)
+			{
+				const bool isSelected = (selectedProjectionMode == n);
+				if (ImGui::Selectable(projectionModes[n], isSelected)) selectedProjectionMode = n;
+
+				if (isSelected) ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+		if (selectedProjectionMode != camera.m_ProjectionMode) camera.m_CameraUIUpdate = true;
+		camera.m_ProjectionMode = selectedProjectionMode;
+
+		/* Projection mode settings */
 		if (camera.m_ProjectionMode == Camera::PERSPECTIVE)
 		{
 			float fov = camera.m_VFoV;
@@ -117,7 +136,15 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 			if (fov != camera.m_VFoV) camera.m_CameraUIUpdate = true;
 			camera.m_VFoV = fov;
 		}
+		else if (camera.m_ProjectionMode == Camera::ORTHOGRAPHIC)
+		{
+			float scale = camera.m_OrthoScale;
+			ImGui::DragFloat("Ortho Scale", &scale, camera.m_MinOrthoScale, camera.m_MinOrthoScale);
+			if (scale != camera.m_OrthoScale) camera.m_CameraUIUpdate = true;
+			camera.m_OrthoScale = scale;
+		}
 
+		/* Control mode settings */
 		if (camera.m_ControlMode == Camera::FREE_FLY)
 		{
 			float posn[3] = { camera.m_Position.x, camera.m_Position.y, camera.m_Position.z };

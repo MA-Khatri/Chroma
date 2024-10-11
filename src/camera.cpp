@@ -46,9 +46,7 @@ void Camera::Update(float vFOVdeg, float nearPlane, float farPlane, int inWidth,
 	/* Set the view and projection matrices using the lookAt and perspective glm functions */
 	m_ViewMatrix = glm::lookAt(m_Position, m_Position + m_Orientation, m_Up);
 
-	m_ProjectionMatrix = glm::perspective(glm::radians(m_VFoV), (float)(m_Width) / float(m_Height), m_NearPlane, m_FarPlane);
-
-	m_Matrix = m_ProjectionMatrix * m_ViewMatrix;
+	UpdateProjectionMatrix();
 }
 
 void Camera::UpdateOrbit()
@@ -81,7 +79,16 @@ void Camera::UpdateProjectionMatrix(float vFOVdeg)
 
 void Camera::UpdateProjectionMatrix()
 {
-	m_ProjectionMatrix = glm::perspective(glm::radians(m_VFoV), (float)(m_Width) / float(m_Height), m_NearPlane, m_FarPlane);
+	if (m_ProjectionMode == PERSPECTIVE)
+	{
+		m_ProjectionMatrix = glm::perspective(glm::radians(m_VFoV), static_cast<float>(m_Width) / static_cast<float>(m_Height), m_NearPlane, m_FarPlane);
+	}
+	else if (m_ProjectionMode == ORTHOGRAPHIC)
+	{
+		float hw = 0.5f * m_OrthoScale * static_cast<float>(m_Width);
+		float hh = 0.5f * m_OrthoScale * static_cast<float>(m_Height);
+		m_ProjectionMatrix = glm::orthoRH_ZO(-hw, hw, -hh, hh, m_NearPlane, m_FarPlane);
+	}
 	m_Matrix = m_ProjectionMatrix * m_ViewMatrix;
 }
 
@@ -157,8 +164,8 @@ bool Camera::Inputs(GLFWwindow* window)
 		glfwGetCursorPos(window, &mouseX, &mouseY);
 
 		/* Mouse drag amounts for rotation */
-		float yDrag = m_Sensitivity * (float)(mouseY - m_PrevMousePosn.y) / m_Height;
-		float xDrag = m_Sensitivity * (float)(mouseX - m_PrevMousePosn.x) / m_Width;
+		float yDrag = m_Sensitivity * static_cast<float>(mouseY - m_PrevMousePosn.y) / m_Height;
+		float xDrag = m_Sensitivity * static_cast<float>(mouseX - m_PrevMousePosn.x) / m_Width;
 		if (fabsf(yDrag) > 0.0f || fabsf(xDrag) > 0.0f) updated = true;
 
 		if (m_ControlMode == FREE_FLY)
@@ -244,9 +251,19 @@ bool Camera::Inputs(GLFWwindow* window)
 void Camera::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	Camera* camera = (Camera*)glfwGetWindowUserPointer(window);
-	camera->m_VFoV -= static_cast<float>(yoffset);	
-	if (camera->m_VFoV < camera->m_MinFoV) camera->m_VFoV = camera->m_MinFoV;
-	if (camera->m_VFoV > camera->m_MaxFoV) camera->m_VFoV = camera->m_MaxFoV;
+
+	if (camera->m_ProjectionMode == Camera::PERSPECTIVE)
+	{
+		camera->m_VFoV -= static_cast<float>(yoffset);
+		if (camera->m_VFoV < camera->m_MinFoV) camera->m_VFoV = camera->m_MinFoV;
+		if (camera->m_VFoV > camera->m_MaxFoV) camera->m_VFoV = camera->m_MaxFoV;
+	}
+	else if (camera->m_ProjectionMode == Camera::ORTHOGRAPHIC)
+	{
+		camera->m_OrthoScale -= camera->m_MinOrthoScale * static_cast<float>(yoffset);
+		if (camera->m_OrthoScale < camera->m_MinOrthoScale) camera->m_OrthoScale = camera->m_MinOrthoScale;
+	}
+
 
 	/* Set this to true so that camera is updated */
 	camera->m_CameraUIUpdate = true;

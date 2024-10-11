@@ -729,13 +729,23 @@ namespace otx
 		m_LaunchParams.camera.position = ToFloat3(camera.m_Position);
 		m_LaunchParams.camera.direction = ToFloat3(glm::normalize(camera.m_Orientation));
 
-		float aspect = m_LaunchParams.frame.size.x / float(m_LaunchParams.frame.size.y);
-		float focal_length = glm::length(camera.m_Orientation);
-		float h = glm::tan(glm::radians(camera.m_VFoV) / 2.0f);
-		float height = 2.0f * h * focal_length;
-		float width = height * aspect;
-		m_LaunchParams.camera.horizontal = width * normalize(cross(m_LaunchParams.camera.direction, ToFloat3(camera.m_Up)));
-		m_LaunchParams.camera.vertical = height * normalize(cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
+		if (camera.m_ProjectionMode == Camera::PERSPECTIVE)
+		{
+			float aspect = m_LaunchParams.frame.size.x / float(m_LaunchParams.frame.size.y);
+			float focal_length = glm::length(camera.m_Orientation);
+			float h = glm::tan(glm::radians(camera.m_VFoV) / 2.0f);
+			float height = 2.0f * h * focal_length;
+			float width = height * aspect;
+			m_LaunchParams.camera.horizontal = width * normalize(cross(m_LaunchParams.camera.direction, ToFloat3(camera.m_Up)));
+			m_LaunchParams.camera.vertical = height * normalize(cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
+			m_LaunchParams.camera.projectionMode = Camera::PERSPECTIVE;
+		}
+		else if (camera.m_ProjectionMode == Camera::ORTHOGRAPHIC)
+		{
+			m_LaunchParams.camera.horizontal = m_LaunchParams.frame.size.x * camera.m_OrthoScale * normalize(cross(m_LaunchParams.camera.direction, ToFloat3(camera.m_Up)));
+			m_LaunchParams.camera.vertical = m_LaunchParams.frame.size.y * camera.m_OrthoScale * normalize(cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
+			m_LaunchParams.camera.projectionMode = Camera::ORTHOGRAPHIC;
+		}
 
 		/* Reset accumulation */
 		m_LaunchParams.frame.accumID = 0;

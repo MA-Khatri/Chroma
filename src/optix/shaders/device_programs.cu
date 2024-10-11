@@ -267,13 +267,25 @@ namespace otx
 			/* Normalized screen plane position in [0, 1]^2 with randomized sub-pixel position */
 			const float2 screen = make_float2(ix + prd.random(), iy + prd.random()) / make_float2(optixLaunchParams.frame.size.x, optixLaunchParams.frame.size.y);
 
-			/* Generate ray direction */
-			float3 rayDir = normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical);
+			/* Ray origin and direction */
+			float3 rayOrg, rayDir;
+
+			if (optixLaunchParams.camera.projectionMode == 0) /* Camera::PERSPECTIVE */
+			{
+				rayOrg = camera.position;
+				rayDir = normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical);
+			}
+			else if (optixLaunchParams.camera.projectionMode == 1) /* Camera::ORTHOGRAPHIC */
+			{
+
+				rayOrg = camera.position + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical;
+				rayDir = camera.direction;
+			}
 
 			/* Launch ray */
 			optixTrace(
 				optixLaunchParams.traversable,
-				camera.position,
+				rayOrg,
 				rayDir,
 				0.0f, /* tMin */
 				1e20f, /* tMax */
