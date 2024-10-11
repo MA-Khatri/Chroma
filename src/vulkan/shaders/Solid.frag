@@ -3,6 +3,7 @@
 layout(location = 0) in vec3 v_Position;
 layout(location = 1) in vec3 v_Normal;
 layout(location = 2) in vec3 v_CameraPosn;
+layout(location = 3) in vec3 v_Color;
 
 layout(location = 0) out vec4 outColor;
 
@@ -20,5 +21,5 @@ void main()
 	float specularContrib = pow(max(dot(lightDir, reflectDir), 0.0), exponent);
 
 	float lc = ambient + diffuse * diffuseContrib + specular * specularContrib;
-	outColor = vec4(vec3(lc), 1);
+	outColor = vec4(v_Color * vec3(lc), 1);
 }

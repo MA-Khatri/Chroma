@@ -3,8 +3,7 @@
 
 #include "../launch_params.h"
 
-#include "math.cuh"
-#include "random.cuh"
+#include "utils.cuh"
 
 namespace otx
 {
@@ -13,7 +12,6 @@ namespace otx
 	/* Launch parameters in constant memory, filled in by Optix upon optixLaunch */
 	extern "C" __constant__ LaunchParams optixLaunchParams;
 
-
 	/* Per-ray data */
 	struct PRD
 	{
@@ -21,58 +19,6 @@ namespace otx
 		float3 pixelColor;
 		int depth = 0;
 	};
-
-
-	/* 
-	 * To communicate between programs, we pass a pointer to per-ray data (PRD)
-	 * which we represent with two ints. The helpers below allow us to encode/decode
-	 * the pointer as two ints.
-	 */
-	static __forceinline__ __device__
-	void* unpackPointer(uint32_t i0, uint32_t i1)
-	{
-		const uint64_t uptr = static_cast<uint64_t>(i0) << 32 | i1;
-		void* ptr = reinterpret_cast<void*> (uptr);
-		return ptr;
-	}
-
-	static __forceinline__ __device__
-	void packPointer(void* ptr, uint32_t& i0, uint32_t& i1)
-	{
-		const uint64_t uptr = reinterpret_cast<uint64_t>(ptr);
-		i0 = uptr >> 32;
-		i1 = uptr & 0x00000000ffffffff;
-	}
-
-	template<typename T>
-	static __forceinline__ __device__ T* getPRD()
-	{
-		const uint32_t u0 = optixGetPayload_0();
-		const uint32_t u1 = optixGetPayload_1();
-		return reinterpret_cast<T*>(unpackPointer(u0, u1));
-	}
-
-
-	/* =============== */
-	/* === Helpers === */
-	/* =============== */
-	/* Compute world position of (current) ray hit */
-	extern "C" __inline__ __device__ float3 HitPosition()
-	{
-		return optixGetWorldRayOrigin() + optixGetWorldRayDirection() * optixGetRayTmax();
-	}
-	
-	/* Compute interpolated normal using barycentric coords */
-	extern "C" __inline__ __device__ float3 InterpolateNormals(const float2& uv, const float3& n0, const float3& n1, const float3& n2)
-	{
-		return n0 + uv.x * (n1 - n0) + uv.y * (n2 - n0);
-	}
-
-	/* Compute interpolated texture coordinate using barycentric coords */
-	extern "C" __inline__ __device__ float2 TexCoord(const float2& uv, const float2& v0, const float2& v1, const float2& v2)
-	{
-		return (1.0f - uv.x - uv.y) * v0 + uv.x * v1 + uv.y * v2;
-	}
 
 	/* ===================== */
 	/* === Radiance Rays === */
@@ -99,7 +45,7 @@ namespace otx
 		Ns = normalize(optixTransformNormalFromObjectToWorldSpace(Ns));
 
 		/* Default diffuse color if no diffuse texture */
-		float3 diffuseColor = make_float3(0.7f);
+		float3 diffuseColor = *sbtData.color;
 
 		/* === Sample texture(s) === */
 		float2 tc = TexCoord(uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);
@@ -114,7 +60,7 @@ namespace otx
 		{
 			/* Determine diffuse ray origin and reflection direction */
 			OrthonormalBasis basis = OrthonormalBasis(Ns);
-			float3 reflectDir = basis.Local(prd.random.RandomOnUnitHemisphere());
+			float3 reflectDir = basis.Local(prd.random.RandomOnUnitCosineHemisphere());
 			float3 reflectOrigin = HitPosition() + 1e-3f * Ns;
 
 

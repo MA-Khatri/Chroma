@@ -33,6 +33,7 @@ Scene::Scene()
 	dragon->Translate(10.0f, 0.0f, 0.0f);
 	dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 45.0f);
 	dragon->Scale(5.0f);
+	dragon->m_Color = glm::vec3(0.3f, 0.8f, 0.3f);
 	m_RasterObjects.push_back(dragon);
 	m_RayTraceObjects.push_back(dragon);
 

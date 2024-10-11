@@ -451,6 +451,7 @@ namespace otx
 		m_IndexBuffers.resize(nObjects);
 		m_NormalBuffers.resize(nObjects);
 		m_TexCoordBuffers.resize(nObjects);
+		m_ObjectColorBuffers.resize(nObjects);
 
 		m_GASBuffers.resize(nObjects);
 		m_Instances.resize(nObjects);
@@ -472,6 +473,7 @@ namespace otx
 			m_IndexBuffers[objectID].alloc_and_upload(mesh.ivecIndices);
 			m_NormalBuffers[objectID].alloc_and_upload(mesh.normals);
 			m_TexCoordBuffers[objectID].alloc_and_upload(mesh.texCoords);
+			m_ObjectColorBuffers[objectID].alloc_and_upload(std::vector<glm::vec3>{objects[objectID]->m_Color});
 
 			triangleInput = {};
 			triangleInput.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
@@ -641,9 +643,9 @@ namespace otx
 				HitgroupRecord rec;
 				OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[rayID], &rec));
 
-				/* Textures... */
 				if (rayID == RADIANCE_RAY_TYPE)
 				{
+					/* Textures... */
 					if (obj->m_DiffuseTexture.textureID >= 0)
 					{
 						rec.data.hasDiffuseTexture = true;
@@ -673,17 +675,15 @@ namespace otx
 					{
 						rec.data.hasNormalTexture = false;
 					}
+
+					rec.data.texCoord = (float2*)m_TexCoordBuffers[objectID].d_pointer();
+					rec.data.normal = (float3*)m_NormalBuffers[objectID].d_pointer();
+					rec.data.color = (float3*)m_ObjectColorBuffers[objectID].d_pointer();
 				}
 
 				/* Vertex data */
 				rec.data.position = (float3*)m_VertexBuffers[objectID].d_pointer();
 				rec.data.index = (int3*)m_IndexBuffers[objectID].d_pointer();
-
-				if (rayID == RADIANCE_RAY_TYPE)
-				{
-					rec.data.normal = (float3*)m_NormalBuffers[objectID].d_pointer();
-					rec.data.texCoord = (float2*)m_TexCoordBuffers[objectID].d_pointer();
-				}
 				
 				hitgroupRecords.push_back(rec);
 			}

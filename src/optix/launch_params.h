@@ -20,6 +20,8 @@ namespace otx
 		float3* normal;
 		float2* texCoord; 
 		int3* index;
+		
+		float3* color; /* Default color used in place of diffuse texture if texture is not present */
 
 		bool hasDiffuseTexture;
 		cudaTextureObject_t diffuseTexture;

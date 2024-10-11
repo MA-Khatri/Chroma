@@ -80,6 +80,8 @@ public:
 	struct UniformBufferObject {
 		alignas(16) glm::mat4 modelMatrix;
 		alignas(16) glm::mat4 normalMatrix; /* We pass in the normal matrix as a mat4 to avoid alignment issues */
+
+		alignas(16) glm::vec3 color;
 	};
 
 	Mesh m_Mesh = Mesh();
@@ -87,6 +89,7 @@ public:
 	Texture m_DiffuseTexture;
 	Texture m_SpecularTexture;
 	Texture m_NormalTexture;
+	glm::vec3 m_Color = glm::vec3(0.7f); /* Base color used for diffuse if no diffuse texture */
 
 private:
 	/* === Vulkan === */
