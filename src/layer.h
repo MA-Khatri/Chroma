@@ -95,6 +95,8 @@ public:
 	virtual std::string TakeScreenshot() { return ""; }
 
 protected:
+	void SetupDebug(Application* app); /* Called by each layer's OnAttach() to set up debug info */
+
 	void CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera);
 
 	int m_FrameStorageCount = 1001;
@@ -102,4 +104,6 @@ protected:
 	SlidingBuffer<float> m_FrameRates = SlidingBuffer<float>(m_FrameStorageCount);
 	std::vector<float> m_FrameGraphX = arange<float>(0, (float)m_FrameStorageCount, 1);
 	std::string m_ScreenshotString = "";
+	std::vector<std::string> m_SceneStrings;
+	int m_SceneID = 0;
 };

@@ -17,7 +17,7 @@
 class RasterView : public Layer 
 {
 public:
-	RasterView(std::shared_ptr<Scene> scene);
+	RasterView();
 	~RasterView();
 
 	/* Standard layer methods */
@@ -73,5 +73,6 @@ private:
 	VkDeviceMemory m_DepthImageMemory;
 	VkImageView m_DepthImageView;
 	
-	std::shared_ptr<Scene> m_Scene;
+	std::vector<std::shared_ptr<Scene>> m_Scenes;
+	std::shared_ptr<Scene> m_Scene; /* Current scene */
 };

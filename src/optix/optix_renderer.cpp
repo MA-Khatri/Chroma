@@ -517,7 +517,6 @@ namespace otx
 			/* === Build GAS === */
 			OptixTraversableHandle gasHandle = BuildAccel(triangleInput, m_GASBuffers[objectID]);
 
-
 			/* === IAS Setup === */
 			OptixInstance instance = {};
 			memcpy(instance.transform, m_Transforms[objectID].data(), sizeof(float) * 12); /* Copy over the object's transform */
@@ -734,9 +733,19 @@ namespace otx
 
 	void Optix::SetCamera(const Camera& camera)
 	{
-		/* Note: we set the clear/background color here too! */
-		//m_LaunchParams.clearColor = ToFloat3(m_Scene->m_ClearColor);
+		/* === Update launch Params here === */
+		m_LaunchParams.frame.samples = m_SamplesPerRender;
+		m_LaunchParams.maxDepth = m_MaxDepth;
+		m_LaunchParams.cutoffColor = make_float3(0.2f);
 
+		/* Background settings */
+		m_LaunchParams.backgroundMode = m_Scene->m_BackgroundMode;
+		m_LaunchParams.clearColor = ToFloat3(m_Scene->m_ClearColor);
+		m_LaunchParams.gradientBottom = ToFloat3(m_Scene->m_GradientBottom);
+		m_LaunchParams.gradientTop = ToFloat3(m_Scene->m_GradientTop);
+		//m_LaunchParams.backgroundTexture = TODO;
+
+		/* === Update camera === */
 		m_LastSetCamera = camera;
 		m_LaunchParams.camera.position = ToFloat3(camera.m_Position);
 		m_LaunchParams.camera.direction = ToFloat3(glm::normalize(camera.m_Orientation));
@@ -793,9 +802,6 @@ namespace otx
 		/* Sanity check: make sure we launch only after first resize is already done */
 		if (m_LaunchParams.frame.size.x == 0 || m_LaunchParams.frame.size.y == 0) return;
 
-		m_LaunchParams.frame.samples = m_SamplesPerRender;
-		m_LaunchParams.maxDepth = m_MaxDepth;
-		m_LaunchParams.cutoff_color = make_float3(0.0f);
 		m_LaunchParamsBuffer.upload(&m_LaunchParams, 1);
 		m_LaunchParams.frame.accumID++; /* Must increment *after* upload */
 

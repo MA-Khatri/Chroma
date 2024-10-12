@@ -445,11 +445,18 @@ namespace vk
 			i++;
 		}
 
-		/* If any of the queue families were not set, error */
-		if (GraphicsQueueFamily == (uint32_t)-1 || ComputeQueueFamily == (uint32_t)-1 || TransferQueueFamily == (uint32_t)-1)
+		/* Print a warning if any of the queue families are missing */
+		if (GraphicsQueueFamily == (uint32_t)-1)
 		{
-			std::cerr << "GetQueueFamilies(): Error! Missing queue families on selected physical device!" << std::endl;
-			exit(-1);
+			std::cerr << "GetQueueFamilies(): Warning! Missing graphics queue family on selected device!" << std::endl;
+		}
+		if (ComputeQueueFamily == (uint32_t)-1)
+		{
+			std::cerr << "GetQueueFamilies(): Warning! Missing compute queue family on selected device!" << std::endl;
+		}
+		if (TransferQueueFamily == (uint32_t)-1)
+		{
+			std::cerr << "GetQueueFamilies(): Warning! Missing transfer queue family on selected device!" << std::endl;
 		}
 	}
 

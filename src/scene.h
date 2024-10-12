@@ -7,7 +7,7 @@
 #include "mesh.h"
 #include "camera.h"
 #include "application.h"
-
+#include "background_mode.h"
 
 /* Forward declarations */
 class Object;
@@ -17,7 +17,7 @@ struct PipelineInfo;
 class Scene
 {
 public:
-	Scene();
+	Scene(int scene);
 	~Scene();
 
 	void MakeScene(int scene);
@@ -29,14 +29,30 @@ public:
 	void VkCleanup();
 
 public:
-	enum Scenes
+	enum
 	{
 		DEFAULT,
 		CORNELL_BOX
 	};
 
-	/* Scene clear/background color */
+	const std::map<int, std::string> m_SceneNames = {
+		{DEFAULT, "Default"},
+		{CORNELL_BOX, "Cornell Box"}
+	};
+
+	int m_BackgroundMode = BackgroundMode::SOLID_COLOR;
+
+	/* Scene clear/background color used if m_BackgroundMode == SOLID_COLOR */
 	glm::vec3 m_ClearColor = glm::vec3(63.0f / 255.0f, 63.0f / 255.0f, 63.0f / 255.0f);
+
+	/* Scene bottom background gradient color used if m_BackgroundMode == GRADIENT */
+	glm::vec3 m_GradientBottom = glm::vec3(0.3f);
+
+	/* Scene top background gradient color used if m_BackgroundMode == GRADIENT */
+	glm::vec3 m_GradientTop = glm::vec3(1.0f);
+
+	/* Path to background texture used if m_BackgroundMode == TEXTURE */
+	std::string m_BackgroundPath;
 
 	/* List of pipeline types for Vulkan rendering */
 	enum PipelineType
@@ -47,6 +63,7 @@ public:
 		Lines, /* Displays line list with color */
 	};
 
+	int m_SceneType = DEFAULT;
 	std::vector<std::shared_ptr<Object>> m_RasterObjects; /* Objects to be drawn in RasterView */
 	std::vector<std::shared_ptr<Object>> m_RayTraceObjects; /* Objects to be drawn in RayTraceView */
 

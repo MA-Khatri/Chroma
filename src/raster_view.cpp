@@ -3,9 +3,9 @@
 #include <stdlib.h>
 
 
-RasterView::RasterView(std::shared_ptr<Scene> scene)
+RasterView::RasterView()
 {
-	m_Scene = scene;
+	// TODO?
 }
 
 RasterView::~RasterView()
@@ -17,12 +17,15 @@ RasterView::~RasterView()
 /* ============================== */
 /* === Standard layer methods === */
 /* ============================== */
-
 void RasterView::OnAttach(Application* app)
 {
+	SetupDebug(app);
+
 	m_AppHandle = app;
 	m_WindowHandle = app->GetWindowHandle();
 	m_Camera = app->GetMainCamera();
+	m_Scenes = app->GetScenes();
+	m_Scene = m_Scenes[0];
 
 	InitVulkan();
 	m_Scene->VkSetup(m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_ViewportFramebuffers);
@@ -37,6 +40,15 @@ void RasterView::OnDetach()
 
 void RasterView::OnUpdate()
 {
+	int appScene = m_AppHandle->GetSceneID();
+	if (appScene != m_SceneID)
+	{
+		//m_Scene->VkCleanup(); /* Causes a crash? */
+		m_SceneID = appScene;
+		m_Scene = m_AppHandle->GetScenes()[appScene];
+		m_Scene->VkSetup(m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_ViewportFramebuffers);
+	}
+
 	if (m_Camera->m_CameraUIUpdate)
 	{
 		m_Camera->UpdateViewMatrix();

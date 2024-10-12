@@ -5,6 +5,8 @@
 #include <chrono>
 #include <sstream>
 
+#include "scene.h"
+
 std::string GetDateTimeStr()
 {
 	/* Get time */
@@ -58,6 +60,15 @@ std::string WriteImageToFile(std::string filename, int width, int height, int ch
 }
 
 
+void Layer::SetupDebug(Application* app)
+{
+	for (auto& scene : app->GetScenes())
+	{
+		m_SceneStrings.push_back(scene->m_SceneNames.at(scene->m_SceneType));
+	}
+}
+
+
 void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 {
 	ImGuiIO io = ImGui::GetIO();
@@ -85,16 +96,37 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 
 	ImGui::Text("Viewport Size :  %.1i x %.1i ", (int)viewport_size.x, (int)viewport_size.y);
 
+	camera.m_CameraUIUpdate = false;
+
+	ImGui::SeparatorText("Scene Settings");
+	{
+		/* Choose a scene */
+		int selectedScene = app->GetSceneID();
+		const char* selectedScenePreview = m_SceneStrings[selectedScene].c_str();
+		if (ImGui::BeginCombo("Scene", selectedScenePreview))
+		{
+			for (int n = 0; n < m_SceneStrings.size(); n++)
+			{
+				const bool isSelected = (selectedScene == n);
+				if (ImGui::Selectable(m_SceneStrings[n].c_str(), isSelected)) selectedScene = n;
+
+				if (isSelected) ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+		if (selectedScene != app->GetScenes()[app->GetSceneID()]->m_SceneType) camera.m_CameraUIUpdate = true;
+		app->SetSceneID(selectedScene);
+	}
+
+
 	//if (ImGui::CollapsingHeader("Camera Settings"))
 	ImGui::SeparatorText("Camera Settings");
 	{
 		ImGui::Checkbox("Link Cameras", &app->m_LinkCameras);
 		
-		camera.m_CameraUIUpdate = false;
-
 		/* Choose camera control mode */
 		const char* controlModes[] = { "Free fly", "Orbit" }; /* Make sure this matches order in Camera::ControlMode */
-		static int selectedControlMode = camera.m_ControlMode;
+		int selectedControlMode = camera.m_ControlMode;
 		const char* controlModePreview = controlModes[selectedControlMode];
 		if (ImGui::BeginCombo("Control Mode", controlModePreview))
 		{
@@ -112,7 +144,7 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 
 		/* Choose camera projection mode */
 		const char* projectionModes[] = { "Perspective", "Orthographic" }; /* Make sure this matches order in Camera::ProjectionMode */
-		static int selectedProjectionMode = camera.m_ProjectionMode;
+		int selectedProjectionMode = camera.m_ProjectionMode;
 		const char* projectionModePreview = projectionModes[selectedProjectionMode];
 		if (ImGui::BeginCombo("Projection Mode", projectionModePreview))
 		{

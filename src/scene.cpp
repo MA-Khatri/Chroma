@@ -1,10 +1,10 @@
 #include "scene.h"
 #include "application.h"
 
-Scene::Scene()
+Scene::Scene(int scene)
 {
 	/* === Make Scene Objects === */
-	MakeScene(CORNELL_BOX);
+	MakeScene(scene);
 }
 
 
@@ -33,6 +33,8 @@ void Scene::MakeScene(int scene)
 	{
 	case DEFAULT:
 	{
+		m_SceneType = DEFAULT;
+
 		TexturePaths vikingRoomTextures;
 		vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
 		std::shared_ptr<Object> vikingRoom = std::make_shared<Object>(Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, Flat));
@@ -60,10 +62,16 @@ void Scene::MakeScene(int scene)
 		plane0->Scale(100.0f);
 		PushToBoth(plane0);
 
+		m_BackgroundMode = BackgroundMode::GRADIENT;
+		m_GradientBottom = glm::vec3(0.3f);
+		m_GradientTop = glm::vec3(1.0f);
+
 		break;
 	}
 	case CORNELL_BOX:
 	{
+		m_SceneType = CORNELL_BOX;
+
 		glm::vec3 white = glm::vec3(0.73f);
 		glm::vec3 red = glm::vec3(0.65f, 0.05f, 0.05f);
 		glm::vec3 green = glm::vec3(0.12f, 0.45f, 0.15f);
@@ -118,9 +126,12 @@ void Scene::MakeScene(int scene)
 		dragon->m_Color = white;
 		PushToBoth(dragon);
 
+		m_BackgroundMode = BackgroundMode::SOLID_COLOR;
+		m_ClearColor = glm::vec3(0.0f);
+
 		break;
 	}
-
+	// TODO: more?
 	}
 }
 

@@ -1,8 +1,7 @@
 #include "raytrace_view.h"
 #include <algorithm>
 
-RayTraceView::RayTraceView(std::shared_ptr<Scene> scene)
-	: m_OptixRenderer(otx::Optix(scene))
+RayTraceView::RayTraceView()
 { 
 	// TODO?
 }
@@ -16,18 +15,29 @@ RayTraceView::~RayTraceView()
 
 void RayTraceView::OnAttach(Application* app)
 {
+	SetupDebug(app);
+
 	m_AppHandle = app;
 	m_WindowHandle = app->GetWindowHandle();
+	m_SceneID = app->GetSceneID();
+	
+	/* Create a separate Optix Renderer for each scene */
+	/* TODO: This doesn't seem like a great solution but it will do for now... */
+	for (auto& scene : m_AppHandle->GetScenes())
+	{
+		m_OptixRenderers.push_back(std::make_shared<otx::Optix>(scene));
+	}
+	m_OptixRenderer = m_OptixRenderers[m_SceneID];
 
-	m_OptixRenderer.Resize(m_ViewportSize);
+	m_OptixRenderer->Resize(m_ViewportSize);
 	m_RenderedImage.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 	m_RenderedImagePixels.resize(static_cast<size_t>(m_ViewportSize.x * m_ViewportSize.y));
 
 	if (m_AppHandle->m_LinkCameras)	m_Camera = m_AppHandle->GetMainCamera();
 	else m_Camera = m_LocalCamera;
 
-	m_OptixRenderer.SetCamera(*m_Camera);
-	m_OptixRenderer.SetSamplesPerRender(1);
+	m_OptixRenderer->SetCamera(*m_Camera);
+	m_OptixRenderer->SetSamplesPerRender(m_SamplesPerRender);
 }
 
 void RayTraceView::OnDetach()
@@ -38,6 +48,15 @@ void RayTraceView::OnDetach()
 
 void RayTraceView::OnUpdate()
 {
+	if (m_AppHandle->GetSceneID() != m_SceneID)
+	{
+		m_SceneID = m_AppHandle->GetSceneID();
+		m_OptixRenderer = m_OptixRenderers[m_SceneID];
+		m_OptixRenderer->Resize(m_ViewportSize);
+		m_OptixRenderer->SetCamera(*m_Camera);
+		m_OptixRenderer->SetSamplesPerRender(m_SamplesPerRender);
+	}
+
 	if (m_AppHandle->m_LinkCameras)	m_Camera = m_AppHandle->GetMainCamera();
 	else m_Camera = m_LocalCamera;
 
@@ -49,13 +68,13 @@ void RayTraceView::OnUpdate()
 		{
 			m_Camera->UpdateOrbit();
 		}
-		m_OptixRenderer.SetCamera(*m_Camera);
+		m_OptixRenderer->SetCamera(*m_Camera);
 	}
 
 	if (m_ViewportHovered)
 	{
 		bool updated = m_Camera->Inputs(m_WindowHandle);
-		if (updated) m_OptixRenderer.SetCamera(*m_Camera);
+		if (updated) m_OptixRenderer->SetCamera(*m_Camera);
 	}
 
 	if (m_ViewportFocused && m_AppHandle->m_FocusedWindow != Application::RayTracedViewport)
@@ -66,17 +85,17 @@ void RayTraceView::OnUpdate()
 		glfwSetWindowUserPointer(m_WindowHandle, m_Camera);
 		glfwSetScrollCallback(m_WindowHandle, Camera::ScrollCallback);
 		
-		if (m_Camera->IsCameraDifferent(m_OptixRenderer.GetLastSetCamera()))
+		if (m_Camera->IsCameraDifferent(m_OptixRenderer->GetLastSetCamera()))
 		{
 			/* Reset camera for renderer if we switch back to ray trace view and camera settings have changed */
-			m_OptixRenderer.SetCamera(*m_Camera);
+			m_OptixRenderer->SetCamera(*m_Camera);
 		}
 	}
 
 	if (m_AppHandle->m_FocusedWindow == Application::RayTracedViewport)
 	{
-		m_OptixRenderer.Render();
-		m_OptixRenderer.DownloadPixels(m_RenderedImagePixels.data()); /* Instead of downloading to host then re-uploading to GPU, can we upload directly? */
+		m_OptixRenderer->Render();
+		m_OptixRenderer->DownloadPixels(m_RenderedImagePixels.data()); /* Instead of downloading to host then re-uploading to GPU, can we upload directly? */
 		m_RenderedImage.SetData(m_RenderedImagePixels.data());
 	}
 }
@@ -118,7 +137,7 @@ void RayTraceView::OnUIRender()
 			CommonDebug(m_AppHandle, m_ViewportSize, *m_Camera);
 
 			ImGui::SeparatorText("Ray Tracer");
-			ImGui::Text("Total Accumulated Samples: %.1i", m_OptixRenderer.GetAccumulatedSampleCount());
+			ImGui::Text("Total Accumulated Samples: %.1i", m_OptixRenderer->GetAccumulatedSampleCount());
 		}
 		ImGui::End();
 	}
@@ -163,7 +182,7 @@ void RayTraceView::OnResize(ImVec2 newSize)
 		m_LocalCamera->UpdateProjectionMatrix(static_cast<int>(m_ViewportSize.x), static_cast<int>(m_ViewportSize.y));
 	}
 
-	m_OptixRenderer.Resize(m_ViewportSize);
+	m_OptixRenderer->Resize(m_ViewportSize);
 	m_RenderedImage.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 	m_RenderedImagePixels.resize(static_cast<size_t>(m_ViewportSize.x * m_ViewportSize.y));
 }

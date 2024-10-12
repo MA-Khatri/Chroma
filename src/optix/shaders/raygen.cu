@@ -70,7 +70,7 @@ namespace otx
 			{
 				if (prd.depth >=  optixLaunchParams.maxDepth)
 				{
-					prd.radiance *= optixLaunchParams.cutoff_color;
+					prd.radiance *= optixLaunchParams.cutoffColor;
 					break;
 				}
 

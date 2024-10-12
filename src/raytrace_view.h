@@ -10,7 +10,7 @@
 class RayTraceView : public Layer 
 {
 public:
-	RayTraceView(std::shared_ptr<Scene> scene);
+	RayTraceView();
 	~RayTraceView();
 
 	/* Standard layer methods */
@@ -33,7 +33,10 @@ private:
 	bool m_ViewportHovered = false;
 	ImVec2 m_ViewportSize = ImVec2(400.0f, 400.0f);
 
-	otx::Optix m_OptixRenderer;
+	std::vector<std::shared_ptr<otx::Optix>> m_OptixRenderers;
+	std::shared_ptr<otx::Optix> m_OptixRenderer;
+	int m_SamplesPerRender = 1;
+
 	Image m_RenderedImage = Image(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), ImageFormat::RGBA, nullptr);
 	std::vector<uint32_t> m_RenderedImagePixels;
 };

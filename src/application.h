@@ -21,16 +21,15 @@
 #include "vulkan/vulkan_utils.h"
 #include "layer.h"
 #include "camera.h"
-
+#include "scene.h"
 
 /* === Forward Declerations === */
 class Layer;
-
+class Scene;
 
 /* ========================= */
 /* === Application Class === */
 /* ========================= */
-
 class Application
 {
 public:
@@ -48,6 +47,10 @@ public:
 
 	GLFWwindow* GetWindowHandle() const { return m_WindowHandle; }
 	Camera* GetMainCamera() const { return m_MainCamera; }
+	void SetScenes(std::vector<std::shared_ptr<Scene>>& scenes);
+	std::vector<std::shared_ptr<Scene>>& GetScenes() { return m_Scenes; }
+	int GetSceneID() const { return m_SceneID; }
+	void SetSceneID(int id);
 	float GetTime();
 
 private:
@@ -77,4 +80,8 @@ private:
 
 	/* The default, application-wide camera */
 	Camera* m_MainCamera = new Camera();
+
+	/* Store all scenes */
+	std::vector<std::shared_ptr<Scene>> m_Scenes;
+	int m_SceneID = 0; /* I.e., index into m_Scenes */
 };

@@ -18,6 +18,17 @@ Application::~Application()
 	Shutdown();
 }
 
+void Application::SetScenes(std::vector<std::shared_ptr<Scene>>& scenes)
+{
+	m_Scenes = scenes;
+	m_SceneID = 0;
+}
+
+void Application::SetSceneID(int id)
+{
+	m_SceneID = id;
+}
+
 void Application::PushLayer(const std::shared_ptr<Layer>& layer)
 {
 	m_LayerStack.emplace_back(layer); 

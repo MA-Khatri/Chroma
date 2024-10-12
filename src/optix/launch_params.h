@@ -3,7 +3,6 @@
 #include <glm/glm.hpp>
 #include <vector_math.h>
 
-
 namespace otx
 {
 	/* Ray types */
@@ -50,10 +49,16 @@ namespace otx
 			int projectionMode;
 		} camera;
 
-		float3 cutoff_color; /* radiance color for rays that reach depth limit */
+		float3 cutoffColor; /* radiance color for rays that reach depth limit */
 		int maxDepth; /* Max number of ray bounces */
 
 		OptixTraversableHandle traversable;
+
+		int backgroundMode;
+		float3 clearColor;
+		float3 gradientBottom;
+		float3 gradientTop;
+		uint32_t* backgroundTexture;
 	};
 
 } /* namspace otx */
