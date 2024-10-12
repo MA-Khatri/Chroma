@@ -13,6 +13,11 @@ bool debug_mode = true;
 bool debug_mode = false;
 #endif
 
+/*
+ * Much of the code in this file is based on:
+ * https://github.com/ingowald/optix7course
+ */
+
 
 namespace otx
 {
@@ -150,7 +155,7 @@ namespace otx
 		m_PipelineCompileOptions.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
 		m_PipelineCompileOptions.pipelineLaunchParamsVariableName = "optixLaunchParams";
 
-		m_PipelineLinkOptions.maxTraceDepth = 8; /* HERE */
+		m_PipelineLinkOptions.maxTraceDepth = m_MaxDepth;
 
 		std::ifstream input("src/optix/shaders/compiled/device_programs.optixir", std::ios::binary);
 		std::vector<char> optixirCode(std::istreambuf_iterator<char>(input), {});
@@ -723,7 +728,7 @@ namespace otx
 	void Optix::SetCamera(const Camera& camera)
 	{
 		/* Note: we set the clear/background color here too! */
-		m_LaunchParams.clearColor = ToFloat3(m_Scene->m_ClearColor);
+		//m_LaunchParams.clearColor = ToFloat3(m_Scene->m_ClearColor);
 
 		m_LastSetCamera = camera;
 		m_LaunchParams.camera.position = ToFloat3(camera.m_Position);
@@ -758,12 +763,27 @@ namespace otx
 	}
 
 
+	void Optix::SetMaxDepth(int maxDepth)
+	{
+		m_MaxDepth = maxDepth;
+
+		/* Reset accumulation */
+		m_LaunchParams.frame.accumID = 0;
+	}
+
+	Camera* Optix::GetLastSetCamera()
+	{
+		return &m_LastSetCamera;
+	}
+
 	void Optix::Render()
 	{
 		/* Sanity check: make sure we launch only after first resize is already done */
 		if (m_LaunchParams.frame.size.x == 0 || m_LaunchParams.frame.size.y == 0) return;
 
 		m_LaunchParams.frame.samples = m_SamplesPerRender;
+		m_LaunchParams.maxDepth = m_MaxDepth;
+		m_LaunchParams.cutoff_color = make_float3(1.0f);
 		m_LaunchParamsBuffer.upload(&m_LaunchParams, 1);
 		m_LaunchParams.frame.accumID++; /* Must increment *after* upload */
 

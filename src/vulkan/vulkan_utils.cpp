@@ -7,6 +7,11 @@
 #include "shader.h"
 
 
+/*
+ * Much of the code in this file is based on:
+ * https://vulkan-tutorial.com/
+ */
+
 namespace vk
 {
 	/* === Namespace Globals === */

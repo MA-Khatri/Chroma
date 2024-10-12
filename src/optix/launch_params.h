@@ -50,7 +50,8 @@ namespace otx
 			int projectionMode;
 		} camera;
 
-		float3 clearColor;
+		float3 cutoff_color; /* radiance color for rays that reach depth limit */
+		int maxDepth; /* Max number of ray bounces */
 
 		OptixTraversableHandle traversable;
 	};

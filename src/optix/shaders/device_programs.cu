@@ -1,32 +1,17 @@
 #include <optix_device.h>
 #include <cuda_runtime.h>
 
-#include "../launch_params.h"
-
 #include "utils.cuh"
 
 namespace otx
 {
-	typedef PCG Random;
-
-	/* Launch parameters in constant memory, filled in by Optix upon optixLaunch */
-	extern "C" __constant__ LaunchParams optixLaunchParams;
-
-	/* Per-ray data */
-	struct PRD
-	{
-		Random random;
-		float3 pixelColor;
-		int depth = 0;
-	};
-
 	/* ===================== */
 	/* === Radiance Rays === */
 	/* ===================== */
 	extern "C" __global__ void __closesthit__radiance()
 	{
 		const MeshSBTData& sbtData = *(const MeshSBTData*)optixGetSbtDataPointer();
-		PRD& prd = *getPRD<PRD>();
+		PRD_radiance& prd = *getPRD<PRD_radiance>();
 
 		const int primID = optixGetPrimitiveIndex();
 		const int3 index = sbtData.index[primID];
@@ -44,10 +29,13 @@ namespace otx
 		/* Compute world-space normal and normalize */
 		Ns = normalize(optixTransformNormalFromObjectToWorldSpace(Ns));
 
+		/* Face forward normal */
+		if (dot(rayDir, Ns) > 0.0f) Ns = -Ns;
+
 		/* Default diffuse color if no diffuse texture */
 		float3 diffuseColor = *sbtData.color;
 
-		/* === Sample texture(s) === */
+		/* === Sample diffuse texture === */
 		float2 tc = TexCoord(uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);
 		if (sbtData.hasDiffuseTexture)
 		{
@@ -55,46 +43,57 @@ namespace otx
 			diffuseColor = make_float3(tex.x, tex.y, tex.z);
 		}
 
-		/* === Trace diffuse ray === */
-		if (prd.depth < 8)
-		{
-			/* Determine diffuse ray origin and reflection direction */
-			OrthonormalBasis basis = OrthonormalBasis(Ns);
-			float3 reflectDir = basis.Local(prd.random.RandomOnUnitCosineHemisphere());
-			float3 reflectOrigin = HitPosition() + 1e-3f * Ns;
+		/* === Set ray data for next trace call === */
+		/* Update color info */
+		prd.reflectance *= diffuseColor;
+
+		/* Determine reflected ray origin and direction */
+		OrthonormalBasis basis = OrthonormalBasis(Ns);
+		float3 reflectDir = basis.Local(prd.random.RandomOnUnitCosineHemisphere());
+		float3 reflectOrigin = HitPosition() + 1e-3f * Ns;
+		prd.origin = reflectOrigin;
+		prd.direction = reflectDir;
+
+		///* === Trace diffuse ray === */
+		//if (prd.depth < optixLaunchParams.maxDepth - 1) /* -1 since prd.depth starts at 0 */
+		//{
+		//	/* Determine diffuse ray origin and reflection direction */
+		//	OrthonormalBasis basis = OrthonormalBasis(Ns);
+		//	float3 reflectDir = basis.Local(prd.random.RandomOnUnitCosineHemisphere());
+		//	float3 reflectOrigin = HitPosition() + 1e-3f * Ns;
 
 
-			/* Launch reflected ray */
-			PRD reflectPRD;
-			reflectPRD.random = prd.random;
-			reflectPRD.pixelColor = make_float3(1.0f);
-			reflectPRD.depth = prd.depth + 1;
+		//	/* Launch reflected ray */
+		//	PRD reflectPRD;
+		//	reflectPRD.random = prd.random;
+		//	reflectPRD.pixelColor = make_float3(1.0f);
+		//	reflectPRD.depth = prd.depth + 1;
 
-			uint32_t u0, u1;
-			packPointer(&reflectPRD, u0, u1);
+		//	uint32_t u0, u1;
+		//	packPointer(&reflectPRD, u0, u1);
 
-			optixTrace(
-				optixLaunchParams.traversable,
-				reflectOrigin,
-				reflectDir,
-				0.0f, /* tMin */
-				1e20f, /* tMax */
-				0.0f, /* ray time */
-				OptixVisibilityMask(255),
-				OPTIX_RAY_FLAG_DISABLE_ANYHIT, /* OPTIX_RAY_FLAG_NONE */
-				RADIANCE_RAY_TYPE, /* SBT offset */
-				RAY_TYPE_COUNT, /* SBT stride */
-				RADIANCE_RAY_TYPE, /* miss SBT index */
-				u0, u1 /* packed pointer to our PRD */
-			);
+		//	optixTrace(
+		//		optixLaunchParams.traversable,
+		//		reflectOrigin,
+		//		reflectDir,
+		//		0.0f, /* tMin */
+		//		1e20f, /* tMax */
+		//		0.0f, /* ray time */
+		//		OptixVisibilityMask(255),
+		//		OPTIX_RAY_FLAG_DISABLE_ANYHIT, /* OPTIX_RAY_FLAG_NONE */
+		//		RADIANCE_RAY_TYPE, /* SBT offset */
+		//		RAY_TYPE_COUNT, /* SBT stride */
+		//		RADIANCE_RAY_TYPE, /* miss SBT index */
+		//		u0, u1 /* packed pointer to our PRD */
+		//	);
 
-			/* Multiply ray colors together */
-			prd.pixelColor = diffuseColor * reflectPRD.pixelColor;
-		}
-		else
-		{
-			prd.pixelColor = diffuseColor;
-		}
+		//	/* Multiply ray colors together */
+		//	prd.pixelColor = diffuseColor * reflectPRD.pixelColor;
+		//}
+		//else
+		//{
+		//	prd.pixelColor = diffuseColor;
+		//}
 		
 		///* === Compute shadow === */
 		//const float3 surfPosn = HitPosition();
@@ -143,9 +142,8 @@ namespace otx
 
 	extern "C" __global__ void __miss__radiance()
 	{
-		PRD& prd = *getPRD<PRD>();
-		//prd.pixelColor = optixLaunchParams.clearColor;
-		prd.pixelColor = make_float3(1.0f);
+		PRD_radiance& prd = *getPRD<PRD_radiance>();
+		prd.radiance = make_float3(1.0f);
 	}
 
 
@@ -197,17 +195,23 @@ namespace otx
 		}
 
 		/* Initialize per-ray data */
-		PRD prd;
+		PRD_radiance prd;
+		prd.depth = 0;
+		prd.done = false;
+		prd.reflectance = make_float3(1.0f);
+		prd.radiance = make_float3(0.0f);
+		prd.origin = make_float3(0.0f);
+		prd.direction = make_float3(0.0f);
+
 		/* Random seed is current frame count * frame size + current (1D) pixel position such that every pixel for every accumulated frame has a unique seed. */
 		prd.random.Init(accumID * optixLaunchParams.frame.size.x * optixLaunchParams.frame.size.y + iy * optixLaunchParams.frame.size.x + ix);
-		prd.pixelColor = make_float3(1.0f);
-
+		
 		/* The ints we store the PRD pointer in */
 		uint32_t u0, u1;
 		packPointer(&prd, u0, u1);
 
 		const int numPixelSamples = optixLaunchParams.frame.samples; /* Pixel samples per call to render */
-		float3 pixelColor = make_float3(0.0f);
+		float3 pixelColor = make_float3(0.0f); /* Accumulated color for all pixel samples */
 		for (int sampleID = 0; sampleID < numPixelSamples; sampleID++)
 		{
 			/* Normalized screen plane position in [0, 1]^2 with randomized sub-pixel position */
@@ -228,25 +232,46 @@ namespace otx
 				rayDir = camera.direction;
 			}
 
-			/* Launch ray */
-			optixTrace(
-				optixLaunchParams.traversable,
-				rayOrg,
-				rayDir,
-				0.0f, /* tMin */
-				1e20f, /* tMax */
-				0.0f, /* ray time */
-				OptixVisibilityMask(255),
-				OPTIX_RAY_FLAG_DISABLE_ANYHIT, /* OPTIX_RAY_FLAG_NONE */
-				RADIANCE_RAY_TYPE, /* SBT offset */
-				RAY_TYPE_COUNT, /* SBT stride */
-				RADIANCE_RAY_TYPE, /* miss SBT index */
-				u0, u1 /* packed pointer to our PRD */
-			);
-			pixelColor += prd.pixelColor;
+			float3 result = make_float3(0.0f); /* Accumulated color for current sample */
+			/* Iterative (non-recursive) render loop */
+			while(true)
+			{
+				optixTrace(
+					optixLaunchParams.traversable,
+					rayOrg,
+					rayDir,
+					0.0f, /* tMin */
+					1e20f, /* tMax */
+					0.0f, /* ray time */
+					OptixVisibilityMask(255),
+					OPTIX_RAY_FLAG_DISABLE_ANYHIT, /* OPTIX_RAY_FLAG_NONE */
+					RADIANCE_RAY_TYPE, /* SBT offset */
+					RAY_TYPE_COUNT, /* SBT stride */
+					RADIANCE_RAY_TYPE, /* miss SBT index */
+					u0, u1 /* packed pointer to our PRD */
+				);
+				result += prd.reflectance * prd.radiance;
+				prd.depth++;
+
+				if (prd.done)
+				{
+					break;
+				}
+				else if (prd.depth >= optixLaunchParams.maxDepth)
+				{
+					result += prd.reflectance * optixLaunchParams.cutoff_color;
+					break;
+				}
+
+				/* Update ray data for next ray path segment */
+				rayOrg = prd.origin;
+				rayDir = prd.direction;
+			}
+
+			pixelColor += result / (prd.depth);
 		}
 		
-		/* Determine average color for this call */
+		/* Determine average color for this call -- cap to 1.0f */
 		const float cr = min(pixelColor.x / numPixelSamples, 1.0f);
 		const float cg = min(pixelColor.y / numPixelSamples, 1.0f);
 		const float cb = min(pixelColor.z / numPixelSamples, 1.0f);

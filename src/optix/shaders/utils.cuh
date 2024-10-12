@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../launch_params.h"
+
 namespace otx
 {
 	/* ====================== */
@@ -247,5 +249,32 @@ namespace otx
 		{
 			return SampleOnUnitCosineHemisphere(make_float2(RandomValue(), RandomValue()));
 		}
+	};
+
+
+	/* ==================== *
+	 * ===  Shader Info === *
+	 * ==================== *
+	 * All information that is passed to our shader.
+	 * This has to be at the end of this file since it uses definitions from above.
+	 */
+	
+	/* Launch parameters in constant memory, filled in by Optix upon optixLaunch */
+	extern "C" __constant__ LaunchParams optixLaunchParams;
+
+	typedef PCG Random;
+
+	/* Per-ray data */
+	struct PRD_radiance
+	{
+		Random random; /* Random number generator and its state */
+		int depth; /* Recursion depth */
+
+		/* Shading state */
+		bool done; /* boolean allowing for early termination, e.g. if ray gets fully absorbed */
+		float3 reflectance; /* attenuation (<= 1) from surface interaction */
+		float3 radiance; /* light from a light source or miss program */
+		float3 origin;
+		float3 direction;
 	};
 }

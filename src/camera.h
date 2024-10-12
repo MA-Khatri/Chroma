@@ -117,6 +117,9 @@ public:
 	/* Called on scrollwheel input */
 	static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
+	/* Check if current camera's properties match another camera's properties */
+	bool IsCameraDifferent(Camera* camera);
+
 }; /* class Camera */
 
 

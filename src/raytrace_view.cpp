@@ -66,7 +66,11 @@ void RayTraceView::OnUpdate()
 		glfwSetWindowUserPointer(m_WindowHandle, m_Camera);
 		glfwSetScrollCallback(m_WindowHandle, Camera::ScrollCallback);
 		
-		m_OptixRenderer.SetCamera(*m_Camera); /* Reset camera when we switch back to raytraced view */
+		if (m_Camera->IsCameraDifferent(m_OptixRenderer.GetLastSetCamera()))
+		{
+			/* Reset camera for renderer if we switch back to ray trace view and camera settings have changed */
+			m_OptixRenderer.SetCamera(*m_Camera);
+		}
 	}
 
 	if (m_AppHandle->m_FocusedWindow == Application::RayTracedViewport)

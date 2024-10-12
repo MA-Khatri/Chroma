@@ -29,6 +29,11 @@ namespace otx
 		/* Set the number of samples per pixel per call to Render() (updates Launch params) */
 		void SetSamplesPerRender(int nSamples);
 
+		/* Set the maximum number of ray bounces */
+		void SetMaxDepth(int maxDepth);
+
+		Camera* GetLastSetCamera();
+
 		/* Render one frame */
 		void Render();
 
@@ -100,6 +105,7 @@ namespace otx
 
 		/* Our launch parameters on the host, and the buffer to store them on the device */
 		int m_SamplesPerRender = 1;
+		int m_MaxDepth = 8;
 		LaunchParams m_LaunchParams;
 		CUDABuffer m_LaunchParamsBuffer;
 

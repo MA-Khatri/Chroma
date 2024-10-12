@@ -268,3 +268,22 @@ void Camera::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 	/* Set this to true so that camera is updated */
 	camera->m_CameraUIUpdate = true;
 }
+
+
+bool Camera::IsCameraDifferent(Camera* camera)
+{
+	Camera& c = *camera;
+	if (m_Position != c.m_Position) return true;
+	if (m_Orientation != c.m_Orientation) return true;
+	if (m_Up != c.m_Up) return true;
+	if (m_OrbitOrigin != c.m_OrbitOrigin) return true;
+	if (m_OrbitDistance != c.m_OrbitDistance) return true;
+	if (m_OrbitTheta != c.m_OrbitTheta) return true;
+	if (m_OrbitPhi != c.m_OrbitPhi) return true;
+	if (m_VFoV != c.m_VFoV) return true;
+	if (m_OrthoScale != c.m_OrthoScale) return true;
+	if (m_Width != c.m_Width) return true;
+	if (m_Height != c.m_Height) return true;
+
+	return false;
+}
