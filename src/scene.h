@@ -20,6 +20,8 @@ public:
 	Scene();
 	~Scene();
 
+	void MakeScene(int scene);
+
 	/* Utility functions for scene setup and rendering with Vulkan */
 	void VkSetup(ImVec2 viewportSize, VkSampleCountFlagBits sampleCount, VkRenderPass& renderPass, std::vector<VkFramebuffer>& framebuffers);
 	void VkResize(ImVec2 newSize, std::vector<VkFramebuffer>& framebuffers);
@@ -27,6 +29,12 @@ public:
 	void VkCleanup();
 
 public:
+	enum Scenes
+	{
+		DEFAULT,
+		CORNELL_BOX
+	};
+
 	/* Scene clear/background color */
 	glm::vec3 m_ClearColor = glm::vec3(63.0f / 255.0f, 63.0f / 255.0f, 63.0f / 255.0f);
 
@@ -41,6 +49,9 @@ public:
 
 	std::vector<std::shared_ptr<Object>> m_RasterObjects; /* Objects to be drawn in RasterView */
 	std::vector<std::shared_ptr<Object>> m_RayTraceObjects; /* Objects to be drawn in RayTraceView */
+
+private:
+	void PushToBoth(std::shared_ptr<Object> obj);
 
 private:
 	std::map<PipelineType, PipelineInfo> m_Pipelines; /* Pipelines with diff. shaders/draw modes */

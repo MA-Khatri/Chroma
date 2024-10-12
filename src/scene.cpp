@@ -3,11 +3,22 @@
 
 Scene::Scene()
 {
+	/* === Make Scene Objects === */
+	MakeScene(CORNELL_BOX);
+}
+
+
+Scene::~Scene()
+{
+	VkCleanup();
+}
+
+
+void Scene::MakeScene(int scene)
+{
 	TexturePaths noTextures;
 
-	/* ======================== */
 	/* === World Grid Lines === */
-	/* ======================== */
 	std::shared_ptr<Object> grid = std::make_shared<Object>(Object(CreateGroundGrid(), noTextures, Lines));
 	grid->m_DepthTest = false;
 	grid->m_ModelNormalMatrix = glm::mat3(m_ClearColor, glm::vec3(0.0f), glm::vec3(0.0f)); /* We'll store the clear color in the grid's normal matrix... */
@@ -18,45 +29,106 @@ Scene::Scene()
 	axes->m_ModelNormalMatrix = glm::mat3(m_ClearColor, glm::vec3(0.0f), glm::vec3(0.0f));
 	m_RasterObjects.push_back(axes);
 
-	/* ===================== */
-	/* === Scene Objects === */
-	/* ===================== */
-	TexturePaths vikingRoomTextures;
-	vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
-	std::shared_ptr<Object> vikingRoom = std::make_shared<Object>(Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, Flat));
-	vikingRoom->Translate(0.0f, 0.0f, 0.5f);
-	vikingRoom->Scale(5.0f);
-	m_RasterObjects.push_back(vikingRoom);
-	m_RayTraceObjects.push_back(vikingRoom);
+	switch (scene)
+	{
+	case DEFAULT:
+	{
+		TexturePaths vikingRoomTextures;
+		vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
+		std::shared_ptr<Object> vikingRoom = std::make_shared<Object>(Object(LoadMesh("res/meshes/viking_room.obj"), vikingRoomTextures, Flat));
+		vikingRoom->Translate(0.0f, 0.0f, 0.5f);
+		vikingRoom->Scale(5.0f);
+		PushToBoth(vikingRoom);
 
-	std::shared_ptr<Object> dragon = std::make_shared<Object>(LoadMesh("res/meshes/dragon.obj"), noTextures, Solid);
-	dragon->Translate(10.0f, 0.0f, 0.0f);
-	dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 45.0f);
-	dragon->Scale(5.0f);
-	dragon->m_Color = glm::vec3(0.3f, 0.8f, 0.3f);
-	m_RasterObjects.push_back(dragon);
-	m_RayTraceObjects.push_back(dragon);
+		std::shared_ptr<Object> dragon = std::make_shared<Object>(LoadMesh("res/meshes/dragon.obj"), noTextures, Solid);
+		dragon->Translate(10.0f, 0.0f, 0.0f);
+		dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 45.0f);
+		dragon->Scale(5.0f);
+		dragon->m_Color = glm::vec3(0.3f, 0.8f, 0.3f);
+		PushToBoth(dragon);
 
-	std::shared_ptr<Object> lucy = std::make_shared<Object>(LoadMesh("res/meshes/lucy.obj"), noTextures, Solid);
-	lucy->Translate(5.0f, -5.0f, 0.0f);
-	lucy->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 180.0f);
-	lucy->Scale(5.0f);
-	lucy->m_Color = glm::vec3(0.3f, 0.3f, 0.8f);
-	m_RasterObjects.push_back(lucy);
-	m_RayTraceObjects.push_back(lucy);
+		std::shared_ptr<Object> lucy = std::make_shared<Object>(LoadMesh("res/meshes/lucy.obj"), noTextures, Solid);
+		lucy->Translate(5.0f, -5.0f, 0.0f);
+		lucy->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 180.0f);
+		lucy->Scale(5.0f);
+		lucy->m_Color = glm::vec3(0.3f, 0.3f, 0.8f);
+		PushToBoth(lucy);
 
-	TexturePaths planeTextures;
-	planeTextures.diffuse = "res/textures/white.png";
-	std::shared_ptr<Object> plane0 = std::make_shared<Object>(Object(CreatePlane(), planeTextures, Flat));
-	plane0->Scale(100.0f);
-	m_RasterObjects.push_back(plane0);
-	m_RayTraceObjects.push_back(plane0);
+		TexturePaths planeTextures;
+		planeTextures.diffuse = "res/textures/white.png";
+		std::shared_ptr<Object> plane0 = std::make_shared<Object>(Object(CreatePlane(), planeTextures, Flat));
+		plane0->Scale(100.0f);
+		PushToBoth(plane0);
+
+		break;
+	}
+	case CORNELL_BOX:
+	{
+		glm::vec3 white = glm::vec3(0.73f);
+		glm::vec3 red = glm::vec3(0.65f, 0.05f, 0.05f);
+		glm::vec3 green = glm::vec3(0.12f, 0.45f, 0.15f);
+		glm::vec3 lightC = glm::vec3(15.0f);
+
+		/* === Walls === */
+		std::shared_ptr<Object> bottom = std::make_shared<Object>(Object(CreatePlane(), noTextures, Solid));
+		bottom->Scale(10.0f);
+		bottom->m_Color = white;
+		PushToBoth(bottom);
+
+		std::shared_ptr<Object> top = std::make_shared<Object>(Object(CreatePlane(), noTextures, Solid));
+		top->Translate(0.0f, 0.0f, 10.0f);
+		top->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f); /* technically not necessary */
+		top->Scale(10.0f);
+		top->m_Color = white;
+		PushToBoth(top);
+
+		std::shared_ptr<Object> left = std::make_shared<Object>(Object(CreatePlane(), noTextures, Solid));
+		left->Translate(0.0f, -5.0f, 5.0f);
+		left->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -90.0f);
+		left->Scale(10.0f);
+		left->m_Color = green;
+		PushToBoth(left);
+
+		std::shared_ptr<Object> right = std::make_shared<Object>(Object(CreatePlane(), noTextures, Solid));
+		right->Translate(0.0f, 5.0f, 5.0f);
+		right->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 90.0f);
+		right->Scale(10.0f);
+		right->m_Color = red;
+		PushToBoth(right);
+
+		std::shared_ptr<Object> back = std::make_shared<Object>(Object(CreatePlane(), noTextures, Solid));
+		back->Translate(-5.0f, 0.0f, 5.0f);
+		back->Rotate(glm::vec3(0.0f, 1.0f, 0.0f), 90.0f);
+		back->Scale(10.0f);
+		back->m_Color = white;
+		PushToBoth(back);
+
+		/* === Light === */
+		std::shared_ptr<Object> light = std::make_shared<Object>(Object(CreatePlane(), noTextures, Solid));
+		light->Translate(0.0f, 0.0f, 10.0f - 0.001f);
+		light->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f);
+		light->Scale(3.0f);
+		light->m_Color = lightC;
+		PushToBoth(light);
+
+		/* === Scene Objects === */
+		std::shared_ptr<Object> dragon = std::make_shared<Object>(LoadMesh("res/meshes/dragon.obj"), noTextures, Solid);
+		dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), -60.0f);
+		dragon->Scale(7.0f);
+		dragon->m_Color = white;
+		PushToBoth(dragon);
+
+		break;
+	}
+
+	}
 }
 
 
-Scene::~Scene()
+void Scene::PushToBoth(std::shared_ptr<Object> obj)
 {
-	VkCleanup();
+	m_RasterObjects.push_back(obj);
+	m_RayTraceObjects.push_back(obj);
 }
 
 

@@ -116,6 +116,9 @@ void RayTraceView::OnUIRender()
 		ImGui::Begin("Debug Panel");
 		{
 			CommonDebug(m_AppHandle, m_ViewportSize, *m_Camera);
+
+			ImGui::SeparatorText("Ray Tracer");
+			ImGui::Text("Total Accumulated Samples: %.1i", m_OptixRenderer.GetAccumulatedSampleCount());
 		}
 		ImGui::End();
 	}

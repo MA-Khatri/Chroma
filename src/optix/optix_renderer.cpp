@@ -57,8 +57,8 @@ namespace otx
 		Debug("[Optix] Creating context...");
 		CreateContext();
 
-		Debug("[Optix] Setting up module...");
-		CreateModule();
+		Debug("[Optix] Setting up modules...");
+		CreateModules();
 
 		Debug("[Optix] Creating raygen programs...");
 		CreateRaygenPrograms();
@@ -135,7 +135,7 @@ namespace otx
 	}
 
 
-	void Optix::CreateModule()
+	void Optix::CreateModules()
 	{
 		m_ModuleCompileOptions.maxRegisterCount = 50;
 #ifdef _DEBUG
@@ -156,6 +156,7 @@ namespace otx
 		m_PipelineCompileOptions.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
 		m_PipelineCompileOptions.pipelineLaunchParamsVariableName = "optixLaunchParams";
 
+
 		/* 
 		 * Note: Technically, since we are doing iterative ray tracing for radiance rays 
 		 * and only shooting shadow rays from within the closest hit shaders, this could be 
@@ -163,42 +164,39 @@ namespace otx
 		 */
 		m_PipelineLinkOptions.maxTraceDepth = m_MaxDepth; 
 
-		std::ifstream input("src/optix/shaders/compiled/device_programs.optixir", std::ios::binary);
-		std::vector<char> optixirCode(std::istreambuf_iterator<char>(input), {});
-		if (optixirCode.empty())
-		{
-			std::cerr << "Optix::CreateModule(): Failed to load optixir code!" << std::endl;
-			exit(-1);
-		}
 
-		char log[2048];
-		size_t sizeof_log = sizeof(log);
-#if OPTIX_VERSION >= 70700
-		OPTIX_CHECK(optixModuleCreate(
-			m_OptixContext,
-			&m_ModuleCompileOptions,
-			&m_PipelineCompileOptions, 
-			optixirCode.data(),
-			optixirCode.size(),
-			log,
-			&sizeof_log,
-			&m_Module
-		));
-#else
-		std::cerr << "ERROR: OptiX version is < 7.7. Cannot compile from optixir source code!" << std::endl;
-		/* Below will probably cause the actual error... */
-		OPTIX_CHECK(optixModuleCreateFromPTX(
-			m_OptixContext, 
-			&m_ModuleCompileOptions, 
-			&m_PipelineCompileOptions,
-			optixirCode.c_str(), 
-			optixirCode.size(), 
-			log, 
-			&sizeof_log, 
-			&m_Module
-		));
-#endif
-		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+		std::vector<std::pair<std::string, OptixModule*>> modules = {
+			{ std::string("src/optix/shaders/compiled/raygen.optixir"), &m_RaygenModule },
+			{ std::string("src/optix/shaders/compiled/diffuse.optixir"), &m_DiffuseModule },
+			{ std::string("src/optix/shaders/compiled/shadow.optixir"), &m_ShadowModule },
+			{ std::string("src/optix/shaders/compiled/miss.optixir"), &m_MissModule }
+		};
+
+		for (auto& module : modules)
+		{
+			std::ifstream input(module.first, std::ios::binary);
+			std::vector<char> optixirCode(std::istreambuf_iterator<char>(input), {});
+			if (optixirCode.empty())
+			{
+				std::cerr << "Optix::CreateModules(): Failed to load optixir code for file: " << module.first << std::endl;
+				exit(-1);
+			}
+
+			char log[2048];
+			size_t sizeof_log = sizeof(log);
+			OPTIX_CHECK(optixModuleCreate(
+				m_OptixContext,
+				&m_ModuleCompileOptions,
+				&m_PipelineCompileOptions,
+				optixirCode.data(),
+				optixirCode.size(),
+				log,
+				&sizeof_log,
+				module.second
+			));
+
+			if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+		}
 	}
 
 
@@ -209,7 +207,7 @@ namespace otx
 		OptixProgramGroupOptions pgOptions = {};
 		OptixProgramGroupDesc pgDesc = {};
 		pgDesc.kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
-		pgDesc.raygen.module = m_Module;
+		pgDesc.raygen.module = m_RaygenModule;
 		pgDesc.raygen.entryFunctionName = "__raygen__renderFrame";
 
 		char log[2048];
@@ -237,7 +235,7 @@ namespace otx
 		OptixProgramGroupOptions pgOptions = {};
 		OptixProgramGroupDesc pgDesc = {};
 		pgDesc.kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
-		pgDesc.miss.module = m_Module;
+		pgDesc.miss.module = m_MissModule;
 
 		/* === Radiance rays === */
 		pgDesc.miss.entryFunctionName = "__miss__radiance";
@@ -253,6 +251,7 @@ namespace otx
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 
 		/* === Shadow rays === */
+		pgDesc.miss.module = m_ShadowModule;
 		pgDesc.miss.entryFunctionName = "__miss__shadow";
 		OPTIX_CHECK(optixProgramGroupCreate(
 			m_OptixContext,
@@ -277,8 +276,8 @@ namespace otx
 		OptixProgramGroupOptions pgOptions = {};
 		OptixProgramGroupDesc pgDesc = {};
 		pgDesc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-		pgDesc.hitgroup.moduleAH = m_Module;
-		pgDesc.hitgroup.moduleCH = m_Module;
+		pgDesc.hitgroup.moduleAH = m_DiffuseModule;
+		pgDesc.hitgroup.moduleCH = m_DiffuseModule;
 
 		/* === Radiance rays === */
 		pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__radiance";
@@ -295,6 +294,8 @@ namespace otx
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 
 		/* === Shadow rays === */
+		pgDesc.hitgroup.moduleAH = m_ShadowModule;
+		pgDesc.hitgroup.moduleCH = m_ShadowModule;
 		pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__shadow";
 		pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__shadow";
 		OPTIX_CHECK(optixProgramGroupCreate(
@@ -782,6 +783,11 @@ namespace otx
 		return &m_LastSetCamera;
 	}
 
+	int Optix::GetAccumulatedSampleCount()
+	{
+		return m_SamplesPerRender * m_LaunchParams.frame.accumID;
+	}
+
 	void Optix::Render()
 	{
 		/* Sanity check: make sure we launch only after first resize is already done */
@@ -789,7 +795,7 @@ namespace otx
 
 		m_LaunchParams.frame.samples = m_SamplesPerRender;
 		m_LaunchParams.maxDepth = m_MaxDepth;
-		m_LaunchParams.cutoff_color = make_float3(1.0f);
+		m_LaunchParams.cutoff_color = make_float3(0.0f);
 		m_LaunchParamsBuffer.upload(&m_LaunchParams, 1);
 		m_LaunchParams.frame.accumID++; /* Must increment *after* upload */
 

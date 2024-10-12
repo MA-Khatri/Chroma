@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optix_device.h>
+#include <cuda_runtime.h>
 #include "../launch_params.h"
 
 namespace otx
@@ -272,8 +274,7 @@ namespace otx
 
 		/* Shading state */
 		bool done; /* boolean allowing for early termination, e.g. if ray gets fully absorbed */
-		float3 reflectance; /* attenuation (<= 1) from surface interaction */
-		float3 radiance; /* light from a light source or miss program */
+		float3 radiance;
 		float3 origin;
 		float3 direction;
 	};

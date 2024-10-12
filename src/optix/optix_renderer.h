@@ -33,6 +33,7 @@ namespace otx
 		void SetMaxDepth(int maxDepth);
 
 		Camera* GetLastSetCamera();
+		int GetAccumulatedSampleCount();
 
 		/* Render one frame */
 		void Render();
@@ -47,8 +48,8 @@ namespace otx
 		/* Creates and configures an Optix device context */
 		void CreateContext();
 
-		/* Creates the module that contains all the programs we will use. */
-		void CreateModule();
+		/* Creates the modules that contain the programs we will use. */
+		void CreateModules();
 
 		/* Setup for raygen program(s) we will use */
 		void CreateRaygenPrograms();
@@ -90,8 +91,11 @@ namespace otx
 		OptixPipelineCompileOptions m_PipelineCompileOptions = {};
 		OptixPipelineLinkOptions m_PipelineLinkOptions = {};
 
-		/* The module that contains our device programs */
-		OptixModule m_Module;
+		/* The modules that contain our device programs */
+		OptixModule m_RaygenModule;
+		OptixModule m_DiffuseModule;
+		OptixModule m_ShadowModule;
+		OptixModule m_MissModule;
 		OptixModuleCompileOptions m_ModuleCompileOptions = {};
 
 		/* A vector of all our program(group)s, and the SBT built around them */
@@ -105,7 +109,7 @@ namespace otx
 
 		/* Our launch parameters on the host, and the buffer to store them on the device */
 		int m_SamplesPerRender = 1;
-		int m_MaxDepth = 8;
+		int m_MaxDepth = 4;
 		LaunchParams m_LaunchParams;
 		CUDABuffer m_LaunchParamsBuffer;
 

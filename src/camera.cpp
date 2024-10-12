@@ -19,8 +19,8 @@ Camera::Camera()
 {
 	m_Width = 100;
 	m_Height = 100;
-	m_Position = glm::vec3(0.0f, 10.0f, 5.0f);
-	m_Orientation = glm::vec3(0.0, -1.0, 0.0);
+	m_Position = glm::vec3(17.0f, 0.0f, 5.0f);
+	m_Orientation = glm::vec3(-1.0, 0.0, 0.0);
 	m_Up = glm::vec3(0.0, 0.0, 1.0);
 	m_VFoV = 45.0f;
 	m_NearPlane = 0.1f;
