@@ -148,14 +148,20 @@ namespace otx
 
 		m_PipelineCompileOptions = {};
 		//m_PipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
-		m_PipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
+		//m_PipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
+		m_PipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
 		m_PipelineCompileOptions.usesMotionBlur = false;
 		m_PipelineCompileOptions.numPayloadValues = 2;
 		m_PipelineCompileOptions.numAttributeValues = 2;
 		m_PipelineCompileOptions.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
 		m_PipelineCompileOptions.pipelineLaunchParamsVariableName = "optixLaunchParams";
 
-		m_PipelineLinkOptions.maxTraceDepth = m_MaxDepth;
+		/* 
+		 * Note: Technically, since we are doing iterative ray tracing for radiance rays 
+		 * and only shooting shadow rays from within the closest hit shaders, this could be 
+		 * set to just 2 and should still work...
+		 */
+		m_PipelineLinkOptions.maxTraceDepth = m_MaxDepth; 
 
 		std::ifstream input("src/optix/shaders/compiled/device_programs.optixir", std::ios::binary);
 		std::vector<char> optixirCode(std::istreambuf_iterator<char>(input), {});
@@ -339,7 +345,7 @@ namespace otx
 			2 * 1024,   /* [in] The direct stack size requirement for direct callables invoked from IS or AH */
 			2 * 1024,   /* [in] The direct stack size requirement for direct callables invoked from RG, MS, or CH */
 			2 * 1024,   /* [in] The continuation stack size requirement */
-			1		    /* [in] The maximum depth of a traversable graph passed to trace */
+			2		    /* [in] The maximum depth of a traversable graph passed to trace */
 		));
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 	}

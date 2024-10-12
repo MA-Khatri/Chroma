@@ -216,16 +216,31 @@ Mesh LoadMesh(std::string filepath)
 				attrib.vertices[3 * index.vertex_index + 2]
 			};
 
-			vertex.texCoord = {
-				attrib.texcoords[2 * index.texcoord_index + 0],
-				1.0f - attrib.texcoords[2 * index.texcoord_index + 1] /* flip v-coord to match Vulkan convention */
-			};
-			
-			vertex.normal = {
-				attrib.normals[3 * index.normal_index + 0],
-				attrib.normals[3 * index.normal_index + 1],
-				attrib.normals[3 * index.normal_index + 2]
-			};
+			if (attrib.texcoords.size() > 0)
+			{
+				vertex.texCoord = {
+					attrib.texcoords[2 * index.texcoord_index + 0],
+					1.0f - attrib.texcoords[2 * index.texcoord_index + 1] /* flip v-coord to match Vulkan convention */
+				};
+			}
+			else
+			{
+				vertex.texCoord = { 0.0f, 0.0f };
+			}
+
+			if (attrib.normals.size() > 0)
+			{
+				vertex.normal = {
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
+				};
+			}
+			else
+			{
+				vertex.normal = { 0.0f, 0.0f, 0.0f };
+			}
+
 
 			if (uniqueVertices.count(vertex) == 0)
 			{

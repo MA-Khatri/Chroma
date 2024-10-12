@@ -37,6 +37,14 @@ Scene::Scene()
 	m_RasterObjects.push_back(dragon);
 	m_RayTraceObjects.push_back(dragon);
 
+	std::shared_ptr<Object> lucy = std::make_shared<Object>(LoadMesh("res/meshes/lucy.obj"), noTextures, Solid);
+	lucy->Translate(5.0f, -5.0f, 0.0f);
+	lucy->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 180.0f);
+	lucy->Scale(5.0f);
+	lucy->m_Color = glm::vec3(0.3f, 0.3f, 0.8f);
+	m_RasterObjects.push_back(lucy);
+	m_RayTraceObjects.push_back(lucy);
+
 	TexturePaths planeTextures;
 	planeTextures.diffuse = "res/textures/white.png";
 	std::shared_ptr<Object> plane0 = std::make_shared<Object>(Object(CreatePlane(), planeTextures, Flat));

@@ -53,47 +53,6 @@ namespace otx
 		float3 reflectOrigin = HitPosition() + 1e-3f * Ns;
 		prd.origin = reflectOrigin;
 		prd.direction = reflectDir;
-
-		///* === Trace diffuse ray === */
-		//if (prd.depth < optixLaunchParams.maxDepth - 1) /* -1 since prd.depth starts at 0 */
-		//{
-		//	/* Determine diffuse ray origin and reflection direction */
-		//	OrthonormalBasis basis = OrthonormalBasis(Ns);
-		//	float3 reflectDir = basis.Local(prd.random.RandomOnUnitCosineHemisphere());
-		//	float3 reflectOrigin = HitPosition() + 1e-3f * Ns;
-
-
-		//	/* Launch reflected ray */
-		//	PRD reflectPRD;
-		//	reflectPRD.random = prd.random;
-		//	reflectPRD.pixelColor = make_float3(1.0f);
-		//	reflectPRD.depth = prd.depth + 1;
-
-		//	uint32_t u0, u1;
-		//	packPointer(&reflectPRD, u0, u1);
-
-		//	optixTrace(
-		//		optixLaunchParams.traversable,
-		//		reflectOrigin,
-		//		reflectDir,
-		//		0.0f, /* tMin */
-		//		1e20f, /* tMax */
-		//		0.0f, /* ray time */
-		//		OptixVisibilityMask(255),
-		//		OPTIX_RAY_FLAG_DISABLE_ANYHIT, /* OPTIX_RAY_FLAG_NONE */
-		//		RADIANCE_RAY_TYPE, /* SBT offset */
-		//		RAY_TYPE_COUNT, /* SBT stride */
-		//		RADIANCE_RAY_TYPE, /* miss SBT index */
-		//		u0, u1 /* packed pointer to our PRD */
-		//	);
-
-		//	/* Multiply ray colors together */
-		//	prd.pixelColor = diffuseColor * reflectPRD.pixelColor;
-		//}
-		//else
-		//{
-		//	prd.pixelColor = diffuseColor;
-		//}
 		
 		///* === Compute shadow === */
 		//const float3 surfPosn = HitPosition();
