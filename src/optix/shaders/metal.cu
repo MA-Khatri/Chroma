@@ -2,7 +2,7 @@
 
 namespace otx
 {
-	extern "C" __global__ void __closesthit__radiance__diffuse()
+	extern "C" __global__ void __closesthit__radiance__metal()
 	{
 		const MeshSBTData& sbtData = *(const MeshSBTData*)optixGetSbtDataPointer();
 		PRD_radiance& prd = *getPRD<PRD_radiance>();
@@ -43,15 +43,14 @@ namespace otx
 
 		/* === Set ray data for next trace call === */
 		/* Determine reflected ray origin and direction */
-		OrthonormalBasis basis = OrthonormalBasis(Ns);
-		float3 reflectDir = basis.Local(prd.random.RandomOnUnitCosineHemisphere());
+		float3 reflectDir = reflect(rayDir, Ns); /* Reflected ray direction */
 		float3 reflectOrigin = HitPosition() + 1e-3f * Ns;
 		prd.origin = reflectOrigin;
 		prd.direction = reflectDir;
 	}
 
 
-	extern "C" __global__ void __anyhit__radiance__diffuse()
+	extern "C" __global__ void __anyhit__radiance__metal()
 	{
 		// TODO?
 	}

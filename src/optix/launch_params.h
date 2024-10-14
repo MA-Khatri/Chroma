@@ -5,11 +5,13 @@
 
 namespace otx
 {
-	/* Ray types */
+	/* Material Types (used to access SBT) */
 	enum
 	{
-		RADIANCE_RAY_TYPE = 0,
-		SHADOW_RAY_TYPE,
+		LAMBERTIAN = 0,
+		CONDUCTOR,
+		DIELECTRIC,
+		DIFFUSE_LIGHT,
 		RAY_TYPE_COUNT
 	};
 

@@ -94,6 +94,7 @@ namespace otx
 		/* The modules that contain our device programs */
 		OptixModule m_RaygenModule;
 		OptixModule m_DiffuseModule;
+		OptixModule m_MetalModule;
 		OptixModule m_ShadowModule;
 		OptixModule m_MissModule;
 		OptixModuleCompileOptions m_ModuleCompileOptions = {};

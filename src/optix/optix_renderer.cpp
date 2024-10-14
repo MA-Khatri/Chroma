@@ -268,7 +268,7 @@ namespace otx
 
 	void Optix::CreateHitgroupPrograms()
 	{
-		m_HitgroupPGs.resize(RAY_TYPE_COUNT);
+		m_HitgroupPGs.resize();
 
 		char log[2048];
 		size_t sizeof_log = sizeof(log);
@@ -280,8 +280,9 @@ namespace otx
 		pgDesc.hitgroup.moduleCH = m_DiffuseModule;
 
 		/* === Radiance rays === */
-		pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__radiance";
-		pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__radiance";
+		/* Diffuse */
+		pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__radiance__diffuse";
+		pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__radiance__diffuse";
 		OPTIX_CHECK(optixProgramGroupCreate(
 			m_OptixContext, 
 			&pgDesc, 
@@ -289,6 +290,22 @@ namespace otx
 			&pgOptions, 
 			log, 
 			&sizeof_log, 
+			&m_HitgroupPGs[RADIANCE_RAY_TYPE]
+		));
+		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+
+		/* Metal */
+		pgDesc.hitgroup.moduleAH = m_MetalModule;
+		pgDesc.hitgroup.moduleCH = m_MetalModule;
+		pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__radiance__metal";
+		pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__radiance__metal";
+		OPTIX_CHECK(optixProgramGroupCreate(
+			m_OptixContext,
+			&pgDesc,
+			1,
+			&pgOptions,
+			log,
+			&sizeof_log,
 			&m_HitgroupPGs[RADIANCE_RAY_TYPE]
 		));
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;

@@ -43,7 +43,7 @@ void RasterView::OnUpdate()
 	int appScene = m_AppHandle->GetSceneID();
 	if (appScene != m_SceneID)
 	{
-		//m_Scene->VkCleanup(); /* Causes a crash? */
+		//m_Scene->VkCleanup(); /* Causes a crash? And doesn't seem like we need to. */
 		m_SceneID = appScene;
 		m_Scene = m_AppHandle->GetScenes()[appScene];
 		m_Scene->VkSetup(m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_ViewportFramebuffers);

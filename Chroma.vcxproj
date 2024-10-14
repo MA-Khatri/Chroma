@@ -96,6 +96,7 @@
     <Image Include="res\textures\viking_room_diff.png" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="src\optix\shaders\metal.cu" />
     <CudaCompile Include="src\optix\shaders\miss.cu" />
     <CudaCompile Include="src\optix\shaders\raygen.cu" />
     <CudaCompile Include="src\optix\shaders\diffuse.cu" />
