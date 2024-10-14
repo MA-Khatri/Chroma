@@ -83,9 +83,9 @@ namespace otx
 					0.0f, /* ray time */
 					OptixVisibilityMask(255),
 					OPTIX_RAY_FLAG_DISABLE_ANYHIT, /* OPTIX_RAY_FLAG_NONE */
-					RADIANCE_RAY_TYPE, /* SBT offset */
+					RAY_TYPE_RADIANCE, /* SBT offset */
 					RAY_TYPE_COUNT, /* SBT stride */
-					RADIANCE_RAY_TYPE, /* miss SBT index */
+					RAY_TYPE_RADIANCE, /* miss SBT index */
 					u0, u1 /* packed pointer to our PRD */
 				);
 

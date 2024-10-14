@@ -29,7 +29,7 @@ public:
 	void VkCleanup();
 
 public:
-	enum
+	enum SceneType
 	{
 		DEFAULT,
 		CORNELL_BOX
@@ -55,7 +55,7 @@ public:
 	std::string m_BackgroundPath;
 
 	/* List of pipeline types for Vulkan rendering */
-	enum PipelineType
+	enum PipelineType /* TODO: Should these be capitalized for consistency with other enums? */
 	{
 		Solid, /* Proxy for Blender's solid viewport shading */
 		Normal, /* View object normals */
@@ -71,7 +71,7 @@ private:
 	void PushToBoth(std::shared_ptr<Object> obj);
 
 private:
-	std::map<PipelineType, PipelineInfo> m_Pipelines; /* Pipelines with diff. shaders/draw modes */
+	std::map<PipelineType, PipelineInfo> m_Pipelines; /* Vulkan Pipelines with diff. shaders/draw modes */
 
 	/* We set the camera's view and projection matrices as push constants for Vulkan rendering */
 	struct PushConstants {

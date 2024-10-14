@@ -104,6 +104,10 @@ protected:
 	SlidingBuffer<float> m_FrameRates = SlidingBuffer<float>(m_FrameStorageCount);
 	std::vector<float> m_FrameGraphX = arange<float>(0, (float)m_FrameStorageCount, 1);
 	std::string m_ScreenshotString = "";
-	std::vector<std::string> m_SceneStrings;
+
+	std::vector<std::string> m_SceneNames;
 	int m_SceneID = 0;
+
+	std::vector<std::string> m_ControlModeNames;
+	std::vector<std::string> m_ProjectionModeNames;
 };

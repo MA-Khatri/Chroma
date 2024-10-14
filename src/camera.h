@@ -9,8 +9,10 @@
 #include<glm/gtx/vector_angle.hpp>
 
 #include <GLFW/glfw3.h>
-
 #include <imgui.h>
+
+#include <string>
+#include <map>
 
 class Camera
 {
@@ -29,10 +31,20 @@ public:
 		ORBIT
 	};
 
+	std::map<int, std::string> m_ControlModeNames = {
+		{FREE_FLY, "Free Fly"},
+		{ORBIT, "Orbit"}
+	};
+
 	enum ProjectionMode
 	{
 		PERSPECTIVE,
 		ORTHOGRAPHIC,
+	};
+
+	std::map<int, std::string> m_ProjectionModeNames = {
+		{PERSPECTIVE, "Perspective"},
+		{ORTHOGRAPHIC, "Orthographic"}
 	};
 
 	int m_ControlMode = FREE_FLY;

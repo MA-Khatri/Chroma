@@ -3,18 +3,11 @@
 #include <glm/glm.hpp>
 #include <vector_math.h>
 
+#include "types.h"
+
 namespace otx
 {
-	/* Material Types (used to access SBT) */
-	enum
-	{
-		LAMBERTIAN = 0,
-		CONDUCTOR,
-		DIELECTRIC,
-		DIFFUSE_LIGHT,
-		RAY_TYPE_COUNT
-	};
-
+	/* Mesh data relevant for all material types */
 	struct MeshSBTData
 	{
 		float3* position;

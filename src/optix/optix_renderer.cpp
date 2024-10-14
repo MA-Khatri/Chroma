@@ -156,18 +156,14 @@ namespace otx
 		m_PipelineCompileOptions.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
 		m_PipelineCompileOptions.pipelineLaunchParamsVariableName = "optixLaunchParams";
 
-
-		/* 
-		 * Note: Technically, since we are doing iterative ray tracing for radiance rays 
-		 * and only shooting shadow rays from within the closest hit shaders, this could be 
-		 * set to just 2 and should still work...
-		 */
 		m_PipelineLinkOptions.maxTraceDepth = m_MaxDepth; 
-
 
 		std::vector<std::pair<std::string, OptixModule*>> modules = {
 			{ std::string("src/optix/shaders/compiled/raygen.optixir"), &m_RaygenModule },
-			{ std::string("src/optix/shaders/compiled/diffuse.optixir"), &m_DiffuseModule },
+			{ std::string("src/optix/shaders/compiled/lambertian.optixir"), &m_LambertianModule },
+			{ std::string("src/optix/shaders/compiled/conductor.optixir"), &m_ConductorModule },
+			{ std::string("src/optix/shaders/compiled/dielectric.optixir"), &m_DielectricModule },
+			{ std::string("src/optix/shaders/compiled/diffuse_light.optixir"), &m_DiffuseLightModule },
 			{ std::string("src/optix/shaders/compiled/shadow.optixir"), &m_ShadowModule },
 			{ std::string("src/optix/shaders/compiled/miss.optixir"), &m_MissModule }
 		};
@@ -246,7 +242,7 @@ namespace otx
 			&pgOptions, 
 			log, 
 			&sizeof_log, 
-			&m_MissPGs[RADIANCE_RAY_TYPE]
+			&m_MissPGs[RAY_TYPE_RADIANCE]
 		));
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 
@@ -260,7 +256,7 @@ namespace otx
 			&pgOptions,
 			log,
 			&sizeof_log,
-			&m_MissPGs[SHADOW_RAY_TYPE]
+			&m_MissPGs[RAY_TYPE_SHADOW]
 		));
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 	}
@@ -268,7 +264,11 @@ namespace otx
 
 	void Optix::CreateHitgroupPrograms()
 	{
-		m_HitgroupPGs.resize();
+		/* 
+		 * We do -1 to remove RAY_TYPE_RADIANCE since we have no radiance-ray specific hitgroup 
+		 * programs but still need to add hitgroup programs for other ray types.
+		 */
+		m_HitgroupPGs.resize(MATERIAL_TYPE_COUNT + RAY_TYPE_COUNT - 1);
 
 		char log[2048];
 		size_t sizeof_log = sizeof(log);
@@ -276,13 +276,13 @@ namespace otx
 		OptixProgramGroupOptions pgOptions = {};
 		OptixProgramGroupDesc pgDesc = {};
 		pgDesc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-		pgDesc.hitgroup.moduleAH = m_DiffuseModule;
-		pgDesc.hitgroup.moduleCH = m_DiffuseModule;
+		pgDesc.hitgroup.moduleAH = m_LambertianModule;
+		pgDesc.hitgroup.moduleCH = m_LambertianModule;
 
 		/* === Radiance rays === */
-		/* Diffuse */
-		pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__radiance__diffuse";
-		pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__radiance__diffuse";
+		/* Lambertian */
+		pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__radiance";
+		pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__radiance";
 		OPTIX_CHECK(optixProgramGroupCreate(
 			m_OptixContext, 
 			&pgDesc, 
@@ -290,15 +290,13 @@ namespace otx
 			&pgOptions, 
 			log, 
 			&sizeof_log, 
-			&m_HitgroupPGs[RADIANCE_RAY_TYPE]
+			&m_HitgroupPGs[MATERIAL_TYPE_LAMBERTIAN]
 		));
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 
-		/* Metal */
-		pgDesc.hitgroup.moduleAH = m_MetalModule;
-		pgDesc.hitgroup.moduleCH = m_MetalModule;
-		pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__radiance__metal";
-		pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__radiance__metal";
+		/* Conductor */
+		pgDesc.hitgroup.moduleAH = m_ConductorModule;
+		pgDesc.hitgroup.moduleCH = m_ConductorModule;
 		OPTIX_CHECK(optixProgramGroupCreate(
 			m_OptixContext,
 			&pgDesc,
@@ -306,9 +304,39 @@ namespace otx
 			&pgOptions,
 			log,
 			&sizeof_log,
-			&m_HitgroupPGs[RADIANCE_RAY_TYPE]
+			&m_HitgroupPGs[MATERIAL_TYPE_CONDUCTOR]
 		));
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+
+		/* Dielectric */
+		pgDesc.hitgroup.moduleAH = m_DielectricModule;
+		pgDesc.hitgroup.moduleCH = m_DielectricModule;
+		OPTIX_CHECK(optixProgramGroupCreate(
+			m_OptixContext,
+			&pgDesc,
+			1,
+			&pgOptions,
+			log,
+			&sizeof_log,
+			&m_HitgroupPGs[MATERIAL_TYPE_DIELECTRIC]
+		));
+		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+
+		/* Diffuse Light */
+		pgDesc.hitgroup.moduleAH = m_DiffuseLightModule;
+		pgDesc.hitgroup.moduleCH = m_DiffuseLightModule;
+		OPTIX_CHECK(optixProgramGroupCreate(
+			m_OptixContext,
+			&pgDesc,
+			1,
+			&pgOptions,
+			log,
+			&sizeof_log,
+			&m_HitgroupPGs[MATERIAL_TYPE_DIFFUSE_LIGHT]
+		));
+		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+
+		// TODO, more...
 
 		/* === Shadow rays === */
 		pgDesc.hitgroup.moduleAH = m_ShadowModule;
@@ -322,7 +350,7 @@ namespace otx
 			&pgOptions,
 			log,
 			&sizeof_log,
-			&m_HitgroupPGs[SHADOW_RAY_TYPE]
+			&m_HitgroupPGs[MATERIAL_TYPE_COUNT + RAY_TYPE_SHADOW - 1]
 		));
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 	}
@@ -497,7 +525,7 @@ namespace otx
 			uint32_t triangleInputFlags;
 
 			/* Upload the mesh to the device */
-			Mesh& mesh = m_Scene->m_RayTraceObjects[objectID]->m_Mesh;
+			Mesh& mesh = objects[objectID]->m_Mesh;
 			m_VertexBuffers[objectID].alloc_and_upload(mesh.posns);
 			m_IndexBuffers[objectID].alloc_and_upload(mesh.ivecIndices);
 			m_NormalBuffers[objectID].alloc_and_upload(mesh.normals);
@@ -539,7 +567,7 @@ namespace otx
 			memcpy(instance.transform, m_Transforms[objectID].data(), sizeof(float) * 12); /* Copy over the object's transform */
 			instance.instanceId = objectID;
 			instance.visibilityMask = 255;
-			instance.sbtOffset = objectID * RAY_TYPE_COUNT;
+			instance.sbtOffset = objectID * RAY_TYPE_COUNT;			
 			instance.flags = OPTIX_INSTANCE_FLAG_NONE;
 			instance.traversableHandle = gasHandle;
 
@@ -667,12 +695,14 @@ namespace otx
 			for (int rayID = 0; rayID < RAY_TYPE_COUNT; rayID++)
 			{
 				auto obj = m_Scene->m_RayTraceObjects[objectID];
-
 				HitgroupRecord rec;
-				OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[rayID], &rec));
 
-				if (rayID == RADIANCE_RAY_TYPE)
+				/* RADIANCE rays only */
+				if (rayID == RAY_TYPE_RADIANCE)
 				{
+					/* Assign the material type (program) here */
+					OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[obj->m_RTMaterialType], &rec));
+
 					/* Textures... */
 					if (obj->m_DiffuseTexture.textureID >= 0)
 					{
@@ -708,8 +738,18 @@ namespace otx
 					rec.data.normal = (float3*)m_NormalBuffers[objectID].d_pointer();
 					rec.data.color = (float3*)m_ObjectColorBuffers[objectID].d_pointer();
 				}
+				/* Shadow rays only */
+				else if (rayID == RAY_TYPE_SHADOW)
+				{
+					OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[rayID + MATERIAL_TYPE_COUNT - 1], &rec));
+				}
+				else
+				{
+					std::cerr << "Optix::BuildSBT(): WARNING! Invalid rayID! Skipping..." << std::endl;
+					continue;
+				}
 
-				/* Vertex data */
+				/* Common to all raytypes -- i.e., mesh data */
 				rec.data.position = (float3*)m_VertexBuffers[objectID].d_pointer();
 				rec.data.index = (int3*)m_IndexBuffers[objectID].d_pointer();
 				

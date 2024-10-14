@@ -93,8 +93,10 @@ namespace otx
 
 		/* The modules that contain our device programs */
 		OptixModule m_RaygenModule;
-		OptixModule m_DiffuseModule;
-		OptixModule m_MetalModule;
+		OptixModule m_LambertianModule;
+		OptixModule m_ConductorModule;
+		OptixModule m_DielectricModule;
+		OptixModule m_DiffuseLightModule;
 		OptixModule m_ShadowModule;
 		OptixModule m_MissModule;
 		OptixModuleCompileOptions m_ModuleCompileOptions = {};
@@ -108,10 +110,20 @@ namespace otx
 		CUDABuffer m_HitgroupRecordsBuffer;
 		OptixShaderBindingTable m_SBT = {};
 
-		/* Our launch parameters on the host, and the buffer to store them on the device */
+		/* Samples per pixel per call to render */
 		int m_SamplesPerRender = 1;
+
+		/*
+		 * Note: Technically, since we are doing iterative ray tracing for radiance rays
+		 * and only shooting shadow rays from within the closest hit shaders, this could be
+		 * set to just 2 and should still work...
+		 */
 		int m_MaxDepth = 4;
+
+		/* Our launch parameters on the host */
 		LaunchParams m_LaunchParams;
+
+		/* The buffer to store LaunchParams on the device*/
 		CUDABuffer m_LaunchParamsBuffer;
 
 		/* Our output color buffer */

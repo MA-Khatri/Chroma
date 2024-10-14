@@ -42,8 +42,10 @@ struct Texture
 class Object
 {
 public:
-	Object(Mesh mesh, TexturePaths texturePaths, int pipelineType);
+	Object(Mesh mesh, TexturePaths texturePaths, int vkPipelineType, int rtMaterialType = 0);
 	~Object();
+
+	void LoadTextures();
 
 	/* Load in the pixels and resolution of the provided texture */
 	void LoadTexture(Texture& tex);
@@ -90,6 +92,7 @@ public:
 	Texture m_SpecularTexture;
 	Texture m_NormalTexture;
 	glm::vec3 m_Color = glm::vec3(0.7f); /* Base color used for diffuse if no diffuse texture */
+	int m_RTMaterialType = 1; /* Ray tracing material type -- i.e., otx::MaterialType enum */
 
 private:
 	/* === Vulkan === */

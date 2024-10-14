@@ -4,27 +4,11 @@
 #include "vulkan/vulkan_utils.h"
 
 
-Object::Object(Mesh mesh, TexturePaths texturePaths, int pipelineType)
-    : m_Mesh(mesh), m_TexturePaths(texturePaths), m_PipelineType(pipelineType)
+Object::Object(Mesh mesh, TexturePaths texturePaths, int vkPipelineType, int rtMaterialType /* = 0 */)
+    : m_Mesh(mesh), m_TexturePaths(texturePaths), m_PipelineType(vkPipelineType), m_RTMaterialType(rtMaterialType)
 {
-    /* Load all textures... */
-    if (!m_TexturePaths.diffuse.empty())
-    {
-        m_DiffuseTexture.filePath = m_TexturePaths.diffuse;
-        LoadTexture(m_DiffuseTexture);
-    }
-    if (!m_TexturePaths.specular.empty())
-    {
-        m_SpecularTexture.filePath = m_TexturePaths.specular;
-        LoadTexture(m_SpecularTexture);
-    }
-    if (!m_TexturePaths.normal.empty())
-    {
-        m_NormalTexture.filePath = m_TexturePaths.normal;
-        LoadTexture(m_NormalTexture);
-    }
+    LoadTextures();
 }
-
 
 Object::~Object()
 {
@@ -56,6 +40,27 @@ Object::~Object()
     vkDestroyImage(vk::Device, m_NormalTextureImage, nullptr);
     vkFreeMemory(vk::Device, m_NormalTextureImageMemory, nullptr);
     vkDestroySampler(vk::Device, m_NormalTextureSampler, nullptr);
+}
+
+
+void Object::LoadTextures()
+{
+    /* Load all textures... */
+    if (!m_TexturePaths.diffuse.empty())
+    {
+        m_DiffuseTexture.filePath = m_TexturePaths.diffuse;
+        LoadTexture(m_DiffuseTexture);
+    }
+    if (!m_TexturePaths.specular.empty())
+    {
+        m_SpecularTexture.filePath = m_TexturePaths.specular;
+        LoadTexture(m_SpecularTexture);
+    }
+    if (!m_TexturePaths.normal.empty())
+    {
+        m_NormalTexture.filePath = m_TexturePaths.normal;
+        LoadTexture(m_NormalTexture);
+    }
 }
 
 

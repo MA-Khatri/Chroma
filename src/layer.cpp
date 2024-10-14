@@ -7,6 +7,7 @@
 
 #include "scene.h"
 
+
 std::string GetDateTimeStr()
 {
 	/* Get time */
@@ -62,9 +63,18 @@ std::string WriteImageToFile(std::string filename, int width, int height, int ch
 
 void Layer::SetupDebug(Application* app)
 {
+	/* Get a list of names for each drop down (aka combo) */
 	for (auto& scene : app->GetScenes())
 	{
-		m_SceneStrings.push_back(scene->m_SceneNames.at(scene->m_SceneType));
+		m_SceneNames.push_back(scene->m_SceneNames.at(scene->m_SceneType));
+	}
+	for (auto& controlMode : app->GetMainCamera()->m_ControlModeNames)
+	{
+		m_ControlModeNames.push_back(controlMode.second);
+	}
+	for (auto& projectionMode : app->GetMainCamera()->m_ProjectionModeNames)
+	{
+		m_ProjectionModeNames.push_back(projectionMode.second);
 	}
 }
 
@@ -102,13 +112,13 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 	{
 		/* Choose a scene */
 		int selectedScene = app->GetSceneID();
-		const char* selectedScenePreview = m_SceneStrings[selectedScene].c_str();
+		const char* selectedScenePreview = m_SceneNames[selectedScene].c_str();
 		if (ImGui::BeginCombo("Scene", selectedScenePreview))
 		{
-			for (int n = 0; n < m_SceneStrings.size(); n++)
+			for (int n = 0; n < m_SceneNames.size(); n++)
 			{
 				const bool isSelected = (selectedScene == n);
-				if (ImGui::Selectable(m_SceneStrings[n].c_str(), isSelected)) selectedScene = n;
+				if (ImGui::Selectable(m_SceneNames[n].c_str(), isSelected)) selectedScene = n;
 
 				if (isSelected) ImGui::SetItemDefaultFocus();
 			}
@@ -125,15 +135,14 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 		ImGui::Checkbox("Link Cameras", &app->m_LinkCameras);
 		
 		/* Choose camera control mode */
-		const char* controlModes[] = { "Free fly", "Orbit" }; /* Make sure this matches order in Camera::ControlMode */
 		int selectedControlMode = camera.m_ControlMode;
-		const char* controlModePreview = controlModes[selectedControlMode];
+		const char* controlModePreview = m_ControlModeNames[selectedControlMode].c_str();
 		if (ImGui::BeginCombo("Control Mode", controlModePreview))
 		{
-			for (int n = 0; n < IM_ARRAYSIZE(controlModes); n++)
+			for (int n = 0; n < m_ControlModeNames.size(); n++)
 			{
 				const bool isSelected = (selectedControlMode == n);
-				if (ImGui::Selectable(controlModes[n], isSelected)) selectedControlMode = n;
+				if (ImGui::Selectable(m_ControlModeNames[n].c_str(), isSelected)) selectedControlMode = n;
 
 				if (isSelected) ImGui::SetItemDefaultFocus();
 			}
@@ -143,15 +152,14 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 		camera.m_ControlMode = selectedControlMode;
 
 		/* Choose camera projection mode */
-		const char* projectionModes[] = { "Perspective", "Orthographic" }; /* Make sure this matches order in Camera::ProjectionMode */
 		int selectedProjectionMode = camera.m_ProjectionMode;
-		const char* projectionModePreview = projectionModes[selectedProjectionMode];
+		const char* projectionModePreview = m_ProjectionModeNames[selectedProjectionMode].c_str();
 		if (ImGui::BeginCombo("Projection Mode", projectionModePreview))
 		{
-			for (int n = 0; n < IM_ARRAYSIZE(projectionModes); n++)
+			for (int n = 0; n < m_ProjectionModeNames.size(); n++)
 			{
 				const bool isSelected = (selectedProjectionMode == n);
-				if (ImGui::Selectable(projectionModes[n], isSelected)) selectedProjectionMode = n;
+				if (ImGui::Selectable(m_ProjectionModeNames[n].c_str(), isSelected)) selectedProjectionMode = n;
 
 				if (isSelected) ImGui::SetItemDefaultFocus();
 			}
