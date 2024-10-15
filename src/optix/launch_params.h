@@ -53,7 +53,7 @@ namespace otx
 		float3 clearColor;
 		float3 gradientBottom;
 		float3 gradientTop;
-		uint32_t* backgroundTexture;
+		cudaTextureObject_t backgroundTexture;
 	};
 
 } /* namspace otx */

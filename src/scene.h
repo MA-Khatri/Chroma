@@ -51,8 +51,8 @@ public:
 	/* Scene top background gradient color used if m_BackgroundMode == GRADIENT */
 	glm::vec3 m_GradientTop = glm::vec3(1.0f);
 
-	/* Path to background texture used if m_BackgroundMode == TEXTURE */
-	std::string m_BackgroundPath;
+	/* Background texture loaded as a float to enable hdr skyboxes */
+	Texture<float> m_BackgroundTexture;
 
 	/* List of pipeline types for Vulkan rendering */
 	enum PipelineType /* TODO: Should these be capitalized for consistency with other enums? */

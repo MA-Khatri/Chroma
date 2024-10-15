@@ -1,6 +1,5 @@
 #include "object.h"
 
-#include "stb_image.h"
 #include "vulkan/vulkan_utils.h"
 
 
@@ -49,40 +48,40 @@ void Object::LoadTextures()
     if (!m_TexturePaths.diffuse.empty())
     {
         m_DiffuseTexture.filePath = m_TexturePaths.diffuse;
-        LoadTexture(m_DiffuseTexture);
+        m_DiffuseTexture.LoadTexture();
     }
     if (!m_TexturePaths.specular.empty())
     {
         m_SpecularTexture.filePath = m_TexturePaths.specular;
-        LoadTexture(m_SpecularTexture);
+        m_SpecularTexture.LoadTexture();
     }
     if (!m_TexturePaths.normal.empty())
     {
         m_NormalTexture.filePath = m_TexturePaths.normal;
-        LoadTexture(m_NormalTexture);
+        m_NormalTexture.LoadTexture();
     }
 }
 
 
-void Object::LoadTexture(Texture& tex)
-{
-    int texWidth, texHeight, texChannels;
-    uint8_t* pixels = stbi_load(tex.filePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha); /* load image with alpha channel even if it doesn't have one */
-    if (!pixels)
-    {
-        std::cerr << "LoadTexture(): Error! Failed to load image " << tex.filePath << " ! " << std::endl;
-        exit(-1);
-    }
-
-#ifdef _DEBUG
-    if (texChannels != 4) std::cout << "Warning: loaded texture only has " << texChannels << " channels. Force loaded with 4 channels!" << std::endl;
-#endif
-    tex.resolution = glm::ivec3(texWidth, texHeight, 4);
-
-    /* Copy pixels to local std::vector and free originally read data */
-    tex.pixels = std::vector<uint8_t>(pixels, pixels + (tex.resolution.x * tex.resolution.y * tex.resolution.z));
-    stbi_image_free(pixels);
-}
+//void Object::LoadTexture(Texture& tex)
+//{
+//    int texWidth, texHeight, texChannels;
+//    uint8_t* pixels = stbi_load(tex.filePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha); /* load image with alpha channel even if it doesn't have one */
+//    if (!pixels)
+//    {
+//        std::cerr << "LoadTexture(): Error! Failed to load image " << tex.filePath << " ! " << std::endl;
+//        exit(-1);
+//    }
+//
+//#ifdef _DEBUG
+//    if (texChannels != 4) std::cout << "Warning: loaded texture only has " << texChannels << " channels. Force loaded with 4 channels!" << std::endl;
+//#endif
+//    tex.resolution = glm::ivec3(texWidth, texHeight, 4);
+//
+//    /* Copy pixels to local std::vector and free originally read data */
+//    tex.pixels = std::vector<uint8_t>(pixels, pixels + (tex.resolution.x * tex.resolution.y * tex.resolution.z));
+//    stbi_image_free(pixels);
+//}
 
 
 void Object::VkSetup(const PipelineInfo& pipelineInfo)

@@ -101,13 +101,14 @@ namespace otx
 			pixelColor += prd.radiance;
 		}
 		
-		/* Determine average color for this call -- cap to 1.0f */
-		//const float cr = min(pixelColor.x / numPixelSamples, 1.0f);
-		//const float cg = min(pixelColor.y / numPixelSamples, 1.0f);
-		//const float cb = min(pixelColor.z / numPixelSamples, 1.0f);
-		const float cr = pixelColor.x / numPixelSamples;
-		const float cg = pixelColor.y / numPixelSamples;
-		const float cb = pixelColor.z / numPixelSamples;
+		/* Determine average color for this call. Cap to prevent speckles (even though this breaks pbr condition) */
+		const float cap = 5.0f;
+		const float cr = min(pixelColor.x / numPixelSamples, cap);
+		const float cg = min(pixelColor.y / numPixelSamples, cap);
+		const float cb = min(pixelColor.z / numPixelSamples, cap);
+		//const float cr = pixelColor.x / numPixelSamples;
+		//const float cg = pixelColor.y / numPixelSamples;
+		//const float cb = pixelColor.z / numPixelSamples;
 		const float3 cclr = make_float3(cr, cg, cb);
 
 		/* Determine the new accumulated color */

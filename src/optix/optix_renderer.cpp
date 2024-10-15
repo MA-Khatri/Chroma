@@ -601,6 +601,11 @@ namespace otx
 			if (obj->m_NormalTexture.pixels.size() > 0) nTextures++;
 		}
 
+		if (m_Scene->m_BackgroundTexture.pixels.size() > 0)
+		{
+			nTextures++;
+		}
+
 		m_TextureArrays.resize(nTextures);
 		m_TextureObjects.resize(nTextures);
 
@@ -608,20 +613,20 @@ namespace otx
 		for (auto obj : m_Scene->m_RayTraceObjects)
 		{
 			/* Get all textures for this object */
-			std::vector<Texture*> textures;
+			std::vector<Texture<uint8_t>*> textures;
 			textures.reserve(3);
 
-			Texture* diffuse = &(obj->m_DiffuseTexture);
+			Texture<uint8_t>* diffuse = &(obj->m_DiffuseTexture);
 			if (diffuse->pixels.size() > 0) { diffuse->textureID = textureID; textureID++; textures.emplace_back(diffuse); }
 
-			Texture* specular = &(obj->m_SpecularTexture);
+			Texture<uint8_t>* specular = &(obj->m_SpecularTexture);
 			if (specular->pixels.size() > 0) { specular->textureID = textureID; textureID++; textures.emplace_back(specular); }
 
-			Texture* normal = &(obj->m_NormalTexture);
+			Texture<uint8_t>* normal = &(obj->m_NormalTexture);
 			if (normal->pixels.size() > 0) { normal->textureID = textureID; textureID++; textures.emplace_back(normal); }
 
 			/* Create CUDA resources for each texture */
-			for (Texture* tex : textures)
+			for (Texture<uint8_t>* tex : textures)
 			{
 				int32_t width = tex->resolution.x;
 				int32_t height = tex->resolution.y;
@@ -655,6 +660,46 @@ namespace otx
 				CUDA_CHECK(CreateTextureObject(&cuda_tex, &res_desc, &tex_desc, nullptr));
 				m_TextureObjects[tex->textureID] = cuda_tex;
 			}
+		}
+
+		/* Load background texture if there is one */
+		if (m_Scene->m_BackgroundTexture.pixels.size() > 0)
+		{
+			auto& tex = m_Scene->m_BackgroundTexture;
+			tex.textureID = textureID;
+
+			int32_t width = tex.resolution.x;
+			int32_t height = tex.resolution.y;
+			int32_t numComponents = tex.resolution.z;
+			int32_t pitch = width * numComponents * sizeof(float);
+			cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<float4>();
+
+			cudaArray_t& pixelArray = m_TextureArrays[tex.textureID];
+			CUDA_CHECK(MallocArray(&pixelArray, &channel_desc, width, height));
+			CUDA_CHECK(Memcpy2DToArray(pixelArray, 0, 0, tex.pixels.data(), pitch, pitch, height, cudaMemcpyHostToDevice));
+
+			cudaResourceDesc res_desc = {};
+			res_desc.resType = cudaResourceTypeArray;
+			res_desc.res.array.array = pixelArray;
+
+			cudaTextureDesc tex_desc = {};
+			tex_desc.addressMode[0] = cudaAddressModeWrap;
+			tex_desc.addressMode[1] = cudaAddressModeWrap;
+			tex_desc.filterMode = cudaFilterModeLinear;
+			tex_desc.readMode = cudaReadModeElementType;
+
+			tex_desc.normalizedCoords = 1;
+			tex_desc.maxAnisotropy = 1;
+			tex_desc.maxMipmapLevelClamp = 99;
+			tex_desc.minMipmapLevelClamp = 0;
+			tex_desc.mipmapFilterMode = cudaFilterModePoint;
+			tex_desc.borderColor[0] = 1.0f;
+			tex_desc.sRGB = 0;
+
+			/* Create the texture object */
+			cudaTextureObject_t cuda_tex = 0;
+			CUDA_CHECK(CreateTextureObject(&cuda_tex, &res_desc, &tex_desc, nullptr));
+			m_TextureObjects[tex.textureID] = cuda_tex;
 		}
 	}
 
@@ -793,14 +838,16 @@ namespace otx
 		/* === Update launch Params here === */
 		m_LaunchParams.frame.samples = m_SamplesPerRender;
 		m_LaunchParams.maxDepth = m_MaxDepth;
-		m_LaunchParams.cutoffColor = make_float3(0.2f);
+		m_LaunchParams.cutoffColor = make_float3(0.0f);
 
 		/* Background settings */
 		m_LaunchParams.backgroundMode = m_Scene->m_BackgroundMode;
 		m_LaunchParams.clearColor = ToFloat3(m_Scene->m_ClearColor);
 		m_LaunchParams.gradientBottom = ToFloat3(m_Scene->m_GradientBottom);
 		m_LaunchParams.gradientTop = ToFloat3(m_Scene->m_GradientTop);
-		//m_LaunchParams.backgroundTexture = TODO;
+
+		int backgroundID = m_Scene->m_BackgroundTexture.textureID;
+		if (backgroundID >= 0) m_LaunchParams.backgroundTexture = m_TextureObjects[backgroundID];
 
 		/* === Update camera === */
 		m_LastSetCamera = camera;

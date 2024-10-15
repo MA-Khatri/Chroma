@@ -13,6 +13,8 @@
 
 #include "mesh.h"
 
+#include "stb_image.h"
+
 
 struct PipelineInfo
 {
@@ -30,12 +32,47 @@ struct TexturePaths
 };
 
 /* Local texture storage */
+template<typename T>
 struct Texture
 {
-	std::string filePath;
-	std::vector<uint8_t> pixels; /* local storage of pixels */
+	std::string filePath; /* path to texture image */
+	std::vector<T> pixels; /* local storage of pixels */
 	glm::ivec3 resolution; /* x = width, y = height, z = channels */
 	int textureID = -1; /* textureID set in optix_renderer -> CreateTextures() */
+
+	void LoadTexture()
+	{
+		int texWidth, texHeight, texChannels;
+		T* data;
+		if (std::is_same<T, uint8_t>::value)
+		{
+			/* Note: we load image with alpha channel even if it doesn't have one */
+			data = (T*)stbi_load(filePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		}
+		else if (std::is_same<T, float>::value)
+		{
+			data = (T*)stbi_loadf(filePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		}
+		else
+		{
+			std::cerr << "LoadTexture(): Error! Unsupported texture format!" << std::endl;
+		}
+		
+		if (!data)
+		{
+			std::cerr << "LoadTexture(): Error! Failed to load image " << filePath << " ! " << std::endl;
+			exit(-1);
+		}
+
+#ifdef _DEBUG
+		if (texChannels != 4) std::cout << "Warning: loaded texture only has " << texChannels << " channels. Force loaded with 4 channels!" << std::endl;
+#endif
+		resolution = glm::ivec3(texWidth, texHeight, 4);
+
+		/* Copy pixels to local std::vector and free originally read data */
+		pixels = std::vector<T>(data, data + (resolution.x * resolution.y * resolution.z));
+		stbi_image_free(data);
+	}
 };
 
 
@@ -46,9 +83,6 @@ public:
 	~Object();
 
 	void LoadTextures();
-
-	/* Load in the pixels and resolution of the provided texture */
-	void LoadTexture(Texture& tex);
 
 	/* Sets up object to be drawn with Vulkan */
 	void VkSetup(const PipelineInfo& pipelineInfo);
@@ -88,9 +122,9 @@ public:
 
 	Mesh m_Mesh = Mesh();
 	TexturePaths m_TexturePaths;
-	Texture m_DiffuseTexture;
-	Texture m_SpecularTexture;
-	Texture m_NormalTexture;
+	Texture<uint8_t> m_DiffuseTexture;
+	Texture<uint8_t> m_SpecularTexture;
+	Texture<uint8_t> m_NormalTexture;
 	glm::vec3 m_Color = glm::vec3(0.7f); /* Base color used for diffuse if no diffuse texture */
 	int m_RTMaterialType = 1; /* Ray tracing material type -- i.e., otx::MaterialType enum */
 

@@ -17,14 +17,13 @@ namespace otx
 		const float3& v0 = sbtData.position[index.x];
 		const float3& v1 = sbtData.position[index.y];
 		const float3& v2 = sbtData.position[index.z];
-		float3 Ng = cross(v1 - v0, v2 - v0);
-		float3 Ns = (sbtData.normal) ? InterpolateNormals(uv, sbtData.normal[index.x], sbtData.normal[index.y], sbtData.normal[index.z]) : Ng;
+		float3 N = (sbtData.normal) ? InterpolateNormals(uv, sbtData.normal[index.x], sbtData.normal[index.y], sbtData.normal[index.z]) : cross(v1 - v0, v2 - v0);
 
 		/* Compute world-space normal and normalize */
-		Ns = normalize(optixTransformNormalFromObjectToWorldSpace(Ns));
+		N = normalize(optixTransformNormalFromObjectToWorldSpace(N));
 
 		/* Face forward normal */
-		if (dot(rayDir, Ns) > 0.0f) Ns = -Ns;
+		if (dot(rayDir, N) > 0.0f) N = -N;
 
 		/* Default diffuse color if no diffuse texture */
 		float3 diffuseColor = *sbtData.color;
@@ -40,9 +39,9 @@ namespace otx
 
 		/* === Set ray data for next trace call === */
 		/* Determine reflected ray origin and direction */
-		OrthonormalBasis basis = OrthonormalBasis(Ns);
+		OrthonormalBasis basis = OrthonormalBasis(N);
 		float3 reflectDir = basis.Local(prd.random.RandomOnUnitCosineHemisphere());
-		float3 reflectOrigin = HitPosition() + 1e-3f * Ns;
+		float3 reflectOrigin = HitPosition() + 1e-3f * N;
 		prd.origin = reflectOrigin;
 		prd.direction = reflectDir;
 	}

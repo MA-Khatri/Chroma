@@ -17,12 +17,21 @@ namespace otx
 		else if (optixLaunchParams.backgroundMode == BackgroundMode::GRADIENT)
 		{
 			float3 rayDir = optixGetWorldRayDirection();
+
+			/* Dot rayDir with the up vector and use the result to interpolate between the bottom and top gradient colors */
 			const float t = max(dot(normalize(rayDir), make_float3(0.0f, 0.0f, 1.0f)), 0.0f);
 			result = lerp(optixLaunchParams.gradientBottom, optixLaunchParams.gradientTop, t);
 		}
 		else if (optixLaunchParams.backgroundMode == BackgroundMode::TEXTURE)
 		{
-			// TODO
+			float3 rayDir = optixGetWorldRayDirection();
+
+			/* Convert the input ray direction to UV coordinates to access the background texture */
+			float u = 0.5f * (1.0f + atan2(rayDir.x, rayDir.y) * M_1_PIf);
+			float v = atan2(length(make_float2(rayDir.x, rayDir.y)), rayDir.z) * M_1_PIf;
+
+			float4 tex = tex2D<float4>(optixLaunchParams.backgroundTexture, u, v);
+			result = make_float3(tex.x, tex.y, tex.z);
 		}
 		else
 		{

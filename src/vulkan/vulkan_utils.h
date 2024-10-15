@@ -177,7 +177,7 @@ namespace vk
 	void CopyImageToImage(VkCommandBuffer& commandBuffer, const ImVec2& extent, VkImage& srcImage, VkImage& dstImage);
 	void CopyImageToImage(const ImVec2& extent, VkImage& srcImage, VkImage& dstImage);
 
-	void CreateTextureImage(const Texture& tex, uint32_t& mipLevels, VkImage& textureImage, VkDeviceMemory& textureImageMemory);
+	void CreateTextureImage(const Texture<uint8_t>& tex, uint32_t& mipLevels, VkImage& textureImage, VkDeviceMemory& textureImageMemory);
 	void CreateTextureImageView(uint32_t mipLevels, VkImage& textureImage, VkImageView& textureImageView);
 	void CreateTextureSampler(uint32_t mipLevels, VkSampler& textureSampler);
 

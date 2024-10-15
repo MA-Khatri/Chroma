@@ -156,6 +156,9 @@ namespace otx
 		/* One texture object and pixel array per used texture */
 		std::vector<cudaArray_t> m_TextureArrays;
 		std::vector<cudaTextureObject_t> m_TextureObjects;
+
+		/* The texture ID of our background image */
+		int m_BackgroundTextureID = -1;
 	};
 
 

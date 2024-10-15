@@ -65,12 +65,16 @@ void Scene::MakeScene(int scene)
 		plane0->Scale(100.0f);
 		PushToBoth(plane0);
 
-		m_BackgroundMode = BackgroundMode::GRADIENT;
-		m_GradientBottom = glm::vec3(0.3f);
-		m_GradientTop = glm::vec3(1.0f);
+		//m_BackgroundMode = BackgroundMode::GRADIENT;
+		//m_GradientBottom = glm::vec3(0.3f);
+		//m_GradientTop = glm::vec3(1.0f);
 
 		//m_BackgroundMode = BackgroundMode::SOLID_COLOR;
 		//m_ClearColor = glm::vec3(1.0f);
+
+		m_BackgroundMode = BackgroundMode::TEXTURE;
+		//m_BackgroundTexture.filePath = "res/backgrounds/overcast_soil_puresky_4k.hdr";
+		m_BackgroundTexture.filePath = "res/backgrounds/kloofendal_48d_partly_cloudy_puresky_4k.hdr";
 
 		break;
 	}
@@ -138,6 +142,11 @@ void Scene::MakeScene(int scene)
 		break;
 	}
 	// TODO: more?
+	}
+
+	if (m_BackgroundMode == BackgroundMode::TEXTURE)
+	{
+		m_BackgroundTexture.LoadTexture();
 	}
 }
 

@@ -1380,7 +1380,7 @@ namespace vk
 	}
 
 
-	void CreateTextureImage(const Texture& tex, uint32_t& mipLevels, VkImage& textureImage, VkDeviceMemory& textureImageMemory)
+	void CreateTextureImage(const Texture<uint8_t>& tex, uint32_t& mipLevels, VkImage& textureImage, VkDeviceMemory& textureImageMemory)
 	{
 		int texWidth = tex.resolution.x;
 		int texHeight = tex.resolution.y;
