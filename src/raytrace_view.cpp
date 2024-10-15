@@ -22,7 +22,6 @@ void RayTraceView::OnAttach(Application* app)
 	m_SceneID = app->GetSceneID();
 	
 	/* Create a separate Optix Renderer for each scene */
-	/* TODO: This doesn't seem like a great solution but it will do for now... */
 	for (auto& scene : m_AppHandle->GetScenes())
 	{
 		m_OptixRenderers.push_back(std::make_shared<otx::Optix>(scene));
@@ -38,6 +37,7 @@ void RayTraceView::OnAttach(Application* app)
 
 	m_OptixRenderer->SetCamera(*m_Camera);
 	m_OptixRenderer->SetSamplesPerRender(m_SamplesPerRender);
+	m_OptixRenderer->SetMaxDepth(m_MaxDepth);
 }
 
 void RayTraceView::OnDetach()

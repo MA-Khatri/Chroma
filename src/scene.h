@@ -31,8 +31,9 @@ public:
 public:
 	enum SceneType
 	{
-		DEFAULT,
-		CORNELL_BOX
+		DEFAULT = 0,
+		CORNELL_BOX,
+		MAX_SCENE_COUNT
 	};
 
 	const std::map<int, std::string> m_SceneNames = {
@@ -63,7 +64,7 @@ public:
 		Lines, /* Displays line list with color */
 	};
 
-	int m_SceneType = DEFAULT;
+	int m_SceneType;
 	std::vector<std::shared_ptr<Object>> m_RasterObjects; /* Objects to be drawn in RasterView */
 	std::vector<std::shared_ptr<Object>> m_RayTraceObjects; /* Objects to be drawn in RayTraceView */
 

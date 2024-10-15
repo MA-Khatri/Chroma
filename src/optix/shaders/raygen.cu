@@ -30,11 +30,6 @@ namespace otx
 
 		/* Initialize per-ray data */
 		PRD_radiance prd;
-		prd.depth = 0;
-		prd.done = false;
-		prd.radiance = make_float3(1.0f);
-		prd.origin = make_float3(0.0f);
-		prd.direction = make_float3(0.0f);
 
 		/* Random seed is current frame count * frame size + current (1D) pixel position such that every pixel for every accumulated frame has a unique seed. */
 		prd.random.Init(accumID * optixLaunchParams.frame.size.x * optixLaunchParams.frame.size.y + iy * optixLaunchParams.frame.size.x + ix);
@@ -47,6 +42,13 @@ namespace otx
 		float3 pixelColor = make_float3(0.0f); /* Accumulated color for all pixel samples */
 		for (int sampleID = 0; sampleID < numPixelSamples; sampleID++)
 		{
+			/* Initial prd values */
+			prd.depth = 0;
+			prd.done = false;
+			prd.radiance = make_float3(1.0f);
+			prd.origin = make_float3(0.0f);
+			prd.direction = make_float3(0.0f);
+
 			/* Normalized screen plane position in [0, 1]^2 with randomized sub-pixel position */
 			const float2 screen = make_float2(ix + prd.random(), iy + prd.random()) / make_float2(optixLaunchParams.frame.size.x, optixLaunchParams.frame.size.y);
 
@@ -102,13 +104,10 @@ namespace otx
 		}
 		
 		/* Determine average color for this call. Cap to prevent speckles (even though this breaks pbr condition) */
-		const float cap = 5.0f;
+		const float cap = 1000.0f;
 		const float cr = min(pixelColor.x / numPixelSamples, cap);
 		const float cg = min(pixelColor.y / numPixelSamples, cap);
 		const float cb = min(pixelColor.z / numPixelSamples, cap);
-		//const float cr = pixelColor.x / numPixelSamples;
-		//const float cg = pixelColor.y / numPixelSamples;
-		//const float cb = pixelColor.z / numPixelSamples;
 		const float3 cclr = make_float3(cr, cg, cb);
 
 		/* Determine the new accumulated color */

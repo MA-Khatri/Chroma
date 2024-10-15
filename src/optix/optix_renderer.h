@@ -113,11 +113,7 @@ namespace otx
 		/* Samples per pixel per call to render */
 		int m_SamplesPerRender = 1;
 
-		/*
-		 * Note: Technically, since we are doing iterative ray tracing for radiance rays
-		 * and only shooting shadow rays from within the closest hit shaders, this could be
-		 * set to just 2 and should still work...
-		 */
+		/* Maximum number of ray bounces before termination */
 		int m_MaxDepth = 4;
 
 		/* Our launch parameters on the host */

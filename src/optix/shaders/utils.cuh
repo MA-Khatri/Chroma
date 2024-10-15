@@ -10,6 +10,8 @@ namespace otx
 	/* === Shader helpers === */
 	/* ====================== */
 
+#define RAY_EPS 1e-3f
+
 	/*
 	 * To communicate between programs, we pass a pointer to per-ray data (PRD)
 	 * which we represent with two ints. The helpers below allow us to encode/decode
@@ -41,23 +43,66 @@ namespace otx
 
 
 	/* Compute world position of (current) ray hit */
-	extern "C" __inline__ __device__ float3 HitPosition()
+	static __inline__ __device__ float3 HitPosition()
 	{
 		return optixGetWorldRayOrigin() + optixGetWorldRayDirection() * optixGetRayTmax();
 	}
 
+	/* Compute the world hit position offset by a small epsilon along the normal */
+	static __inline__ __device__ float3 FrontHitPosition(float3 n)
+	{
+		return HitPosition() + n * RAY_EPS;
+	}
+
+	/* Compute the world hit position offset by a small epsilon along the negative normal */
+	static __inline__ __device__ float3 BackHitPosition(float3 n)
+	{
+		return HitPosition() - n * RAY_EPS;
+	}
+
 	/* Compute interpolated normal using barycentric coords */
-	extern "C" __inline__ __device__ float3 InterpolateNormals(const float2 & uv, const float3 & n0, const float3 & n1, const float3 & n2)
+	static __inline__ __device__ float3 InterpolateNormals(const float2 & uv, const float3 & n0, const float3 & n1, const float3 & n2)
 	{
 		return n0 + uv.x * (n1 - n0) + uv.y * (n2 - n0);
 	}
 
 	/* Compute interpolated texture coordinate using barycentric coords */
-	extern "C" __inline__ __device__ float2 TexCoord(const float2 & uv, const float2 & v0, const float2 & v1, const float2 & v2)
+	static __inline__ __device__ float2 TexCoord(const float2 & uv, const float2 & v0, const float2 & v1, const float2 & v2)
 	{
 		return (1.0f - uv.x - uv.y) * v0 + uv.x * v1 + uv.y * v2;
 	}
 
+
+	/* Compute effective Fresnel reflectance: https://en.wikipedia.org/wiki/Fresnel_equations */
+	static __inline__ __device__ float fresnel(float cos_theta_i, float cos_theta_t, float eta1, float eta2)
+	{
+		const float rs = (eta1 * cos_theta_i - eta2 * cos_theta_t) / (eta1 * cos_theta_i + eta2 * cos_theta_t);
+		const float rt = (eta1 * cos_theta_t - eta2 * cos_theta_i) / (eta1 * cos_theta_t + eta2 * cos_theta_i);
+		return 0.5f * (rs * rs + rt * rt);
+	}
+
+	/* 
+	 * Set refracted ray and return boolean indicating if the result is total internal reflection.
+	 * -- w_t = transmitted (or internally reflected) ray that will be set.
+	 * -- w_i = incident ray
+	 * -- n = surface normal
+	 * -- eta1 = exterior index of refraction (wrt the normal)
+	 * -- et12 = interior index of refraction (wrt the normal)
+	 */
+	static __inline__ __device__ bool refract(float3& w_t, float3 w_i, float3 n, float eta1, float eta2)
+	{
+		float cos_theta_i = dot(-w_i, n);
+		float eta = eta2 / eta1;
+		float cos_theta_t_2 = 1.0f - eta * eta * (1.0f - cos_theta_i * cos_theta_i);
+		w_t = eta * w_i + ((eta * cos_theta_i - sqrt(abs(cos_theta_t_2))) * n);
+		return cos_theta_t_2 > 0.0f;
+	}
+
+	/* Compute the log of each component of a float3 */
+	static __inline__ __device__ float3 logf3(float3 v)
+	{
+		return make_float3(logf(v.x), logf(v.y), logf(v.z));
+	}
 
 	/* ========================== *
 	 * === Sampling functions === *

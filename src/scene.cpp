@@ -52,7 +52,7 @@ void Scene::MakeScene(int scene)
 		dragon->m_Color = glm::vec3(0.3f, 0.8f, 0.3f);
 		PushToBoth(dragon);
 
-		std::shared_ptr<Object> lucy = std::make_shared<Object>(LoadMesh("res/meshes/lucy.obj"), noTextures, Solid, otx::MATERIAL_TYPE_LAMBERTIAN);
+		std::shared_ptr<Object> lucy = std::make_shared<Object>(LoadMesh("res/meshes/lucy.obj"), noTextures, Solid, otx::MATERIAL_TYPE_DIELECTRIC);
 		lucy->Translate(5.0f, -5.0f, 0.0f);
 		lucy->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 180.0f);
 		lucy->Scale(5.0f);
@@ -65,6 +65,13 @@ void Scene::MakeScene(int scene)
 		plane0->Scale(100.0f);
 		PushToBoth(plane0);
 
+		std::shared_ptr<Object> sphere0 = std::make_shared<Object>(LoadMesh("res/meshes/sphere.obj"), noTextures, Solid, otx::MATERIAL_TYPE_DIFFUSE_LIGHT);
+		sphere0->Translate(5.0f, -5.0f, 8.0f);
+		sphere0->Scale(1.0f);
+		sphere0->m_Color = glm::vec3(30.0f);
+		PushToBoth(sphere0);
+
+
 		//m_BackgroundMode = BackgroundMode::GRADIENT;
 		//m_GradientBottom = glm::vec3(0.3f);
 		//m_GradientTop = glm::vec3(1.0f);
@@ -74,7 +81,8 @@ void Scene::MakeScene(int scene)
 
 		m_BackgroundMode = BackgroundMode::TEXTURE;
 		//m_BackgroundTexture.filePath = "res/backgrounds/overcast_soil_puresky_4k.hdr";
-		m_BackgroundTexture.filePath = "res/backgrounds/kloofendal_48d_partly_cloudy_puresky_4k.hdr";
+		//m_BackgroundTexture.filePath = "res/backgrounds/kloofendal_48d_partly_cloudy_puresky_4k.hdr";
+		m_BackgroundTexture.filePath = "res/backgrounds/christmas_photo_studio_07_4k.hdr";
 
 		break;
 	}
@@ -86,6 +94,9 @@ void Scene::MakeScene(int scene)
 		glm::vec3 red = glm::vec3(0.65f, 0.05f, 0.05f);
 		glm::vec3 green = glm::vec3(0.12f, 0.45f, 0.15f);
 		glm::vec3 lightC = glm::vec3(15.0f);
+
+		TexturePaths backTextures;
+		backTextures.diffuse = "res/textures/texture.jpg";
 
 		/* === Walls === */
 		std::shared_ptr<Object> bottom = std::make_shared<Object>(Object(CreatePlane(), noTextures, Solid, otx::MATERIAL_TYPE_LAMBERTIAN));
@@ -114,8 +125,9 @@ void Scene::MakeScene(int scene)
 		right->m_Color = red;
 		PushToBoth(right);
 
-		std::shared_ptr<Object> back = std::make_shared<Object>(Object(CreatePlane(), noTextures, Solid, otx::MATERIAL_TYPE_LAMBERTIAN));
+		std::shared_ptr<Object> back = std::make_shared<Object>(Object(CreatePlane(), backTextures, Flat, otx::MATERIAL_TYPE_LAMBERTIAN));
 		back->Translate(-5.0f, 0.0f, 5.0f);
+		back->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -90.0f);
 		back->Rotate(glm::vec3(0.0f, 1.0f, 0.0f), 90.0f);
 		back->Scale(10.0f);
 		back->m_Color = white;
@@ -130,11 +142,17 @@ void Scene::MakeScene(int scene)
 		PushToBoth(light);
 
 		/* === Scene Objects === */
-		std::shared_ptr<Object> dragon = std::make_shared<Object>(LoadMesh("res/meshes/dragon.obj"), noTextures, Solid, otx::MATERIAL_TYPE_LAMBERTIAN);
+		std::shared_ptr<Object> dragon = std::make_shared<Object>(LoadMesh("res/meshes/dragon.obj"), noTextures, Solid, otx::MATERIAL_TYPE_DIELECTRIC);
 		dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), -60.0f);
 		dragon->Scale(7.0f);
 		dragon->m_Color = white;
 		PushToBoth(dragon);
+
+		//std::shared_ptr<Object> sphere = std::make_shared<Object>(LoadMesh("res/meshes/sphere.obj"), noTextures, Solid, otx::MATERIAL_TYPE_DIELECTRIC);
+		//sphere->Translate(0.0f, 0.0f, 5.0f);
+		//sphere->Scale(3.0f);
+		//sphere->m_Color = white;
+		//PushToBoth(sphere);
 
 		m_BackgroundMode = BackgroundMode::SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);

@@ -40,7 +40,7 @@ namespace otx
 		/* === Set ray data for next trace call === */
 		/* Determine reflected ray origin and direction */
 		float3 reflectDir = reflect(rayDir, N); /* Reflected ray direction */
-		float3 reflectOrigin = HitPosition() + 1e-3f * N;
+		float3 reflectOrigin = FrontHitPosition(N);
 		prd.origin = reflectOrigin;
 		prd.direction = reflectDir;
 	}

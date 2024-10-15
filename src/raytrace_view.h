@@ -35,7 +35,8 @@ private:
 
 	std::vector<std::shared_ptr<otx::Optix>> m_OptixRenderers;
 	std::shared_ptr<otx::Optix> m_OptixRenderer;
-	int m_SamplesPerRender = 1;
+	int m_SamplesPerRender = 4;
+	int m_MaxDepth = 8;
 
 	Image m_RenderedImage = Image(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y), ImageFormat::RGBA, nullptr);
 	std::vector<uint32_t> m_RenderedImagePixels;

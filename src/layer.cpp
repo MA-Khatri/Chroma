@@ -124,7 +124,7 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 			}
 			ImGui::EndCombo();
 		}
-		if (selectedScene != app->GetScenes()[app->GetSceneID()]->m_SceneType) camera.m_CameraUIUpdate = true;
+		if (selectedScene != app->GetSceneID()) camera.m_CameraUIUpdate = true;
 		app->SetSceneID(selectedScene);
 	}
 
