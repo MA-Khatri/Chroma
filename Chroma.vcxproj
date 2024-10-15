@@ -24,6 +24,7 @@
     <ClCompile Include="external\stb_image\stb_image_write.cpp" />
     <ClCompile Include="src\application.cpp" />
     <ClCompile Include="src\camera.cpp" />
+    <ClCompile Include="src\material.cpp" />
     <ClCompile Include="src\vulkan\image.cpp" />
     <ClCompile Include="src\layer.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -67,6 +68,7 @@
     <ClInclude Include="src\application.h" />
     <ClInclude Include="src\background_mode.h" />
     <ClInclude Include="src\camera.h" />
+    <ClInclude Include="src\material.h" />
     <ClInclude Include="src\optix\cuda_buffer.h" />
     <ClInclude Include="src\optix\shaders\utils.cuh" />
     <ClInclude Include="src\optix\types.h" />

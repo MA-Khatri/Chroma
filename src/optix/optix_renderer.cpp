@@ -44,7 +44,7 @@ namespace otx
 	struct __align__(OPTIX_SBT_RECORD_ALIGNMENT) HitgroupRecord
 	{
 		__align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
-		MeshSBTData data;
+		SBTData data;
 	};
 
 
@@ -530,7 +530,7 @@ namespace otx
 			m_IndexBuffers[objectID].alloc_and_upload(mesh.ivecIndices);
 			m_NormalBuffers[objectID].alloc_and_upload(mesh.normals);
 			m_TexCoordBuffers[objectID].alloc_and_upload(mesh.texCoords);
-			m_ObjectColorBuffers[objectID].alloc_and_upload(std::vector<glm::vec3>{objects[objectID]->m_Color});
+			m_ObjectColorBuffers[objectID].alloc_and_upload(std::vector<glm::vec3>{objects[objectID]->m_Material->m_Color});
 
 			triangleInput = {};
 			triangleInput.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
@@ -596,9 +596,10 @@ namespace otx
 		int nTextures = 0;
 		for (auto obj : m_Scene->m_RayTraceObjects)
 		{
-			if (obj->m_DiffuseTexture.pixels.size() > 0) nTextures++;
-			if (obj->m_SpecularTexture.pixels.size() > 0) nTextures++;
-			if (obj->m_NormalTexture.pixels.size() > 0) nTextures++;
+			auto mat = obj->m_Material;
+			if (mat->m_DiffuseTexture.pixels.size() > 0) nTextures++;
+			if (mat->m_SpecularTexture.pixels.size() > 0) nTextures++;
+			if (mat->m_NormalTexture.pixels.size() > 0) nTextures++;
 		}
 
 		if (m_Scene->m_BackgroundTexture.pixels.size() > 0)
@@ -612,17 +613,19 @@ namespace otx
 		int textureID = 0;
 		for (auto obj : m_Scene->m_RayTraceObjects)
 		{
+			auto mat = obj->m_Material;
+
 			/* Get all textures for this object */
 			std::vector<Texture<uint8_t>*> textures;
 			textures.reserve(3);
 
-			Texture<uint8_t>* diffuse = &(obj->m_DiffuseTexture);
+			Texture<uint8_t>* diffuse = &(mat->m_DiffuseTexture);
 			if (diffuse->pixels.size() > 0) { diffuse->textureID = textureID; textureID++; textures.emplace_back(diffuse); }
 
-			Texture<uint8_t>* specular = &(obj->m_SpecularTexture);
+			Texture<uint8_t>* specular = &(mat->m_SpecularTexture);
 			if (specular->pixels.size() > 0) { specular->textureID = textureID; textureID++; textures.emplace_back(specular); }
 
-			Texture<uint8_t>* normal = &(obj->m_NormalTexture);
+			Texture<uint8_t>* normal = &(mat->m_NormalTexture);
 			if (normal->pixels.size() > 0) { normal->textureID = textureID; textureID++; textures.emplace_back(normal); }
 
 			/* Create CUDA resources for each texture */
@@ -740,39 +743,40 @@ namespace otx
 			for (int rayID = 0; rayID < RAY_TYPE_COUNT; rayID++)
 			{
 				auto obj = m_Scene->m_RayTraceObjects[objectID];
+				auto mat = obj->m_Material;
 				HitgroupRecord rec;
 
 				/* RADIANCE rays only */
 				if (rayID == RAY_TYPE_RADIANCE)
 				{
 					/* Assign the material type (program) here */
-					OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[obj->m_RTMaterialType], &rec));
+					OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[mat->m_RTMaterialType], &rec));
 
 					/* Textures... */
-					if (obj->m_DiffuseTexture.textureID >= 0)
+					if (mat->m_DiffuseTexture.textureID >= 0)
 					{
 						rec.data.hasDiffuseTexture = true;
-						rec.data.diffuseTexture = m_TextureObjects[obj->m_DiffuseTexture.textureID];
+						rec.data.diffuseTexture = m_TextureObjects[mat->m_DiffuseTexture.textureID];
 					}
 					else
 					{
 						rec.data.hasDiffuseTexture = false;
 					}
 
-					if (obj->m_SpecularTexture.textureID >= 0)
+					if (mat->m_SpecularTexture.textureID >= 0)
 					{
 						rec.data.hasSpecularTexture = true;
-						rec.data.specularTexture = m_TextureObjects[obj->m_SpecularTexture.textureID];
+						rec.data.specularTexture = m_TextureObjects[mat->m_SpecularTexture.textureID];
 					}
 					else
 					{
 						rec.data.hasSpecularTexture = false;
 					}
 
-					if (obj->m_NormalTexture.textureID >= 0)
+					if (mat->m_NormalTexture.textureID >= 0)
 					{
 						rec.data.hasNormalTexture = true;
-						rec.data.normalTexture = m_TextureObjects[obj->m_NormalTexture.textureID];
+						rec.data.normalTexture = m_TextureObjects[mat->m_NormalTexture.textureID];
 					}
 					else
 					{

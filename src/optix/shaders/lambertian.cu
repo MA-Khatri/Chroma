@@ -4,7 +4,7 @@ namespace otx
 {
 	extern "C" __global__ void __closesthit__radiance()
 	{
-		const MeshSBTData& sbtData = *(const MeshSBTData*)optixGetSbtDataPointer();
+		const SBTData& sbtData = *(const SBTData*)optixGetSbtDataPointer();
 		PRD_radiance& prd = *getPRD<PRD_radiance>();
 
 		const int primID = optixGetPrimitiveIndex();

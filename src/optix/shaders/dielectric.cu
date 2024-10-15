@@ -9,7 +9,7 @@ namespace otx
 {
 	extern "C" __global__ void __closesthit__radiance()
 	{
-		const MeshSBTData& sbtData = *(const MeshSBTData*)optixGetSbtDataPointer();
+		const SBTData& sbtData = *(const SBTData*)optixGetSbtDataPointer();
 		PRD_radiance& prd = *getPRD<PRD_radiance>();
 
 		/* === THESE SHOULD LATER BE MATERIAL PARAMS === */
@@ -46,7 +46,7 @@ namespace otx
 		float3 transmittance = make_float3(1.0f);
 		if (cos_theta_i > 0.0f)
 		{
-			/* Ray is entering... */
+			/* Ray is entering */
 			eta1 = etaIn;
 			eta2 = etaOut;
 		}

@@ -19,29 +19,60 @@ Scene::~Scene()
 
 void Scene::MakeScene(int scene)
 {
+	/* === Textures === */
 	TexturePaths noTextures;
 
-	/* === World Grid Lines === */
-	std::shared_ptr<Mesh> gridMesh = std::make_shared<Mesh>(CreateGroundGrid());
-	std::shared_ptr<Mesh> axesMesh = std::make_shared<Mesh>(CreateXYAxes());
+	TexturePaths vikingRoomTextures;
+	vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
 
-	std::shared_ptr<Object> grid = std::make_shared<Object>(gridMesh, noTextures, Lines);
-	grid->m_DepthTest = false;
-	grid->m_ModelNormalMatrix = glm::mat3(m_ClearColor, glm::vec3(0.0f), glm::vec3(0.0f)); /* We'll store the clear color in the grid's normal matrix... */
-	m_RasterObjects.push_back(grid);
+	/* === Create materials === */
+	std::shared_ptr<Material> linesMat = std::make_shared<Material>(noTextures, PipelineType::Lines, -1);
+	linesMat->m_DepthTest = false;
 
-	std::shared_ptr<Object> axes = std::make_shared<Object>(axesMesh, noTextures, Lines);
-	axes->m_DepthTest = false;
-	axes->m_ModelNormalMatrix = glm::mat3(m_ClearColor, glm::vec3(0.0f), glm::vec3(0.0f));
-	m_RasterObjects.push_back(axes);
+	std::shared_ptr<Material> vikingRoomMat = std::make_shared<Material>(vikingRoomTextures, PipelineType::Flat, otx::MATERIAL_TYPE_LAMBERTIAN);
 
+	std::shared_ptr<Material> redGlassMat = std::make_shared<Material>(noTextures, PipelineType::Solid, otx::MATERIAL_TYPE_DIELECTRIC);
+	redGlassMat->m_Color = glm::vec3(1.0f, 0.3f, 0.3f);
+
+	std::shared_ptr<Material> greenGlassMat = std::make_shared<Material>(noTextures, PipelineType::Solid, otx::MATERIAL_TYPE_DIELECTRIC);
+	greenGlassMat->m_Color = glm::vec3(0.3f, 1.0f, 0.3f);
+
+	std::shared_ptr<Material> blueGlassMat = std::make_shared<Material>(noTextures, PipelineType::Solid, otx::MATERIAL_TYPE_DIELECTRIC);
+	blueGlassMat->m_Color = glm::vec3(0.3f, 0.3f, 1.0f);
+
+	std::shared_ptr<Material> fullWhiteMat = std::make_shared<Material>(noTextures, PipelineType::Solid, otx::MATERIAL_TYPE_LAMBERTIAN);
+	fullWhiteMat->m_Color = glm::vec3(1.0f);
+
+	std::shared_ptr<Material> diffuseWhiteMat = std::make_shared<Material>(noTextures, PipelineType::Solid, otx::MATERIAL_TYPE_LAMBERTIAN);
+	diffuseWhiteMat->m_Color = glm::vec3(0.73f);
+
+	std::shared_ptr<Material> diffuseRedMat = std::make_shared<Material>(noTextures, PipelineType::Solid, otx::MATERIAL_TYPE_LAMBERTIAN);
+	diffuseRedMat->m_Color = glm::vec3(0.65f, 0.05f, 0.05f);
+
+	std::shared_ptr<Material> diffuseGreenMat = std::make_shared<Material>(noTextures, PipelineType::Solid, otx::MATERIAL_TYPE_LAMBERTIAN);
+	diffuseGreenMat->m_Color = glm::vec3(0.12f, 0.45f, 0.15f);
+
+	std::shared_ptr<Material> whiteDiffuseLightMat = std::make_shared<Material>(noTextures, PipelineType::Solid, otx::MATERIAL_TYPE_DIFFUSE_LIGHT);
+	whiteDiffuseLightMat->m_Color = glm::vec3(15.0f);
 
 	/* === Create Meshes === */
+	std::shared_ptr<Mesh> gridMesh = std::make_shared<Mesh>(CreateGroundGrid());
+	std::shared_ptr<Mesh> axesMesh = std::make_shared<Mesh>(CreateXYAxes());
 	std::shared_ptr<Mesh> planeMesh = std::make_shared<Mesh>(CreatePlane());
 	std::shared_ptr<Mesh> vikingRoomMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/viking_room.obj"));
 	std::shared_ptr<Mesh> dragonMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/dragon.obj"));
 	std::shared_ptr<Mesh> lucyMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/lucy.obj"));
 	std::shared_ptr<Mesh> sphereMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/sphere.obj"));
+
+	/* === World Grid Lines === */
+	//std::shared_ptr<Object> grid = std::make_shared<Object>(gridMesh, linesMat);
+	//grid->m_ModelNormalMatrix = glm::mat3(m_ClearColor, glm::vec3(0.0f), glm::vec3(0.0f)); /* We'll store the clear color in the grid's normal matrix... */
+	//m_RasterObjects.push_back(grid);
+
+	//std::shared_ptr<Object> axes = std::make_shared<Object>(axesMesh, linesMat);
+	//axes->m_ModelNormalMatrix = glm::mat3(m_ClearColor, glm::vec3(0.0f), glm::vec3(0.0f));
+	//m_RasterObjects.push_back(axes);
+
 
 	/* === Scene Setup === */
 	switch (scene)
@@ -50,40 +81,35 @@ void Scene::MakeScene(int scene)
 	{
 		m_SceneType = DEFAULT;
 
-		TexturePaths vikingRoomTextures;
-		vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
-		std::shared_ptr<Object> vikingRoom = std::make_shared<Object>(vikingRoomMesh, vikingRoomTextures, Flat, otx::MATERIAL_TYPE_LAMBERTIAN);
+		/* === Scene Objects === */
+		std::shared_ptr<Object> vikingRoom = std::make_shared<Object>(vikingRoomMesh, vikingRoomMat);
 		vikingRoom->Translate(0.0f, 0.0f, 0.5f);
 		vikingRoom->Scale(5.0f);
 		PushToBoth(vikingRoom);
 
-		std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, noTextures, Solid, otx::MATERIAL_TYPE_DIELECTRIC);
+		std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, greenGlassMat);
 		dragon->Translate(10.0f, 0.0f, 0.0f);
 		dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 45.0f);
 		dragon->Scale(5.0f);
-		dragon->m_Color = glm::vec3(0.3f, 0.8f, 0.3f);
 		PushToBoth(dragon);
 
-		std::shared_ptr<Object> lucy = std::make_shared<Object>(lucyMesh, noTextures, Solid, otx::MATERIAL_TYPE_DIELECTRIC);
+		std::shared_ptr<Object> lucy = std::make_shared<Object>(lucyMesh, blueGlassMat);
 		lucy->Translate(5.0f, -5.0f, 0.0f);
 		lucy->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 180.0f);
 		lucy->Scale(5.0f);
-		lucy->m_Color = glm::vec3(0.3f, 0.3f, 0.8f);
 		PushToBoth(lucy);
 
-		TexturePaths planeTextures;
-		planeTextures.diffuse = "res/textures/white.png";
-		std::shared_ptr<Object> plane0 = std::make_shared<Object>(planeMesh, planeTextures, Flat, otx::MATERIAL_TYPE_LAMBERTIAN);
+		std::shared_ptr<Object> plane0 = std::make_shared<Object>(planeMesh, fullWhiteMat);
 		plane0->Scale(100.0f);
 		PushToBoth(plane0);
 
-		std::shared_ptr<Object> sphere0 = std::make_shared<Object>(sphereMesh, noTextures, Solid, otx::MATERIAL_TYPE_DIFFUSE_LIGHT);
+		/* === Light(s) === */
+		std::shared_ptr<Object> sphere0 = std::make_shared<Object>(sphereMesh, whiteDiffuseLightMat);
 		sphere0->Translate(5.0f, -5.0f, 8.0f);
 		sphere0->Scale(1.0f);
-		sphere0->m_Color = glm::vec3(30.0f);
 		PushToBoth(sphere0);
 
-
+		/* === Background === */
 		//m_BackgroundMode = BackgroundMode::GRADIENT;
 		//m_GradientBottom = glm::vec3(0.3f);
 		//m_GradientTop = glm::vec3(1.0f);
@@ -102,69 +128,51 @@ void Scene::MakeScene(int scene)
 	{
 		m_SceneType = CORNELL_BOX;
 
-		glm::vec3 white = glm::vec3(0.73f);
-		glm::vec3 red = glm::vec3(0.65f, 0.05f, 0.05f);
-		glm::vec3 green = glm::vec3(0.12f, 0.45f, 0.15f);
-		glm::vec3 lightC = glm::vec3(15.0f);
-
 		TexturePaths backTextures;
 		backTextures.diffuse = "res/textures/texture.jpg";
 
 		/* === Walls === */
-		std::shared_ptr<Object> bottom = std::make_shared<Object>(planeMesh, noTextures, Solid, otx::MATERIAL_TYPE_LAMBERTIAN);
+		std::shared_ptr<Object> bottom = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
 		bottom->Scale(10.0f);
-		bottom->m_Color = white;
 		PushToBoth(bottom);
 
-		std::shared_ptr<Object> top = std::make_shared<Object>(planeMesh, noTextures, Solid, otx::MATERIAL_TYPE_LAMBERTIAN);
+		std::shared_ptr<Object> top = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
 		top->Translate(0.0f, 0.0f, 10.0f);
 		top->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f); /* technically not necessary */
 		top->Scale(10.0f);
-		top->m_Color = white;
 		PushToBoth(top);
 
-		std::shared_ptr<Object> left = std::make_shared<Object>(planeMesh, noTextures, Solid, otx::MATERIAL_TYPE_LAMBERTIAN);
+		std::shared_ptr<Object> left = std::make_shared<Object>(planeMesh, diffuseGreenMat);
 		left->Translate(0.0f, -5.0f, 5.0f);
 		left->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -90.0f);
 		left->Scale(10.0f);
-		left->m_Color = green;
 		PushToBoth(left);
 
-		std::shared_ptr<Object> right = std::make_shared<Object>(planeMesh, noTextures, Solid, otx::MATERIAL_TYPE_LAMBERTIAN);
+		std::shared_ptr<Object> right = std::make_shared<Object>(planeMesh, diffuseGreenMat);
 		right->Translate(0.0f, 5.0f, 5.0f);
 		right->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 90.0f);
 		right->Scale(10.0f);
-		right->m_Color = red;
 		PushToBoth(right);
 
-		std::shared_ptr<Object> back = std::make_shared<Object>(planeMesh, backTextures, Flat, otx::MATERIAL_TYPE_LAMBERTIAN);
+		std::shared_ptr<Object> back = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
 		back->Translate(-5.0f, 0.0f, 5.0f);
 		back->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -90.0f);
 		back->Rotate(glm::vec3(0.0f, 1.0f, 0.0f), 90.0f);
 		back->Scale(10.0f);
-		back->m_Color = white;
 		PushToBoth(back);
 
 		/* === Light === */
-		std::shared_ptr<Object> light = std::make_shared<Object>(planeMesh, noTextures, Solid, otx::MATERIAL_TYPE_DIFFUSE_LIGHT);
+		std::shared_ptr<Object> light = std::make_shared<Object>(planeMesh, whiteDiffuseLightMat);
 		light->Translate(0.0f, 0.0f, 10.0f - 0.001f);
 		light->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f);
 		light->Scale(3.0f);
-		light->m_Color = lightC;
 		PushToBoth(light);
 
 		/* === Scene Objects === */
-		std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, noTextures, Solid, otx::MATERIAL_TYPE_DIELECTRIC);
+		std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, diffuseWhiteMat);
 		dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), -60.0f);
 		dragon->Scale(7.0f);
-		dragon->m_Color = white;
 		PushToBoth(dragon);
-
-		//std::shared_ptr<Object> sphere = std::make_shared<Object>(sphereMesh, noTextures, Solid, otx::MATERIAL_TYPE_DIELECTRIC);
-		//sphere->Translate(0.0f, 0.0f, 5.0f);
-		//sphere->Scale(3.0f);
-		//sphere->m_Color = white;
-		//PushToBoth(sphere);
 
 		m_BackgroundMode = BackgroundMode::SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);
@@ -261,7 +269,8 @@ void Scene::VkSetup(ImVec2 viewportSize, VkSampleCountFlagBits sampleCount, VkRe
 	/* Setup objects for rendering with Vulkan */
 	for (auto& obj : m_RasterObjects)
 	{
-		obj->VkSetup(m_Pipelines[static_cast<PipelineType>(obj->m_PipelineType)]);
+		obj->m_Material->VkSetup(m_Pipelines[static_cast<PipelineType>(obj->m_Material->m_PipelineType)]);
+		obj->VkSetup();
 		obj->VkUpdateUniformBuffer();
 	}
 }

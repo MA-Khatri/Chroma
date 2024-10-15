@@ -7,8 +7,8 @@
 
 namespace otx
 {
-	/* Mesh data relevant for all material types */
-	struct MeshSBTData
+	/* Mesh and material data */
+	struct SBTData
 	{
 		float3* position;
 		float3* normal;
@@ -23,6 +23,8 @@ namespace otx
 		cudaTextureObject_t specularTexture;
 		bool hasNormalTexture;
 		cudaTextureObject_t normalTexture;
+
+		
 	};
 	
 
