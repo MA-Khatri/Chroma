@@ -65,6 +65,8 @@ public:
 	};
 
 	int m_SceneType;
+	std::vector<std::shared_ptr<Material>> m_Materials;
+	std::vector<std::shared_ptr<Mesh>> m_Meshes;
 	std::vector<std::shared_ptr<Object>> m_RasterObjects; /* Objects to be drawn in RasterView */
 	std::vector<std::shared_ptr<Object>> m_RayTraceObjects; /* Objects to be drawn in RayTraceView */
 

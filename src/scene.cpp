@@ -28,50 +28,60 @@ void Scene::MakeScene(int scene)
 	/* === Create materials === */
 	std::shared_ptr<Material> linesMat = std::make_shared<Material>(noTextures, VK_PIPELINE_LINES, -1);
 	linesMat->m_DepthTest = false;
+	m_Materials.push_back(linesMat);
 
 	std::shared_ptr<Material> vikingRoomMat = std::make_shared<Material>(vikingRoomTextures, VK_PIPELINE_FLAT, otx::MATERIAL_TYPE_LAMBERTIAN);
+	m_Materials.push_back(vikingRoomMat);
 
 	std::shared_ptr<Material> redGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_DIELECTRIC);
 	redGlassMat->m_Color = glm::vec3(1.0f, 0.3f, 0.3f);
+	m_Materials.push_back(redGlassMat);
 
 	std::shared_ptr<Material> greenGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_DIELECTRIC);
 	greenGlassMat->m_Color = glm::vec3(0.3f, 1.0f, 0.3f);
+	m_Materials.push_back(greenGlassMat);
 
 	std::shared_ptr<Material> blueGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_DIELECTRIC);
 	blueGlassMat->m_Color = glm::vec3(0.3f, 0.3f, 1.0f);
+	m_Materials.push_back(blueGlassMat);
 
 	std::shared_ptr<Material> fullWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_LAMBERTIAN);
 	fullWhiteMat->m_Color = glm::vec3(1.0f);
+	m_Materials.push_back(fullWhiteMat);
 
 	std::shared_ptr<Material> diffuseWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_LAMBERTIAN);
 	diffuseWhiteMat->m_Color = glm::vec3(0.73f);
+	m_Materials.push_back(diffuseWhiteMat);
 
 	std::shared_ptr<Material> diffuseRedMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_LAMBERTIAN);
 	diffuseRedMat->m_Color = glm::vec3(0.65f, 0.05f, 0.05f);
+	m_Materials.push_back(diffuseRedMat);
 
 	std::shared_ptr<Material> diffuseGreenMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_LAMBERTIAN);
 	diffuseGreenMat->m_Color = glm::vec3(0.12f, 0.45f, 0.15f);
+	m_Materials.push_back(diffuseGreenMat);
 
 	std::shared_ptr<Material> whiteDiffuseLightMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_DIFFUSE_LIGHT);
 	whiteDiffuseLightMat->m_Color = glm::vec3(15.0f);
+	m_Materials.push_back(whiteDiffuseLightMat);
 
 	/* === Create Meshes === */
-	std::shared_ptr<Mesh> gridMesh = std::make_shared<Mesh>(CreateGroundGrid());
-	std::shared_ptr<Mesh> axesMesh = std::make_shared<Mesh>(CreateXYAxes());
-	std::shared_ptr<Mesh> planeMesh = std::make_shared<Mesh>(CreatePlane());
-	std::shared_ptr<Mesh> vikingRoomMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/viking_room.obj"));
-	std::shared_ptr<Mesh> dragonMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/dragon.obj"));
-	std::shared_ptr<Mesh> lucyMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/lucy.obj"));
-	std::shared_ptr<Mesh> sphereMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/sphere.obj"));
+	std::shared_ptr<Mesh> gridMesh = std::make_shared<Mesh>(CreateGroundGrid()); m_Meshes.push_back(gridMesh);
+	std::shared_ptr<Mesh> axesMesh = std::make_shared<Mesh>(CreateXYAxes()); m_Meshes.push_back(axesMesh);
+	std::shared_ptr<Mesh> planeMesh = std::make_shared<Mesh>(CreatePlane()); m_Meshes.push_back(planeMesh);
+	std::shared_ptr<Mesh> vikingRoomMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/viking_room.obj")); m_Meshes.push_back(vikingRoomMesh);
+	std::shared_ptr<Mesh> dragonMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/dragon.obj")); m_Meshes.push_back(dragonMesh);
+	std::shared_ptr<Mesh> lucyMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/lucy.obj")); m_Meshes.push_back(lucyMesh);
+	std::shared_ptr<Mesh> sphereMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/sphere.obj")); m_Meshes.push_back(sphereMesh);
 
 	/* === World Grid Lines === */
-	//std::shared_ptr<Object> grid = std::make_shared<Object>(gridMesh, linesMat);
-	//grid->m_ModelNormalMatrix = glm::mat3(m_ClearColor, glm::vec3(0.0f), glm::vec3(0.0f)); /* We'll store the clear color in the grid's normal matrix... */
-	//m_RasterObjects.push_back(grid);
+	std::shared_ptr<Object> grid = std::make_shared<Object>(gridMesh, linesMat);
+	grid->m_ModelNormalMatrix = glm::mat3(m_ClearColor, glm::vec3(0.0f), glm::vec3(0.0f)); /* We'll store the clear color in the grid's normal matrix... */
+	m_RasterObjects.push_back(grid);
 
-	//std::shared_ptr<Object> axes = std::make_shared<Object>(axesMesh, linesMat);
-	//axes->m_ModelNormalMatrix = glm::mat3(m_ClearColor, glm::vec3(0.0f), glm::vec3(0.0f));
-	//m_RasterObjects.push_back(axes);
+	std::shared_ptr<Object> axes = std::make_shared<Object>(axesMesh, linesMat);
+	axes->m_ModelNormalMatrix = glm::mat3(m_ClearColor, glm::vec3(0.0f), glm::vec3(0.0f));
+	m_RasterObjects.push_back(axes);
 
 
 	/* === Scene Setup === */
@@ -265,11 +275,16 @@ void Scene::VkSetup(ImVec2 viewportSize, VkSampleCountFlagBits sampleCount, VkRe
 	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersLines, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_PipelineLayout);
 	m_Pipelines[VK_PIPELINE_LINES] = pInfo;
 
+
+	/* Setup all materials for Vulkan */
+	for (auto& mat : m_Materials)
+	{
+		mat->VkSetup(m_Pipelines[mat->m_VKPipelineType]);
+	}
 	
 	/* Setup objects for rendering with Vulkan */
 	for (auto& obj : m_RasterObjects)
 	{
-		obj->m_Material->VkSetup(m_Pipelines[obj->m_Material->m_VKPipelineType]);
 		obj->VkSetup();
 	}
 }

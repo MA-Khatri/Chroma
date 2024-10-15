@@ -26,7 +26,8 @@ void Object::VkSetup()
 {
     /* Note: This MUST be called after Material::VkSetup()! */
 
-    m_DescriptorWrites.resize(0); /* Clear, just in case */
+    /* Clear descriptor writes */
+    m_DescriptorWrites.resize(0);
 
     vk::CreateVertexBuffer(m_Mesh->vertices, m_VertexBuffer, m_VertexBufferMemory);
     vk::CreateIndexBuffer(m_Mesh->indices, m_IndexBuffer, m_IndexBufferMemory);
@@ -50,9 +51,6 @@ void Object::VkSetup()
     uboWrite.pImageInfo = nullptr; /* optional */
     uboWrite.pTexelBufferView = nullptr; /* optional */
     m_DescriptorWrites.push_back(uboWrite);
-
-    /* Concatenate the material's descriptor writes as well */
-    m_DescriptorWrites.insert(m_DescriptorWrites.end(), m_Material->m_DescriptorWrites.begin(), m_Material->m_DescriptorWrites.end());
 
     vkUpdateDescriptorSets(vk::Device, static_cast<uint32_t>(m_DescriptorWrites.size()), m_DescriptorWrites.data(), 0, nullptr);
     VkUpdateUniformBuffer(); /* Need to call this just to make sure it gets set. */

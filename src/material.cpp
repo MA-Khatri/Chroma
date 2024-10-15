@@ -56,6 +56,9 @@ void Material::LoadTextures()
 
 void Material::VkSetup(const PipelineInfo& pipelineInfo)
 {
+    /* Clear the descriptor writes */
+    m_DescriptorWrites.resize(0);
+
     m_DescriptorSetLayout = pipelineInfo.descriptorSetLayout;
     m_DescriptorPool = pipelineInfo.descriptorPool;
     m_PipelineLayout = pipelineInfo.pipelineLayout;
@@ -129,4 +132,6 @@ void Material::VkSetup(const PipelineInfo& pipelineInfo)
         samplerWrite.pImageInfo = &normImageInfo;
         m_DescriptorWrites.push_back(samplerWrite);
     }
+
+    vkUpdateDescriptorSets(vk::Device, static_cast<uint32_t>(m_DescriptorWrites.size()), m_DescriptorWrites.data(), 0, nullptr);
 }
