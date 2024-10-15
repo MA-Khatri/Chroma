@@ -26,7 +26,7 @@ namespace otx
 		if (dot(rayDir, N) > 0.0f) N = -N;
 
 		/* Default diffuse color if no diffuse texture */
-		float3 diffuseColor = *sbtData.color;
+		float3 diffuseColor = sbtData.reflectionColor;
 
 		/* === Sample diffuse texture === */
 		float2 tc = TexCoord(uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);

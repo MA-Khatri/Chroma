@@ -508,7 +508,6 @@ namespace otx
 		m_IndexBuffers.resize(nObjects);
 		m_NormalBuffers.resize(nObjects);
 		m_TexCoordBuffers.resize(nObjects);
-		m_ObjectColorBuffers.resize(nObjects);
 
 		m_GASBuffers.resize(nObjects);
 		m_Instances.resize(nObjects);
@@ -530,7 +529,6 @@ namespace otx
 			m_IndexBuffers[objectID].alloc_and_upload(mesh.ivecIndices);
 			m_NormalBuffers[objectID].alloc_and_upload(mesh.normals);
 			m_TexCoordBuffers[objectID].alloc_and_upload(mesh.texCoords);
-			m_ObjectColorBuffers[objectID].alloc_and_upload(std::vector<glm::vec3>{objects[objectID]->m_Material->m_Color});
 
 			triangleInput = {};
 			triangleInput.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
@@ -785,7 +783,14 @@ namespace otx
 
 					rec.data.texCoord = (float2*)m_TexCoordBuffers[objectID].d_pointer();
 					rec.data.normal = (float3*)m_NormalBuffers[objectID].d_pointer();
-					rec.data.color = (float3*)m_ObjectColorBuffers[objectID].d_pointer();
+					
+					/* Set remaining material properties */
+					rec.data.roughness = mat->m_Roughness;
+					rec.data.etaIn = mat->m_EtaIn;
+					rec.data.etaOut = mat->m_EtaOut;
+					rec.data.reflectionColor = ToFloat3(mat->m_ReflectionColor);
+					rec.data.refractionColor = ToFloat3(mat->m_RefractionColor);
+					rec.data.extinction = ToFloat3(mat->m_Extinction);
 				}
 				/* Shadow rays only */
 				else if (rayID == RAY_TYPE_SHADOW)

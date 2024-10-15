@@ -138,7 +138,6 @@ namespace otx
 		std::vector<CUDABuffer> m_IndexBuffers;
 		std::vector<CUDABuffer> m_NormalBuffers;
 		std::vector<CUDABuffer> m_TexCoordBuffers;
-		std::vector<CUDABuffer> m_ObjectColorBuffers;
 
 		/* Buffers that keep the geometry acceleration structures (per scene object) */
 		std::vector<CUDABuffer> m_GASBuffers;

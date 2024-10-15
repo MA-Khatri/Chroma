@@ -15,8 +15,8 @@ namespace otx
 		/* === THESE SHOULD LATER BE MATERIAL PARAMS === */
 		const float etaIn = 1.45f;
 		const float etaOut = 1.0f;
-		const float3 reflectionColor = *sbtData.color;
-		const float3 refractionColor = *sbtData.color;
+		const float3 reflectionColor = sbtData.reflectionColor;
+		const float3 refractionColor = sbtData.refractionColor;
 		const float3 extinction = make_float3(0.0f);
 		/* ============================================= */
 

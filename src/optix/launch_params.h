@@ -15,8 +15,6 @@ namespace otx
 		float2* texCoord; 
 		int3* index;
 		
-		float3* color; /* Default color used in place of diffuse texture if texture is not present */
-
 		bool hasDiffuseTexture;
 		cudaTextureObject_t diffuseTexture;
 		bool hasSpecularTexture;
@@ -24,7 +22,13 @@ namespace otx
 		bool hasNormalTexture;
 		cudaTextureObject_t normalTexture;
 
-		
+
+		float roughness;
+		float etaIn;
+		float etaOut;
+		float3 reflectionColor;
+		float3 refractionColor;
+		float3 extinction;
 	};
 	
 

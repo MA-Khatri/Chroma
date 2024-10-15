@@ -90,7 +90,7 @@ void Object::VkUpdateUniformBuffer()
         //std::cout << ubo.normalmatrix[0][2] << " " << ubo.normalmatrix[1][2] << " " << ubo.normalmatrix[2][2] << std::endl;
         //std::cout << std::endl;
 
-        ubo.color = m_Material->m_Color;
+        ubo.color = m_Material->m_ReflectionColor;
 
         memcpy(m_UniformBufferMapped, &ubo, sizeof(ubo));
     }

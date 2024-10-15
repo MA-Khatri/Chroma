@@ -89,8 +89,16 @@ public:
 	Texture<uint8_t> m_DiffuseTexture;
 	Texture<uint8_t> m_SpecularTexture;
 	Texture<uint8_t> m_NormalTexture;
-	glm::vec3 m_Color = glm::vec3(0.7f); /* Base color, usually used when there is no texture */
+
 	int m_RTMaterialType = 0; /* Ray tracing material type -- i.e., otx::MaterialType enum */
+
+	/* Material properties */
+	float m_Roughness = 0.0f;
+	float m_EtaIn = 1.0f;
+	float m_EtaOut = 1.0f;
+	glm::vec3 m_ReflectionColor = glm::vec3(1.0f);
+	glm::vec3 m_RefractionColor = glm::vec3(1.0f);
+	glm::vec3 m_Extinction = glm::vec3(1.0f);
 
 	/* The vulkan graphics pipeline to be used to draw this material */
 	int m_VKPipelineType = -1; /* Used to access the Scene::PipelineType enum */

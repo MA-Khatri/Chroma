@@ -34,35 +34,38 @@ void Scene::MakeScene(int scene)
 	m_Materials.push_back(vikingRoomMat);
 
 	std::shared_ptr<Material> redGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_DIELECTRIC);
-	redGlassMat->m_Color = glm::vec3(1.0f, 0.3f, 0.3f);
+	redGlassMat->m_ReflectionColor = glm::vec3(1.0f, 0.3f, 0.3f);
+	redGlassMat->m_RefractionColor = glm::vec3(1.0f, 0.3f, 0.3f);
 	m_Materials.push_back(redGlassMat);
 
 	std::shared_ptr<Material> greenGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_DIELECTRIC);
-	greenGlassMat->m_Color = glm::vec3(0.3f, 1.0f, 0.3f);
+	greenGlassMat->m_ReflectionColor = glm::vec3(0.3f, 1.0f, 0.3f);
+	greenGlassMat->m_RefractionColor = glm::vec3(0.3f, 1.0f, 0.3f);
 	m_Materials.push_back(greenGlassMat);
 
 	std::shared_ptr<Material> blueGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_DIELECTRIC);
-	blueGlassMat->m_Color = glm::vec3(0.3f, 0.3f, 1.0f);
+	blueGlassMat->m_ReflectionColor = glm::vec3(0.3f, 0.3f, 1.0f);
+	blueGlassMat->m_RefractionColor = glm::vec3(0.3f, 0.3f, 1.0f);
 	m_Materials.push_back(blueGlassMat);
 
 	std::shared_ptr<Material> fullWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_LAMBERTIAN);
-	fullWhiteMat->m_Color = glm::vec3(1.0f);
+	fullWhiteMat->m_ReflectionColor = glm::vec3(1.0f);
 	m_Materials.push_back(fullWhiteMat);
 
 	std::shared_ptr<Material> diffuseWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_LAMBERTIAN);
-	diffuseWhiteMat->m_Color = glm::vec3(0.73f);
+	diffuseWhiteMat->m_ReflectionColor = glm::vec3(0.73f);
 	m_Materials.push_back(diffuseWhiteMat);
 
 	std::shared_ptr<Material> diffuseRedMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_LAMBERTIAN);
-	diffuseRedMat->m_Color = glm::vec3(0.65f, 0.05f, 0.05f);
+	diffuseRedMat->m_ReflectionColor = glm::vec3(0.65f, 0.05f, 0.05f);
 	m_Materials.push_back(diffuseRedMat);
 
 	std::shared_ptr<Material> diffuseGreenMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_LAMBERTIAN);
-	diffuseGreenMat->m_Color = glm::vec3(0.12f, 0.45f, 0.15f);
+	diffuseGreenMat->m_ReflectionColor = glm::vec3(0.12f, 0.45f, 0.15f);
 	m_Materials.push_back(diffuseGreenMat);
 
 	std::shared_ptr<Material> whiteDiffuseLightMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_DIFFUSE_LIGHT);
-	whiteDiffuseLightMat->m_Color = glm::vec3(15.0f);
+	whiteDiffuseLightMat->m_ReflectionColor = glm::vec3(15.0f);
 	m_Materials.push_back(whiteDiffuseLightMat);
 
 	/* === Create Meshes === */
