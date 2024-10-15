@@ -3,7 +3,7 @@
 #include "vulkan/vulkan_utils.h"
 
 
-Object::Object(Mesh mesh, TexturePaths texturePaths, int vkPipelineType, int rtMaterialType /* = 0 */)
+Object::Object(std::shared_ptr<Mesh> mesh, TexturePaths texturePaths, int vkPipelineType, int rtMaterialType /* = 0 */)
     : m_Mesh(mesh), m_TexturePaths(texturePaths), m_PipelineType(vkPipelineType), m_RTMaterialType(rtMaterialType)
 {
     LoadTextures();
@@ -86,8 +86,8 @@ void Object::LoadTextures()
 
 void Object::VkSetup(const PipelineInfo& pipelineInfo)
 {
-    vk::CreateVertexBuffer(m_Mesh.vertices, m_VertexBuffer, m_VertexBufferMemory);
-    vk::CreateIndexBuffer(m_Mesh.indices, m_IndexBuffer, m_IndexBufferMemory);
+    vk::CreateVertexBuffer(m_Mesh->vertices, m_VertexBuffer, m_VertexBufferMemory);
+    vk::CreateIndexBuffer(m_Mesh->indices, m_IndexBuffer, m_IndexBufferMemory);
 
     m_DescriptorSetLayout = pipelineInfo.descriptorSetLayout;
     m_DescriptorPool = pipelineInfo.descriptorPool;
@@ -195,7 +195,7 @@ void Object::VkDraw(VkCommandBuffer& commandBuffer)
 #ifndef _DEBUG
     vkCmdSetDepthTestEnable(commandBuffer, m_DepthTest); /* WARNING: For some reason, this raises an error *only* in Debug mode... */
 #endif
-    vkCmdSetLineWidth(commandBuffer, m_Mesh.lineWidth);
+    vkCmdSetLineWidth(commandBuffer, m_Mesh->lineWidth);
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
 
@@ -206,7 +206,7 @@ void Object::VkDraw(VkCommandBuffer& commandBuffer)
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
     vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_Mesh.indices.size()), 1, 0, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_Mesh->indices.size()), 1, 0, 0, 0);
 }
 
 

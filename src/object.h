@@ -79,7 +79,7 @@ struct Texture
 class Object
 {
 public:
-	Object(Mesh mesh, TexturePaths texturePaths, int vkPipelineType, int rtMaterialType = 0);
+	Object(std::shared_ptr<Mesh> mesh, TexturePaths texturePaths, int vkPipelineType, int rtMaterialType = 0);
 	~Object();
 
 	void LoadTextures();
@@ -120,13 +120,13 @@ public:
 		alignas(16) glm::vec3 color;
 	};
 
-	Mesh m_Mesh = Mesh();
+	std::shared_ptr<Mesh> m_Mesh;
 	TexturePaths m_TexturePaths;
 	Texture<uint8_t> m_DiffuseTexture;
 	Texture<uint8_t> m_SpecularTexture;
 	Texture<uint8_t> m_NormalTexture;
 	glm::vec3 m_Color = glm::vec3(0.7f); /* Base color used for diffuse if no diffuse texture */
-	int m_RTMaterialType = 1; /* Ray tracing material type -- i.e., otx::MaterialType enum */
+	int m_RTMaterialType = 0; /* Ray tracing material type -- i.e., otx::MaterialType enum */
 
 private:
 	/* === Vulkan === */

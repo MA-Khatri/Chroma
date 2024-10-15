@@ -525,7 +525,7 @@ namespace otx
 			uint32_t triangleInputFlags;
 
 			/* Upload the mesh to the device */
-			Mesh& mesh = objects[objectID]->m_Mesh;
+			Mesh& mesh = *(objects[objectID]->m_Mesh);
 			m_VertexBuffers[objectID].alloc_and_upload(mesh.posns);
 			m_IndexBuffers[objectID].alloc_and_upload(mesh.ivecIndices);
 			m_NormalBuffers[objectID].alloc_and_upload(mesh.normals);
