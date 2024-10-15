@@ -3,10 +3,9 @@
 
 
 Material::Material(TexturePaths texturePaths, int vkPipelineType, int rtMaterialType)
-    : m_TexturePaths(texturePaths), m_PipelineType(vkPipelineType), m_RTMaterialType(rtMaterialType)
+    : m_TexturePaths(texturePaths), m_VKPipelineType(vkPipelineType), m_RTMaterialType(rtMaterialType)
 {
     LoadTextures();
-
 }
 
 
@@ -62,7 +61,7 @@ void Material::VkSetup(const PipelineInfo& pipelineInfo)
     m_PipelineLayout = pipelineInfo.pipelineLayout;
     m_Pipeline = pipelineInfo.pipeline;
 
-    /* Create descriptor set for this object */
+    /* Create descriptor set for this material */
     vk::CreateDescriptorSet(m_DescriptorSetLayout, m_DescriptorPool, m_DescriptorSet);
 
     /* === Textures === */

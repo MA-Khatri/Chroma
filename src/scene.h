@@ -56,12 +56,12 @@ public:
 	Texture<float> m_BackgroundTexture;
 
 	/* List of pipeline types for Vulkan rendering */
-	enum PipelineType /* TODO: Should these be capitalized for consistency with other enums? */
+	enum PipelineType
 	{
-		Solid, /* Proxy for Blender's solid viewport shading */
-		Normal, /* View object normals */
-		Flat, /* Only see diffuse texture */
-		Lines, /* Displays line list with color */
+		VK_PIPELINE_SOLID, /* Proxy for Blender's solid viewport shading */
+		VK_PIPELINE_NORMAL, /* View object normals */
+		VK_PIPELINE_FLAT, /* Only see diffuse texture */
+		VK_PIPELINE_LINES, /* Displays line list with color */
 	};
 
 	int m_SceneType;
@@ -72,7 +72,7 @@ private:
 	void PushToBoth(std::shared_ptr<Object> obj);
 
 private:
-	std::map<PipelineType, PipelineInfo> m_Pipelines; /* Vulkan Pipelines with diff. shaders/draw modes */
+	std::map<int, PipelineInfo> m_Pipelines; /* Vulkan Pipelines with diff. shaders/draw modes */
 
 	/* We set the camera's view and projection matrices as push constants for Vulkan rendering */
 	struct PushConstants {

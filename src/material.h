@@ -93,7 +93,7 @@ public:
 	int m_RTMaterialType = 0; /* Ray tracing material type -- i.e., otx::MaterialType enum */
 
 	/* The vulkan graphics pipeline to be used to draw this material */
-	int m_PipelineType = 0; /* Used to access the Scene::PipelineType enum */
+	int m_VKPipelineType = -1; /* Used to access the Scene::PipelineType enum */
 	VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
 	VkPipeline m_Pipeline = VK_NULL_HANDLE;
 	VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;

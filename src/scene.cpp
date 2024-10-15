@@ -26,33 +26,33 @@ void Scene::MakeScene(int scene)
 	vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
 
 	/* === Create materials === */
-	std::shared_ptr<Material> linesMat = std::make_shared<Material>(noTextures, PipelineType::Lines, -1);
+	std::shared_ptr<Material> linesMat = std::make_shared<Material>(noTextures, VK_PIPELINE_LINES, -1);
 	linesMat->m_DepthTest = false;
 
-	std::shared_ptr<Material> vikingRoomMat = std::make_shared<Material>(vikingRoomTextures, PipelineType::Flat, otx::MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> vikingRoomMat = std::make_shared<Material>(vikingRoomTextures, VK_PIPELINE_FLAT, otx::MATERIAL_TYPE_LAMBERTIAN);
 
-	std::shared_ptr<Material> redGlassMat = std::make_shared<Material>(noTextures, PipelineType::Solid, otx::MATERIAL_TYPE_DIELECTRIC);
+	std::shared_ptr<Material> redGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_DIELECTRIC);
 	redGlassMat->m_Color = glm::vec3(1.0f, 0.3f, 0.3f);
 
-	std::shared_ptr<Material> greenGlassMat = std::make_shared<Material>(noTextures, PipelineType::Solid, otx::MATERIAL_TYPE_DIELECTRIC);
+	std::shared_ptr<Material> greenGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_DIELECTRIC);
 	greenGlassMat->m_Color = glm::vec3(0.3f, 1.0f, 0.3f);
 
-	std::shared_ptr<Material> blueGlassMat = std::make_shared<Material>(noTextures, PipelineType::Solid, otx::MATERIAL_TYPE_DIELECTRIC);
+	std::shared_ptr<Material> blueGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_DIELECTRIC);
 	blueGlassMat->m_Color = glm::vec3(0.3f, 0.3f, 1.0f);
 
-	std::shared_ptr<Material> fullWhiteMat = std::make_shared<Material>(noTextures, PipelineType::Solid, otx::MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> fullWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_LAMBERTIAN);
 	fullWhiteMat->m_Color = glm::vec3(1.0f);
 
-	std::shared_ptr<Material> diffuseWhiteMat = std::make_shared<Material>(noTextures, PipelineType::Solid, otx::MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> diffuseWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_LAMBERTIAN);
 	diffuseWhiteMat->m_Color = glm::vec3(0.73f);
 
-	std::shared_ptr<Material> diffuseRedMat = std::make_shared<Material>(noTextures, PipelineType::Solid, otx::MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> diffuseRedMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_LAMBERTIAN);
 	diffuseRedMat->m_Color = glm::vec3(0.65f, 0.05f, 0.05f);
 
-	std::shared_ptr<Material> diffuseGreenMat = std::make_shared<Material>(noTextures, PipelineType::Solid, otx::MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> diffuseGreenMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_LAMBERTIAN);
 	diffuseGreenMat->m_Color = glm::vec3(0.12f, 0.45f, 0.15f);
 
-	std::shared_ptr<Material> whiteDiffuseLightMat = std::make_shared<Material>(noTextures, PipelineType::Solid, otx::MATERIAL_TYPE_DIFFUSE_LIGHT);
+	std::shared_ptr<Material> whiteDiffuseLightMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_DIFFUSE_LIGHT);
 	whiteDiffuseLightMat->m_Color = glm::vec3(15.0f);
 
 	/* === Create Meshes === */
@@ -148,7 +148,7 @@ void Scene::MakeScene(int scene)
 		left->Scale(10.0f);
 		PushToBoth(left);
 
-		std::shared_ptr<Object> right = std::make_shared<Object>(planeMesh, diffuseGreenMat);
+		std::shared_ptr<Object> right = std::make_shared<Object>(planeMesh, diffuseRedMat);
 		right->Translate(0.0f, 5.0f, 5.0f);
 		right->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 90.0f);
 		right->Scale(10.0f);
@@ -251,27 +251,26 @@ void Scene::VkSetup(ImVec2 viewportSize, VkSampleCountFlagBits sampleCount, VkRe
 	std::vector<std::string> shadersFlat = { "src/vulkan/shaders/Flat.vert", "src/vulkan/shaders/Flat.frag" };
 	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersFlat, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_PipelineLayout);
 	pInfo.pipelineLayout = m_PipelineLayout; /* Note: has to be after pipeline creation bc pipeline layout is created in CreateGraphicsPipeline() */
-	m_Pipelines[Flat] = pInfo;
+	m_Pipelines[VK_PIPELINE_FLAT] = pInfo;
 
 	std::vector<std::string> shadersSolid = { "src/vulkan/shaders/Solid.vert", "src/vulkan/shaders/Solid.frag" };
 	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersSolid, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_PipelineLayout);
-	m_Pipelines[Solid] = pInfo;
+	m_Pipelines[VK_PIPELINE_SOLID] = pInfo;
 
 	std::vector<std::string> shadersNormal = { "src/vulkan/shaders/Solid.vert", "src/vulkan/shaders/Normal.frag" };
 	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersNormal, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_PipelineLayout);
-	m_Pipelines[Normal] = pInfo;
+	m_Pipelines[VK_PIPELINE_NORMAL] = pInfo;
 
 	std::vector<std::string> shadersLines = { "src/vulkan/shaders/Lines.vert", "src/vulkan/shaders/Lines.frag" };
 	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersLines, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_PipelineLayout);
-	m_Pipelines[Lines] = pInfo;
+	m_Pipelines[VK_PIPELINE_LINES] = pInfo;
 
 	
 	/* Setup objects for rendering with Vulkan */
 	for (auto& obj : m_RasterObjects)
 	{
-		obj->m_Material->VkSetup(m_Pipelines[static_cast<PipelineType>(obj->m_Material->m_PipelineType)]);
+		obj->m_Material->VkSetup(m_Pipelines[obj->m_Material->m_VKPipelineType]);
 		obj->VkSetup();
-		obj->VkUpdateUniformBuffer();
 	}
 }
 
