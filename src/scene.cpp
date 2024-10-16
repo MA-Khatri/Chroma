@@ -1,7 +1,7 @@
 #include "scene.h"
 #include "application.h"
 
-#include "optix/types.h"
+#include "common_enums.h"
 
 
 Scene::Scene(int scene)
@@ -30,41 +30,44 @@ void Scene::MakeScene(int scene)
 	linesMat->m_DepthTest = false;
 	m_Materials.push_back(linesMat);
 
-	std::shared_ptr<Material> vikingRoomMat = std::make_shared<Material>(vikingRoomTextures, VK_PIPELINE_FLAT, otx::MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> vikingRoomMat = std::make_shared<Material>(vikingRoomTextures, VK_PIPELINE_FLAT, MATERIAL_TYPE_LAMBERTIAN);
 	m_Materials.push_back(vikingRoomMat);
 
-	std::shared_ptr<Material> redGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_DIELECTRIC);
+	std::shared_ptr<Material> redGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIELECTRIC);
 	redGlassMat->m_ReflectionColor = glm::vec3(1.0f, 0.3f, 0.3f);
 	redGlassMat->m_RefractionColor = glm::vec3(1.0f, 0.3f, 0.3f);
+	redGlassMat->m_EtaIn = 1.45f;
 	m_Materials.push_back(redGlassMat);
 
-	std::shared_ptr<Material> greenGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_DIELECTRIC);
+	std::shared_ptr<Material> greenGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIELECTRIC);
 	greenGlassMat->m_ReflectionColor = glm::vec3(0.3f, 1.0f, 0.3f);
 	greenGlassMat->m_RefractionColor = glm::vec3(0.3f, 1.0f, 0.3f);
+	greenGlassMat->m_EtaIn = 1.45f;
 	m_Materials.push_back(greenGlassMat);
 
-	std::shared_ptr<Material> blueGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_DIELECTRIC);
+	std::shared_ptr<Material> blueGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIELECTRIC);
 	blueGlassMat->m_ReflectionColor = glm::vec3(0.3f, 0.3f, 1.0f);
 	blueGlassMat->m_RefractionColor = glm::vec3(0.3f, 0.3f, 1.0f);
+	blueGlassMat->m_EtaIn = 1.45f;
 	m_Materials.push_back(blueGlassMat);
 
-	std::shared_ptr<Material> fullWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> fullWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_LAMBERTIAN);
 	fullWhiteMat->m_ReflectionColor = glm::vec3(1.0f);
 	m_Materials.push_back(fullWhiteMat);
 
-	std::shared_ptr<Material> diffuseWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> diffuseWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_LAMBERTIAN);
 	diffuseWhiteMat->m_ReflectionColor = glm::vec3(0.73f);
 	m_Materials.push_back(diffuseWhiteMat);
 
-	std::shared_ptr<Material> diffuseRedMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> diffuseRedMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_LAMBERTIAN);
 	diffuseRedMat->m_ReflectionColor = glm::vec3(0.65f, 0.05f, 0.05f);
 	m_Materials.push_back(diffuseRedMat);
 
-	std::shared_ptr<Material> diffuseGreenMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> diffuseGreenMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_LAMBERTIAN);
 	diffuseGreenMat->m_ReflectionColor = glm::vec3(0.12f, 0.45f, 0.15f);
 	m_Materials.push_back(diffuseGreenMat);
 
-	std::shared_ptr<Material> whiteDiffuseLightMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, otx::MATERIAL_TYPE_DIFFUSE_LIGHT);
+	std::shared_ptr<Material> whiteDiffuseLightMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIFFUSE_LIGHT);
 	whiteDiffuseLightMat->m_ReflectionColor = glm::vec3(15.0f);
 	m_Materials.push_back(whiteDiffuseLightMat);
 
@@ -123,14 +126,14 @@ void Scene::MakeScene(int scene)
 		PushToBoth(sphere0);
 
 		/* === Background === */
-		//m_BackgroundMode = BackgroundMode::GRADIENT;
+		//m_BackgroundMode = BACKGROUND_MODE_GRADIENT;
 		//m_GradientBottom = glm::vec3(0.3f);
 		//m_GradientTop = glm::vec3(1.0f);
 
-		//m_BackgroundMode = BackgroundMode::SOLID_COLOR;
+		//m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
 		//m_ClearColor = glm::vec3(1.0f);
 
-		m_BackgroundMode = BackgroundMode::TEXTURE;
+		m_BackgroundMode = BACKGROUND_MODE_TEXTURE;
 		//m_BackgroundTexture.filePath = "res/backgrounds/overcast_soil_puresky_4k.hdr";
 		//m_BackgroundTexture.filePath = "res/backgrounds/kloofendal_48d_partly_cloudy_puresky_4k.hdr";
 		m_BackgroundTexture.filePath = "res/backgrounds/christmas_photo_studio_07_4k.hdr";
@@ -145,7 +148,7 @@ void Scene::MakeScene(int scene)
 		backTextures.diffuse = "res/textures/texture.jpg";
 
 		/* === Walls === */
-		std::shared_ptr<Object> bottom = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
+		std::shared_ptr<Object> bottom = std::make_shared<Object>(planeMesh, fullWhiteMat);
 		bottom->Scale(10.0f);
 		PushToBoth(bottom);
 
@@ -187,7 +190,7 @@ void Scene::MakeScene(int scene)
 		dragon->Scale(7.0f);
 		PushToBoth(dragon);
 
-		m_BackgroundMode = BackgroundMode::SOLID_COLOR;
+		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);
 
 		break;
@@ -195,7 +198,7 @@ void Scene::MakeScene(int scene)
 	// TODO: more?
 	}
 
-	if (m_BackgroundMode == BackgroundMode::TEXTURE)
+	if (m_BackgroundMode == BACKGROUND_MODE_TEXTURE)
 	{
 		m_BackgroundTexture.LoadTexture();
 	}
@@ -254,7 +257,7 @@ void Scene::VkSetup(ImVec2 viewportSize, VkSampleCountFlagBits sampleCount, VkRe
 	layoutBindings.push_back(normalSamplerLayoutBinding);
 
 	vk::CreateDescriptorSetLayout(layoutBindings, m_DescriptorSetLayout);
-	vk::CreateDescriptorPool(1000, m_DescriptorPool); /* Note: Make sure to update the max number of descriptor sets according to the number of objects you have! */
+	vk::CreateDescriptorPool(static_cast<uint32_t>(m_RasterObjects.size()), m_DescriptorPool);
 
 	/* Generate graphics pipelines with different shaders */
 	PipelineInfo pInfo;

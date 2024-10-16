@@ -863,7 +863,7 @@ namespace otx
 		m_LaunchParams.camera.position = ToFloat3(camera.m_Position);
 		m_LaunchParams.camera.direction = ToFloat3(glm::normalize(camera.m_Orientation));
 
-		if (camera.m_ProjectionMode == Camera::PERSPECTIVE)
+		if (camera.m_ProjectionMode == PROJECTION_MODE_PERSPECTIVE)
 		{
 			float aspect = m_LaunchParams.frame.size.x / float(m_LaunchParams.frame.size.y);
 			float focal_length = glm::length(camera.m_Orientation);
@@ -872,13 +872,33 @@ namespace otx
 			float width = height * aspect;
 			m_LaunchParams.camera.horizontal = width * normalize(cross(m_LaunchParams.camera.direction, ToFloat3(camera.m_Up)));
 			m_LaunchParams.camera.vertical = height * normalize(cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
-			m_LaunchParams.camera.projectionMode = Camera::PERSPECTIVE;
+			m_LaunchParams.camera.projectionMode = PROJECTION_MODE_PERSPECTIVE;
 		}
-		else if (camera.m_ProjectionMode == Camera::ORTHOGRAPHIC)
+		else if (camera.m_ProjectionMode == PROJECTION_MODE_ORTHOGRAPHIC)
 		{
 			m_LaunchParams.camera.horizontal = m_LaunchParams.frame.size.x * camera.m_OrthoScale * normalize(cross(m_LaunchParams.camera.direction, ToFloat3(camera.m_Up)));
 			m_LaunchParams.camera.vertical = m_LaunchParams.frame.size.y * camera.m_OrthoScale * normalize(cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
-			m_LaunchParams.camera.projectionMode = Camera::ORTHOGRAPHIC;
+			m_LaunchParams.camera.projectionMode = PROJECTION_MODE_ORTHOGRAPHIC;
+		}
+		else if (camera.m_ProjectionMode == PROJECTION_MODE_THIN_LENS)
+		{
+			float aspect = m_LaunchParams.frame.size.x / float(m_LaunchParams.frame.size.y);
+			float h = glm::tan(glm::radians(camera.m_VFoV) / 2.0f);
+			float height = 2.0f * h * camera.m_FocusDistance;
+			float width = height * aspect;
+
+			float3 u = normalize(cross(m_LaunchParams.camera.direction, ToFloat3(camera.m_Up)));
+			float3 v = normalize(cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
+			
+			m_LaunchParams.camera.horizontal = width * u;
+			m_LaunchParams.camera.vertical = height * v;
+			m_LaunchParams.camera.direction *= camera.m_FocusDistance;
+			m_LaunchParams.camera.projectionMode = PROJECTION_MODE_THIN_LENS;
+
+			/* Determine the defocus disk basis vectors */
+			float defocusRadius = camera.m_FocusDistance * glm::tan(glm::radians(camera.m_DefocusAngle / 2.0f));
+			m_LaunchParams.camera.defocusDiskU = defocusRadius * u;
+			m_LaunchParams.camera.defocusDiskV = defocusRadius * v;
 		}
 
 		/* Reset accumulation */

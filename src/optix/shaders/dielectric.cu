@@ -12,14 +12,6 @@ namespace otx
 		const SBTData& sbtData = *(const SBTData*)optixGetSbtDataPointer();
 		PRD_radiance& prd = *getPRD<PRD_radiance>();
 
-		/* === THESE SHOULD LATER BE MATERIAL PARAMS === */
-		const float etaIn = 1.45f;
-		const float etaOut = 1.0f;
-		const float3 reflectionColor = sbtData.reflectionColor;
-		const float3 refractionColor = sbtData.refractionColor;
-		const float3 extinction = make_float3(0.0f);
-		/* ============================================= */
-
 		const int primID = optixGetPrimitiveIndex();
 		const int3 index = sbtData.index[primID];
 		float2 uv = optixGetTriangleBarycentrics();
@@ -42,20 +34,20 @@ namespace otx
 		const float3 w_out = -rayDir;
 		float cos_theta_i = dot(w_out, N);
 
-		float eta1, eta2;
+		float eta1, eta2 = 1.0f;
 		float3 transmittance = make_float3(1.0f);
 		if (cos_theta_i > 0.0f)
 		{
 			/* Ray is entering */
-			eta1 = etaIn;
-			eta2 = etaOut;
+			eta1 = sbtData.etaIn;
+			eta2 = sbtData.etaOut;
 		}
 		else
 		{
 			/* Ray is exiting, apply Beer's law */
-			transmittance = expf(-extinction * optixGetRayTmax());
-			eta1 = etaOut;
-			eta2 = etaIn;
+			transmittance = expf(-sbtData.extinction * optixGetRayTmax());
+			eta1 = sbtData.etaOut;
+			eta2 = sbtData.etaIn;
 			cos_theta_i = -cos_theta_i;
 			N = -N;
 		}
@@ -75,7 +67,7 @@ namespace otx
 			const float3 fhp = FrontHitPosition(N);
 			prd.origin = fhp;
 			prd.direction = w_in;
-			prd.radiance *= reflectionColor * transmittance;
+			prd.radiance *= sbtData.reflectionColor * transmittance;
 		}
 		else
 		{
@@ -84,7 +76,7 @@ namespace otx
 			const float3 bhp = BackHitPosition(N);
 			prd.origin = bhp;
 			prd.direction = w_in;
-			prd.radiance *= refractionColor * transmittance;
+			prd.radiance *= sbtData.refractionColor * transmittance;
 		}
 	}
 

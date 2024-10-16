@@ -276,7 +276,7 @@ namespace otx
 		/* Return a random point *in* a unit circle (disk) */
 		inline __host__ __device__ float2 RandomInUnitDisk()
 		{
-			return SampleInUnitDiskConcentric(make_float2(RandomValue(), RandomValue()));
+			return SampleInUnitDiskPolar(make_float2(RandomValue(), RandomValue()));
 		}
 
 		/* Return a random point on the surface of a unit sphere */

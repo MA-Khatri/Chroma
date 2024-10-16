@@ -55,16 +55,22 @@ namespace otx
 			/* Ray origin and direction */
 			float3 rayOrg, rayDir;
 
-			if (optixLaunchParams.camera.projectionMode == 0) /* Camera::PERSPECTIVE */
+			if (optixLaunchParams.camera.projectionMode == PROJECTION_MODE_PERSPECTIVE)
 			{
 				rayOrg = camera.position;
 				rayDir = normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical);
 			}
-			else if (optixLaunchParams.camera.projectionMode == 1) /* Camera::ORTHOGRAPHIC */
+			else if (optixLaunchParams.camera.projectionMode == PROJECTION_MODE_ORTHOGRAPHIC)
 			{
-
 				rayOrg = camera.position + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical;
 				rayDir = camera.direction;
+			}
+			else if (optixLaunchParams.camera.projectionMode == PROJECTION_MODE_THIN_LENS)
+			{
+				float2 p = prd.random.RandomInUnitDisk();
+				float3 orgOffset = (p.x * camera.defocusDiskU) + (p.y * camera.defocusDiskV);
+				rayOrg = camera.position + orgOffset;
+				rayDir = camera.direction + ((screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical) - orgOffset;
 			}
 
 			/* Iterative (non-recursive) render loop */

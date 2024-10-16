@@ -7,7 +7,7 @@
 #include "mesh.h"
 #include "camera.h"
 #include "application.h"
-#include "background_mode.h"
+#include "common_enums.h"
 
 /* Forward declarations */
 class Object;
@@ -41,7 +41,7 @@ public:
 		{CORNELL_BOX, "Cornell Box"}
 	};
 
-	int m_BackgroundMode = BackgroundMode::SOLID_COLOR;
+	int m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
 
 	/* Scene clear/background color used if m_BackgroundMode == SOLID_COLOR */
 	glm::vec3 m_ClearColor = glm::vec3(63.0f / 255.0f, 63.0f / 255.0f, 63.0f / 255.0f);

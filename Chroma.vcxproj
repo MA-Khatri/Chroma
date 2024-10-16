@@ -66,12 +66,11 @@
     <ClInclude Include="external\stb_image\stb_image_write.h" />
     <ClInclude Include="external\tiny_obj_loader\tiny_obj_loader.h" />
     <ClInclude Include="src\application.h" />
-    <ClInclude Include="src\background_mode.h" />
+    <ClInclude Include="src\common_enums.h" />
     <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\material.h" />
     <ClInclude Include="src\optix\cuda_buffer.h" />
     <ClInclude Include="src\optix\shaders\utils.cuh" />
-    <ClInclude Include="src\optix\types.h" />
     <ClInclude Include="src\vulkan\image.h" />
     <ClInclude Include="src\optix\launch_params.h" />
     <ClInclude Include="src\layer.h" />

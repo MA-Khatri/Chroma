@@ -14,6 +14,8 @@
 #include <string>
 #include <map>
 
+#include "common_enums.h"
+
 class Camera
 {
 private:
@@ -25,30 +27,20 @@ private:
 
 
 public:
-	enum ControlMode
-	{
-		FREE_FLY,
-		ORBIT
-	};
 
 	std::map<int, std::string> m_ControlModeNames = {
-		{FREE_FLY, "Free Fly"},
-		{ORBIT, "Orbit"}
-	};
-
-	enum ProjectionMode
-	{
-		PERSPECTIVE,
-		ORTHOGRAPHIC,
+		{CONTROL_MODE_FREE_FLY, "Free Fly"},
+		{CONTROL_MODE_ORBIT, "Orbit"},
 	};
 
 	std::map<int, std::string> m_ProjectionModeNames = {
-		{PERSPECTIVE, "Perspective"},
-		{ORTHOGRAPHIC, "Orthographic"}
+		{PROJECTION_MODE_PERSPECTIVE, "Perspective"},
+		{PROJECTION_MODE_ORTHOGRAPHIC, "Orthographic"},
+		{PROJECTION_MODE_THIN_LENS, "Thin Lens"},
 	};
 
-	int m_ControlMode = FREE_FLY;
-	int m_ProjectionMode = PERSPECTIVE;
+	int m_ControlMode = CONTROL_MODE_FREE_FLY;
+	int m_ProjectionMode = PROJECTION_MODE_PERSPECTIVE;
 
 	bool m_CameraUIUpdate = false; /* Set to true if camera values changed by UI */
 
@@ -106,6 +98,12 @@ public:
 
 	/* Camera rotation sensitivity */
 	float m_Sensitivity = 100.0f;
+
+	/* Variation angle of rays (in degrees) through each pixel used for thin lens. Larger = more blur. */
+	float m_DefocusAngle = 1.0f;
+
+	/* Distance from the camera origin to the plane of perfect focus (for thin lens) */
+	float m_FocusDistance = 10.0f;
 
 public:
 	Camera(int width, int height, glm::vec3 position, glm::vec3 orientation, glm::vec3 up, float vfov = 45.0f, float near_plane = 0.1f, float far_plane = 1000.0f);

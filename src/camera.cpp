@@ -79,16 +79,17 @@ void Camera::UpdateProjectionMatrix(float vFOVdeg)
 
 void Camera::UpdateProjectionMatrix()
 {
-	if (m_ProjectionMode == PERSPECTIVE)
-	{
-		m_ProjectionMatrix = glm::perspective(glm::radians(m_VFoV), static_cast<float>(m_Width) / static_cast<float>(m_Height), m_NearPlane, m_FarPlane);
-	}
-	else if (m_ProjectionMode == ORTHOGRAPHIC)
+	if (m_ProjectionMode == PROJECTION_MODE_ORTHOGRAPHIC)
 	{
 		float hw = 0.5f * m_OrthoScale * static_cast<float>(m_Width);
 		float hh = 0.5f * m_OrthoScale * static_cast<float>(m_Height);
 		m_ProjectionMatrix = glm::orthoRH_ZO(-hw, hw, -hh, hh, m_NearPlane, m_FarPlane);
 	}
+	else
+	{
+		m_ProjectionMatrix = glm::perspective(glm::radians(m_VFoV), static_cast<float>(m_Width) / static_cast<float>(m_Height), m_NearPlane, m_FarPlane);
+	}
+
 	m_Matrix = m_ProjectionMatrix * m_ViewMatrix;
 }
 
@@ -96,7 +97,7 @@ bool Camera::Inputs(GLFWwindow* window)
 {
 	bool updated = false;
 
-	if (m_ControlMode == FREE_FLY)
+	if (m_ControlMode == CONTROL_MODE_FREE_FLY)
 	{
 		/* WASD keys for basic motion front/back, strafe left/right */
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -146,7 +147,7 @@ bool Camera::Inputs(GLFWwindow* window)
 	/* Mouse drag for orientation */
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
 	{
-		/* Check if left mouse button is pressed */
+		/* Check if left mouse button was already pressed pressed */
 		if (!m_LMB)
 		{
 			/* Update previous mouse position to current mouse position on first press */
@@ -168,7 +169,7 @@ bool Camera::Inputs(GLFWwindow* window)
 		float xDrag = m_Sensitivity * static_cast<float>(mouseX - m_PrevMousePosn.x) / m_Width;
 		if (fabsf(yDrag) > 0.0f || fabsf(xDrag) > 0.0f) updated = true;
 
-		if (m_ControlMode == FREE_FLY)
+		if (m_ControlMode == CONTROL_MODE_FREE_FLY)
 		{
 			/* Get new orientation for the camera */
 			glm::vec3 newOrientation = glm::rotate(m_Orientation, glm::radians(-yDrag), glm::normalize(glm::cross(m_Orientation, m_Up)));
@@ -182,7 +183,7 @@ bool Camera::Inputs(GLFWwindow* window)
 			/* Right/Left rotate (allowed to fully spin around) */
 			m_Orientation = glm::rotate(m_Orientation, glm::radians(-xDrag), m_Up);
 		}
-		else if (m_ControlMode == ORBIT)
+		else if (m_ControlMode == CONTROL_MODE_ORBIT)
 		{
 			/* If control is pressed while clicking & dragging, vertical drag moves distance in/out */
 			if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
@@ -252,18 +253,17 @@ void Camera::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	Camera* camera = (Camera*)glfwGetWindowUserPointer(window);
 
-	if (camera->m_ProjectionMode == Camera::PERSPECTIVE)
+	if (camera->m_ProjectionMode == PROJECTION_MODE_ORTHOGRAPHIC)
+	{
+		camera->m_OrthoScale -= camera->m_MinOrthoScale * static_cast<float>(yoffset);
+		if (camera->m_OrthoScale < camera->m_MinOrthoScale) camera->m_OrthoScale = camera->m_MinOrthoScale;
+	}
+	else
 	{
 		camera->m_VFoV -= static_cast<float>(yoffset);
 		if (camera->m_VFoV < camera->m_MinFoV) camera->m_VFoV = camera->m_MinFoV;
 		if (camera->m_VFoV > camera->m_MaxFoV) camera->m_VFoV = camera->m_MaxFoV;
 	}
-	else if (camera->m_ProjectionMode == Camera::ORTHOGRAPHIC)
-	{
-		camera->m_OrthoScale -= camera->m_MinOrthoScale * static_cast<float>(yoffset);
-		if (camera->m_OrthoScale < camera->m_MinOrthoScale) camera->m_OrthoScale = camera->m_MinOrthoScale;
-	}
-
 
 	/* Set this to true so that camera is updated */
 	camera->m_CameraUIUpdate = true;

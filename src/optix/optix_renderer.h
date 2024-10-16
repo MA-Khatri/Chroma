@@ -11,6 +11,7 @@
 
 #include "../camera.h"
 #include "../scene.h"
+#include "../common_enums.h"
 
 namespace otx
 {

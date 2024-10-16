@@ -169,23 +169,40 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 		camera.m_ProjectionMode = selectedProjectionMode;
 
 		/* Projection mode settings */
-		if (camera.m_ProjectionMode == Camera::PERSPECTIVE)
+		if (camera.m_ProjectionMode == PROJECTION_MODE_PERSPECTIVE)
 		{
 			float fov = camera.m_VFoV;
 			ImGui::DragFloat("Vertical FoV", &fov, 0.1f, camera.m_MinFoV, camera.m_MaxFoV);
 			if (fov != camera.m_VFoV) camera.m_CameraUIUpdate = true;
 			camera.m_VFoV = fov;
 		}
-		else if (camera.m_ProjectionMode == Camera::ORTHOGRAPHIC)
+		else if (camera.m_ProjectionMode == PROJECTION_MODE_ORTHOGRAPHIC)
 		{
 			float scale = camera.m_OrthoScale;
 			ImGui::DragFloat("Ortho Scale", &scale, camera.m_MinOrthoScale, camera.m_MinOrthoScale);
 			if (scale != camera.m_OrthoScale) camera.m_CameraUIUpdate = true;
 			camera.m_OrthoScale = scale;
 		}
+		else if (camera.m_ProjectionMode == PROJECTION_MODE_THIN_LENS)
+		{
+			float fov = camera.m_VFoV;
+			ImGui::DragFloat("Vertical FoV", &fov, 0.1f, camera.m_MinFoV, camera.m_MaxFoV);
+			if (fov != camera.m_VFoV) camera.m_CameraUIUpdate = true;
+			camera.m_VFoV = fov;
+
+			float defocusAngle = camera.m_DefocusAngle;
+			ImGui::DragFloat("Defocus Angle", &defocusAngle, 0.01f, 0.0f, 10.0f);
+			if (defocusAngle != camera.m_DefocusAngle) camera.m_CameraUIUpdate = true;
+			camera.m_DefocusAngle = defocusAngle;
+
+			float focusDistance = camera.m_FocusDistance;
+			ImGui::DragFloat("Focus Distance", &focusDistance, 0.1f, 0.1f, 100.0f);
+			if (focusDistance != camera.m_FocusDistance) camera.m_CameraUIUpdate = true;
+			camera.m_FocusDistance = focusDistance;
+		}
 
 		/* Control mode settings */
-		if (camera.m_ControlMode == Camera::FREE_FLY)
+		if (camera.m_ControlMode == CONTROL_MODE_FREE_FLY)
 		{
 			float posn[3] = { camera.m_Position.x, camera.m_Position.y, camera.m_Position.z };
 			ImGui::DragFloat3("Camera Position", posn, 0.1f);
@@ -199,7 +216,7 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 			if (newOrnt != camera.m_Orientation) camera.m_CameraUIUpdate = true;
 			camera.m_Orientation = newOrnt;
 		}
-		else if (camera.m_ControlMode == Camera::ORBIT)
+		else if (camera.m_ControlMode == CONTROL_MODE_ORBIT)
 		{
 			float orig[3] = { camera.m_OrbitOrigin.x, camera.m_OrbitOrigin.y, camera.m_OrbitOrigin.z };
 			ImGui::DragFloat3("Orbit Origin", orig, 0.1f);

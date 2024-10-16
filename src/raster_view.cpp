@@ -53,7 +53,7 @@ void RasterView::OnUpdate()
 	{
 		m_Camera->UpdateViewMatrix();
 		m_Camera->UpdateProjectionMatrix();
-		if (m_Camera->m_ControlMode == Camera::ORBIT)
+		if (m_Camera->m_ControlMode == CONTROL_MODE_ORBIT)
 		{
 			m_Camera->UpdateOrbit();
 		}

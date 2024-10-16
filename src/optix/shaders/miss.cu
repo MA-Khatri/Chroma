@@ -1,6 +1,6 @@
 #include "utils.cuh"
 
-#include "../../background_mode.h"
+#include "../../common_enums.h"
 
 namespace otx
 {
@@ -10,11 +10,11 @@ namespace otx
 
 		float3 result;
 
-		if (optixLaunchParams.backgroundMode == BackgroundMode::SOLID_COLOR)
+		if (optixLaunchParams.backgroundMode == BACKGROUND_MODE_SOLID_COLOR)
 		{
 			result = optixLaunchParams.clearColor;
 		}
-		else if (optixLaunchParams.backgroundMode == BackgroundMode::GRADIENT)
+		else if (optixLaunchParams.backgroundMode == BACKGROUND_MODE_GRADIENT)
 		{
 			float3 rayDir = optixGetWorldRayDirection();
 
@@ -22,7 +22,7 @@ namespace otx
 			const float t = max(dot(normalize(rayDir), make_float3(0.0f, 0.0f, 1.0f)), 0.0f);
 			result = lerp(optixLaunchParams.gradientBottom, optixLaunchParams.gradientTop, t);
 		}
-		else if (optixLaunchParams.backgroundMode == BackgroundMode::TEXTURE)
+		else if (optixLaunchParams.backgroundMode == BACKGROUND_MODE_TEXTURE)
 		{
 			float3 rayDir = optixGetWorldRayDirection();
 

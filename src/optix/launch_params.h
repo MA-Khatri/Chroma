@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <vector_math.h>
 
-#include "types.h"
+#include "../common_enums.h"
 
 namespace otx
 {
@@ -22,10 +22,9 @@ namespace otx
 		bool hasNormalTexture;
 		cudaTextureObject_t normalTexture;
 
-
-		float roughness;
 		float etaIn;
 		float etaOut;
+		float roughness;
 		float3 reflectionColor;
 		float3 refractionColor;
 		float3 extinction;
@@ -48,6 +47,10 @@ namespace otx
 			float3 horizontal;
 			float3 vertical;
 			int projectionMode;
+
+			/* Specific to thin lens */
+			float3 defocusDiskU;
+			float3 defocusDiskV;
 		} camera;
 
 		float3 cutoffColor; /* radiance color for rays that reach depth limit */
