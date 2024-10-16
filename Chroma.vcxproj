@@ -69,6 +69,7 @@
     <ClInclude Include="src\common_enums.h" />
     <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\material.h" />
+    <ClInclude Include="src\math_helpers.h" />
     <ClInclude Include="src\optix\cuda_buffer.h" />
     <ClInclude Include="src\optix\shaders\utils.cuh" />
     <ClInclude Include="src\vulkan\image.h" />

@@ -98,8 +98,6 @@ void RayTraceView::OnUpdate()
 		
 		m_OptixRenderer->SetCamera(*m_Camera);
 	}
-	m_Camera->m_CameraUIUpdate = false;
-	std::cout << "Updated!" << std::endl;
 
 	/* Call to render the ray traced image */
 	if (m_AppHandle->m_FocusedWindow == Application::RayTracedViewport)
@@ -152,15 +150,6 @@ void RayTraceView::OnUIRender()
 			if (ImGui::Button("Reset Accumulation"))
 			{
 				m_Camera->m_CameraUIUpdate = true;
-			}
-
-			if (m_Camera->m_CameraUIUpdate)
-			{
-				ImGui::Text("OnUICameraUpdate: TRUE");
-			}
-			else
-			{
-				ImGui::Text("OnUICameraUpdate: FALSE");
 			}
 		}
 		ImGui::End();

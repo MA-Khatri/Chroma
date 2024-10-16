@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "scene.h"
+#include "math_helpers.h"
 
 
 std::string GetDateTimeStr()
@@ -106,6 +107,9 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 
 	ImGui::Text("Viewport Size :  %.1i x %.1i ", (int)viewport_size.x, (int)viewport_size.y);
 
+	/* Make sure to reset the flag! */
+	camera.m_CameraUIUpdate = false;
+
 	ImGui::SeparatorText("Scene Settings");
 	{
 		/* Choose a scene */
@@ -171,31 +175,31 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 		{
 			float fov = camera.m_VFoV;
 			ImGui::DragFloat("Vertical FoV", &fov, 0.1f, camera.m_MinFoV, camera.m_MaxFoV);
-			if (fov != camera.m_VFoV) camera.m_CameraUIUpdate = true;
+			if (!Close(fov, camera.m_VFoV)) camera.m_CameraUIUpdate = true;
 			camera.m_VFoV = fov;
 		}
 		else if (camera.m_ProjectionMode == PROJECTION_MODE_ORTHOGRAPHIC)
 		{
 			float scale = camera.m_OrthoScale;
 			ImGui::DragFloat("Ortho Scale", &scale, camera.m_MinOrthoScale, camera.m_MinOrthoScale);
-			if (scale != camera.m_OrthoScale) camera.m_CameraUIUpdate = true;
+			if (!Close(scale, camera.m_OrthoScale)) camera.m_CameraUIUpdate = true;
 			camera.m_OrthoScale = scale;
 		}
 		else if (camera.m_ProjectionMode == PROJECTION_MODE_THIN_LENS)
 		{
 			float fov = camera.m_VFoV;
 			ImGui::DragFloat("Vertical FoV", &fov, 0.1f, camera.m_MinFoV, camera.m_MaxFoV);
-			if (fov != camera.m_VFoV) camera.m_CameraUIUpdate = true;
+			if (!Close(fov, camera.m_VFoV)) camera.m_CameraUIUpdate = true;
 			camera.m_VFoV = fov;
 
 			float defocusAngle = camera.m_DefocusAngle;
 			ImGui::DragFloat("Defocus Angle", &defocusAngle, 0.01f, 0.0f, 10.0f);
-			if (defocusAngle != camera.m_DefocusAngle) camera.m_CameraUIUpdate = true;
+			if (!Close(defocusAngle, camera.m_DefocusAngle)) camera.m_CameraUIUpdate = true;
 			camera.m_DefocusAngle = defocusAngle;
 
 			float focusDistance = camera.m_FocusDistance;
 			ImGui::DragFloat("Focus Distance", &focusDistance, 0.1f, 0.1f, 100.0f);
-			if (focusDistance != camera.m_FocusDistance) camera.m_CameraUIUpdate = true;
+			if (!Close(focusDistance, camera.m_FocusDistance)) camera.m_CameraUIUpdate = true;
 			camera.m_FocusDistance = focusDistance;
 		}
 
@@ -205,13 +209,13 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 			float posn[3] = { camera.m_Position.x, camera.m_Position.y, camera.m_Position.z };
 			ImGui::DragFloat3("Camera Position", posn, 0.1f);
 			glm::vec3 newPosn = glm::vec3(posn[0], posn[1], posn[2]);
-			if (newPosn != camera.m_Position)camera.m_CameraUIUpdate = true;
+			if (!Close(newPosn, camera.m_Position)) camera.m_CameraUIUpdate = true;
 			camera.m_Position = newPosn;
 
 			float ornt[3] = { camera.m_Orientation.x, camera.m_Orientation.y, camera.m_Orientation.z };
 			ImGui::DragFloat3("Camera Orientation", ornt, 0.01f, -1.0f, 1.0f);
 			glm::vec3 newOrnt = glm::normalize(glm::vec3(ornt[0], ornt[1], ornt[2]));
-			if (newOrnt != camera.m_Orientation) camera.m_CameraUIUpdate = true;
+			if (!Close(newOrnt, camera.m_Orientation)) camera.m_CameraUIUpdate = true;
 			camera.m_Orientation = newOrnt;
 		}
 		else if (camera.m_ControlMode == CONTROL_MODE_ORBIT)
@@ -219,22 +223,22 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 			float orig[3] = { camera.m_OrbitOrigin.x, camera.m_OrbitOrigin.y, camera.m_OrbitOrigin.z };
 			ImGui::DragFloat3("Orbit Origin", orig, 0.1f);
 			glm::vec3 newOrig = glm::vec3(orig[0], orig[1], orig[2]);
-			if (newOrig != camera.m_OrbitOrigin)camera.m_CameraUIUpdate = true;
+			if (!Close(newOrig, camera.m_OrbitOrigin)) camera.m_CameraUIUpdate = true;
 			camera.m_OrbitOrigin = newOrig;
 
 			float dist = camera.m_OrbitDistance;
 			ImGui::DragFloat("Orbit Distance", &dist, 0.1f, 0.1f);
-			if (dist != camera.m_OrbitDistance) camera.m_CameraUIUpdate = true;
+			if (!Close(dist, camera.m_OrbitDistance)) camera.m_CameraUIUpdate = true;
 			camera.m_OrbitDistance = dist;
 
 			float theta = camera.m_OrbitTheta;
 			ImGui::DragFloat("Theta", &theta);
-			if (theta != camera.m_OrbitTheta) camera.m_CameraUIUpdate = true;
+			if (!Close(theta, camera.m_OrbitTheta)) camera.m_CameraUIUpdate = true;
 			camera.m_OrbitTheta = theta;
 
 			float phi = camera.m_OrbitPhi;
 			ImGui::DragFloat("Phi", &phi);
-			if (phi != camera.m_OrbitPhi) camera.m_CameraUIUpdate = true;
+			if (!Close(phi, camera.m_OrbitPhi)) camera.m_CameraUIUpdate = true;
 			camera.m_OrbitPhi = phi;
 		}
 	}	

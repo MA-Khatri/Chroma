@@ -1,5 +1,8 @@
 #include "camera.h"
+
 #include <iostream>
+
+#include "math_helpers.h"
 
 Camera::Camera(int width, int height, glm::vec3 position, glm::vec3 orientation, glm::vec3 up, float vfov /* = 45.0f */, float near_plane /* = 0.1f */, float far_plane /* = 1000.0f */)
 {
@@ -273,17 +276,17 @@ void Camera::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 bool Camera::IsCameraDifferent(Camera* camera)
 {
 	Camera& c = *camera;
-	if (m_Position != c.m_Position) return true;
-	if (m_Orientation != c.m_Orientation) return true;
-	if (m_Up != c.m_Up) return true;
-	if (m_OrbitOrigin != c.m_OrbitOrigin) return true;
-	if (m_OrbitDistance != c.m_OrbitDistance) return true;
-	if (m_OrbitTheta != c.m_OrbitTheta) return true;
-	if (m_OrbitPhi != c.m_OrbitPhi) return true;
-	if (m_VFoV != c.m_VFoV) return true;
-	if (m_OrthoScale != c.m_OrthoScale) return true;
-	if (m_Width != c.m_Width) return true;
-	if (m_Height != c.m_Height) return true;
+	if(!Close(m_Position, c.m_Position)) return true;
+	if(!Close(m_Orientation, c.m_Orientation)) return true;
+	if(!Close(m_Up, c.m_Up)) return true;
+	if(!Close(m_OrbitOrigin, c.m_OrbitOrigin)) return true;
+	if(!Close(m_OrbitDistance, c.m_OrbitDistance)) return true;
+	if(!Close(m_OrbitTheta, c.m_OrbitTheta)) return true;
+	if(!Close(m_OrbitPhi, c.m_OrbitPhi)) return true;
+	if(!Close(m_VFoV, c.m_VFoV)) return true;
+	if(!Close(m_OrthoScale, c.m_OrthoScale)) return true;
+	if(!Close(m_Width, c.m_Width)) return true;
+	if(!Close(m_Height, c.m_Height)) return true;
 
 	return false;
 }

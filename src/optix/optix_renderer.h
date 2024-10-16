@@ -25,7 +25,7 @@ namespace otx
 		void Resize(const ImVec2& newSize);
 
 		/* Set camera for Optix */
-		void SetCamera(Camera& camera);
+		void SetCamera(const Camera& camera);
 
 		/* Set the number of samples per pixel per call to Render() (updates Launch params) */
 		void SetSamplesPerRender(int nSamples);
