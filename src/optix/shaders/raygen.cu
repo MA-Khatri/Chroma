@@ -70,7 +70,7 @@ namespace otx
 				float2 p = prd.random.RandomInUnitDisk();
 				float3 orgOffset = (p.x * camera.defocusDiskU) + (p.y * camera.defocusDiskV);
 				rayOrg = camera.position + orgOffset;
-				rayDir = camera.direction + ((screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical) - orgOffset;
+				rayDir = normalize(camera.direction + ((screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical) - orgOffset);
 			}
 
 			/* Iterative (non-recursive) render loop */
