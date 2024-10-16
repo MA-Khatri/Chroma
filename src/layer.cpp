@@ -106,8 +106,6 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 
 	ImGui::Text("Viewport Size :  %.1i x %.1i ", (int)viewport_size.x, (int)viewport_size.y);
 
-	camera.m_CameraUIUpdate = false;
-
 	ImGui::SeparatorText("Scene Settings");
 	{
 		/* Choose a scene */

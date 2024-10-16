@@ -48,6 +48,11 @@ void RayTraceView::OnDetach()
 
 void RayTraceView::OnUpdate()
 {
+	/* Get camera */
+	if (m_AppHandle->m_LinkCameras)	m_Camera = m_AppHandle->GetMainCamera();
+	else m_Camera = m_LocalCamera;
+
+	/* Update when first switching to new scene */
 	if (m_AppHandle->GetSceneID() != m_SceneID)
 	{
 		m_SceneID = m_AppHandle->GetSceneID();
@@ -57,26 +62,14 @@ void RayTraceView::OnUpdate()
 		m_OptixRenderer->SetSamplesPerRender(m_SamplesPerRender);
 	}
 
-	if (m_AppHandle->m_LinkCameras)	m_Camera = m_AppHandle->GetMainCamera();
-	else m_Camera = m_LocalCamera;
-
-	if (m_Camera->m_CameraUIUpdate)
-	{
-		m_Camera->UpdateViewMatrix();
-		m_Camera->UpdateProjectionMatrix();
-		if (m_Camera->m_ControlMode == CONTROL_MODE_ORBIT)
-		{
-			m_Camera->UpdateOrbit();
-		}
-		m_OptixRenderer->SetCamera(*m_Camera);
-	}
-
+	/* On hover, check for keyboard/mouse inputs */
 	if (m_ViewportHovered)
 	{
 		bool updated = m_Camera->Inputs(m_WindowHandle);
 		if (updated) m_OptixRenderer->SetCamera(*m_Camera);
 	}
 
+	/* When switching between viewports... */
 	if (m_ViewportFocused && m_AppHandle->m_FocusedWindow != Application::RayTracedViewport)
 	{
 		m_AppHandle->m_FocusedWindow = Application::RayTracedViewport;
@@ -92,6 +85,23 @@ void RayTraceView::OnUpdate()
 		}
 	}
 
+	/* If UI caused camera params to change... */
+	if (m_Camera->m_CameraUIUpdate)
+	{
+		if (m_Camera->m_ControlMode == CONTROL_MODE_ORBIT)
+		{
+			m_Camera->UpdateOrbit();
+		}
+
+		m_Camera->UpdateViewMatrix();
+		m_Camera->UpdateProjectionMatrix();
+		
+		m_OptixRenderer->SetCamera(*m_Camera);
+	}
+	m_Camera->m_CameraUIUpdate = false;
+	std::cout << "Updated!" << std::endl;
+
+	/* Call to render the ray traced image */
 	if (m_AppHandle->m_FocusedWindow == Application::RayTracedViewport)
 	{
 		m_OptixRenderer->Render();
@@ -138,6 +148,20 @@ void RayTraceView::OnUIRender()
 
 			ImGui::SeparatorText("Ray Tracer");
 			ImGui::Text("Total Accumulated Samples: %.1i", m_OptixRenderer->GetAccumulatedSampleCount());
+
+			if (ImGui::Button("Reset Accumulation"))
+			{
+				m_Camera->m_CameraUIUpdate = true;
+			}
+
+			if (m_Camera->m_CameraUIUpdate)
+			{
+				ImGui::Text("OnUICameraUpdate: TRUE");
+			}
+			else
+			{
+				ImGui::Text("OnUICameraUpdate: FALSE");
+			}
 		}
 		ImGui::End();
 	}

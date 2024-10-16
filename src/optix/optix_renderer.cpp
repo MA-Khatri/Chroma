@@ -842,7 +842,7 @@ namespace otx
 	}
 
 
-	void Optix::SetCamera(const Camera& camera)
+	void Optix::SetCamera(Camera& camera)
 	{
 		/* === Update launch Params here === */
 		m_LaunchParams.frame.samples = m_SamplesPerRender;
@@ -903,6 +903,7 @@ namespace otx
 
 		/* Reset accumulation */
 		m_LaunchParams.frame.accumID = 0;
+		camera.m_CameraUIUpdate = false;
 	}
 
 
