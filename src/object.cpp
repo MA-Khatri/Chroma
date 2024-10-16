@@ -26,34 +26,14 @@ void Object::VkSetup()
 {
     /* Note: This MUST be called after Material::VkSetup()! */
 
-    /* Clear descriptor writes */
-    m_DescriptorWrites.resize(0);
-
     vk::CreateVertexBuffer(m_Mesh->vertices, m_VertexBuffer, m_VertexBufferMemory);
     vk::CreateIndexBuffer(m_Mesh->indices, m_IndexBuffer, m_IndexBufferMemory);
 
     /* Create buffer and device memory for the uniforms of this object */
     vk::CreateUniformBuffer(sizeof(UniformBufferObject), m_UniformBuffer, m_UniformBufferMemory, m_UniformBufferMapped);
 
-    VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = m_UniformBuffer;
-    bufferInfo.offset = 0;
-    bufferInfo.range = sizeof(UniformBufferObject);
-
-    VkWriteDescriptorSet uboWrite{};
-    uboWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    uboWrite.dstSet = m_Material->GetDescriptorSet();
-    uboWrite.dstBinding = 0;
-    uboWrite.dstArrayElement = 0;
-    uboWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uboWrite.descriptorCount = 1;
-    uboWrite.pBufferInfo = &bufferInfo;
-    uboWrite.pImageInfo = nullptr; /* optional */
-    uboWrite.pTexelBufferView = nullptr; /* optional */
-    m_DescriptorWrites.push_back(uboWrite);
-
-    vkUpdateDescriptorSets(vk::Device, static_cast<uint32_t>(m_DescriptorWrites.size()), m_DescriptorWrites.data(), 0, nullptr);
-    VkUpdateUniformBuffer(); /* Need to call this just to make sure it gets set. */
+    VkUpdateUniformBuffer();
+    VkUploadUniformBuffer(); /* Upload the ubo data */
 }
 
 
@@ -64,6 +44,7 @@ void Object::VkDraw(VkCommandBuffer& commandBuffer)
 #endif
     vkCmdSetLineWidth(commandBuffer, m_Mesh->lineWidth);
 
+    VkUpdateUniformBuffer();
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material->m_PipelineLayout, 0, 1, &m_Material->m_DescriptorSet, 0, nullptr);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material->m_Pipeline);
@@ -78,6 +59,28 @@ void Object::VkDraw(VkCommandBuffer& commandBuffer)
 
 
 void Object::VkUpdateUniformBuffer()
+{
+    /* Create ubo write. We need to do this since our material was shared... */
+    VkDescriptorBufferInfo bufferInfo{};
+    bufferInfo.buffer = m_UniformBuffer;
+    bufferInfo.offset = 0;
+    bufferInfo.range = sizeof(UniformBufferObject);
+
+    VkWriteDescriptorSet uboWrite{};
+    uboWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    uboWrite.dstSet = m_Material->m_DescriptorSet;
+    uboWrite.dstBinding = 0;
+    uboWrite.dstArrayElement = 0;
+    uboWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboWrite.descriptorCount = 1;
+    uboWrite.pBufferInfo = &bufferInfo;
+    uboWrite.pImageInfo = nullptr; /* optional */
+    uboWrite.pTexelBufferView = nullptr; /* optional */
+
+    vkUpdateDescriptorSets(vk::Device, 1, &uboWrite, 0, nullptr);
+}
+
+void Object::VkUploadUniformBuffer()
 {
     if (m_UniformBufferMapped)
     {
@@ -116,7 +119,6 @@ void Object::SetModelMatrix(glm::mat4 matrix)
 {
     m_ModelMatrix = matrix;
     UpdateModelNormalMatrix();
-    VkUpdateUniformBuffer();
 }
 
 
@@ -124,14 +126,12 @@ void Object::UpdateModelMatrix(glm::mat4 matrix)
 {
     m_ModelMatrix *= matrix;
     UpdateModelNormalMatrix();
-    VkUpdateUniformBuffer();
 }
 
 
 void Object::Translate(glm::vec3 translate)
 {
     m_ModelMatrix *= glm::translate(translate);
-    VkUpdateUniformBuffer();
 }
 
 
@@ -145,7 +145,6 @@ void Object::Rotate(glm::vec3 axis, float deg)
 {
     m_ModelMatrix *= glm::rotate(glm::radians(deg), axis);
     UpdateModelNormalMatrix();
-    VkUpdateUniformBuffer();
 }
 
 
@@ -156,7 +155,6 @@ void Object::Scale(glm::vec3 scale, bool updateNormal /* = true */)
     {
         UpdateModelNormalMatrix();
     }
-    VkUpdateUniformBuffer();
 }
 
 

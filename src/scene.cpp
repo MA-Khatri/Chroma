@@ -19,6 +19,13 @@ Scene::~Scene()
 
 void Scene::MakeScene(int scene)
 {
+	/*
+	 * Note: we are loading in all the materials and meshes on the outset.
+	 * It would be more efficient to instead load in the materials and meshes 
+	 * within each scene description. However, defining them all here makes it 
+	 * more convenient to define multiple scenes that use the same materials/meshes.
+	 */
+
 	/* === Textures === */
 	TexturePaths noTextures;
 
@@ -144,51 +151,48 @@ void Scene::MakeScene(int scene)
 	{
 		m_SceneType = CORNELL_BOX;
 
-		TexturePaths backTextures;
-		backTextures.diffuse = "res/textures/texture.jpg";
-
 		/* === Walls === */
-		std::shared_ptr<Object> bottom = std::make_shared<Object>(planeMesh, fullWhiteMat);
-		bottom->Scale(10.0f);
-		PushToBoth(bottom);
+		//std::shared_ptr<Object> bottom = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
+		//bottom->Scale(10.0f);
+		//PushToBoth(bottom);
 
-		std::shared_ptr<Object> top = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
-		top->Translate(0.0f, 0.0f, 10.0f);
-		top->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f); /* technically not necessary */
-		top->Scale(10.0f);
-		PushToBoth(top);
+		//std::shared_ptr<Object> top = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
+		//top->Translate(0.0f, 0.0f, 10.0f);
+		//top->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f); /* technically not necessary */
+		//top->Scale(10.0f);
+		//PushToBoth(top);
 
-		std::shared_ptr<Object> left = std::make_shared<Object>(planeMesh, diffuseGreenMat);
-		left->Translate(0.0f, -5.0f, 5.0f);
-		left->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -90.0f);
-		left->Scale(10.0f);
-		PushToBoth(left);
+		//std::shared_ptr<Object> left = std::make_shared<Object>(planeMesh, diffuseGreenMat);
+		//left->Translate(0.0f, -5.0f, 5.0f);
+		//left->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -90.0f);
+		//left->Scale(10.0f);
+		//PushToBoth(left);
 
-		std::shared_ptr<Object> right = std::make_shared<Object>(planeMesh, diffuseRedMat);
-		right->Translate(0.0f, 5.0f, 5.0f);
-		right->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 90.0f);
-		right->Scale(10.0f);
-		PushToBoth(right);
+		//std::shared_ptr<Object> right = std::make_shared<Object>(planeMesh, diffuseRedMat);
+		//right->Translate(0.0f, 5.0f, 5.0f);
+		//right->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 90.0f);
+		//right->Scale(10.0f);
+		//PushToBoth(right);
 
-		std::shared_ptr<Object> back = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
-		back->Translate(-5.0f, 0.0f, 5.0f);
-		back->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -90.0f);
-		back->Rotate(glm::vec3(0.0f, 1.0f, 0.0f), 90.0f);
-		back->Scale(10.0f);
-		PushToBoth(back);
+		//std::shared_ptr<Object> back = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
+		//back->Translate(-5.0f, 0.0f, 5.0f);
+		//back->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -90.0f);
+		//back->Rotate(glm::vec3(0.0f, 1.0f, 0.0f), 90.0f);
+		//back->Scale(10.0f);
+		//PushToBoth(back);
 
-		/* === Light === */
-		std::shared_ptr<Object> light = std::make_shared<Object>(planeMesh, whiteDiffuseLightMat);
-		light->Translate(0.0f, 0.0f, 10.0f - 0.001f);
-		light->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f);
-		light->Scale(3.0f);
-		PushToBoth(light);
+		///* === Light === */
+		//std::shared_ptr<Object> light = std::make_shared<Object>(planeMesh, whiteDiffuseLightMat);
+		//light->Translate(0.0f, 0.0f, 10.0f - 0.001f);
+		//light->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f);
+		//light->Scale(3.0f);
+		//PushToBoth(light);
 
-		/* === Scene Objects === */
-		std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, diffuseWhiteMat);
-		dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), -60.0f);
-		dragon->Scale(7.0f);
-		PushToBoth(dragon);
+		///* === Scene Objects === */
+		//std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, diffuseWhiteMat);
+		//dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), -60.0f);
+		//dragon->Scale(7.0f);
+		//PushToBoth(dragon);
 
 		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);
@@ -257,7 +261,8 @@ void Scene::VkSetup(ImVec2 viewportSize, VkSampleCountFlagBits sampleCount, VkRe
 	layoutBindings.push_back(normalSamplerLayoutBinding);
 
 	vk::CreateDescriptorSetLayout(layoutBindings, m_DescriptorSetLayout);
-	vk::CreateDescriptorPool(static_cast<uint32_t>(m_RasterObjects.size()), m_DescriptorPool);
+	//vk::CreateDescriptorPool(static_cast<uint32_t>(m_RasterObjects.size()), m_DescriptorPool);
+	vk::CreateDescriptorPool(1000, m_DescriptorPool); /* WARNING: Make sure to update this according to the number of objects! */
 
 	/* Generate graphics pipelines with different shaders */
 	PipelineInfo pInfo;
@@ -271,25 +276,28 @@ void Scene::VkSetup(ImVec2 viewportSize, VkSampleCountFlagBits sampleCount, VkRe
 
 	std::vector<std::string> shadersSolid = { "src/vulkan/shaders/Solid.vert", "src/vulkan/shaders/Solid.frag" };
 	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersSolid, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_PipelineLayout);
+	pInfo.pipelineLayout = m_PipelineLayout;
 	m_Pipelines[VK_PIPELINE_SOLID] = pInfo;
 
 	std::vector<std::string> shadersNormal = { "src/vulkan/shaders/Solid.vert", "src/vulkan/shaders/Normal.frag" };
 	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersNormal, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_PipelineLayout);
+	pInfo.pipelineLayout = m_PipelineLayout;
 	m_Pipelines[VK_PIPELINE_NORMAL] = pInfo;
 
 	std::vector<std::string> shadersLines = { "src/vulkan/shaders/Lines.vert", "src/vulkan/shaders/Lines.frag" };
 	pInfo.pipeline = vk::CreateGraphicsPipeline(shadersLines, m_ViewportSize, m_MSAASampleCount, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, m_ViewportRenderPass, m_DescriptorSetLayout, m_PipelineLayout);
+	pInfo.pipelineLayout = m_PipelineLayout;
 	m_Pipelines[VK_PIPELINE_LINES] = pInfo;
 
 
 	/* Setup all materials for Vulkan */
-	for (auto& mat : m_Materials)
+	for (auto mat : m_Materials)
 	{
 		mat->VkSetup(m_Pipelines[mat->m_VKPipelineType]);
 	}
 	
 	/* Setup objects for rendering with Vulkan */
-	for (auto& obj : m_RasterObjects)
+	for (auto obj : m_RasterObjects)
 	{
 		obj->VkSetup();
 	}

@@ -80,8 +80,6 @@ public:
 	/* Sets up material to be drawn with Vulkan */
 	void VkSetup(const PipelineInfo& pipelineInfo);
 
-	VkDescriptorSet GetDescriptorSet() { return m_DescriptorSet; }
-
 public:
 	bool m_DepthTest = true;
 

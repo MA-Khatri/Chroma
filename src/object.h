@@ -20,7 +20,6 @@ public:
 	Object(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material);
 	~Object();
 
-
 	void VkSetup();
 
 	/* Adds draw command to the provided command buffer */
@@ -40,7 +39,8 @@ public:
 	void Scale(float scale);
 	void Scale(float x, float y, float z);
 
-	void VkUpdateUniformBuffer();
+	void VkUpdateUniformBuffer(); /* Updates descriptor set to take in this object's uniform buffer */
+	void VkUploadUniformBuffer(); /* Uploads this object's ubo data to the GPU */
 
 public:
 	glm::mat4 m_ModelMatrix = glm::mat4(1.0f);
@@ -69,6 +69,4 @@ private:
 	VkBuffer m_UniformBuffer = VK_NULL_HANDLE;
 	VkDeviceMemory m_UniformBufferMemory = VK_NULL_HANDLE;
 	void* m_UniformBufferMapped = nullptr;
-
-	std::vector<VkWriteDescriptorSet> m_DescriptorWrites;
 };
