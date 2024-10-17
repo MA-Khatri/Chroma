@@ -104,6 +104,19 @@ namespace otx
 		return make_float3(logf(v.x), logf(v.y), logf(v.z));
 	}
 
+
+	/* Gamma correct a single float */
+	static __inline__ __device__ float GammaCorrect(float x)
+	{
+		return powf(x, 0.41666666666f); /* 0.41666666666f = 1.0f / 2.4f */
+	}
+
+	/* Gamma correct each component of a float3 */
+	static __inline__ __device__ float3 GammaCorrect(float3 v)
+	{
+		return make_float3(GammaCorrect(v.x), GammaCorrect(v.y), GammaCorrect(v.z));
+	}
+
 	/* ========================== *
 	 * === Sampling functions === *
 	 * ========================== *

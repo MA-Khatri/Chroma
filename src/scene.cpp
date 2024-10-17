@@ -44,19 +44,29 @@ void Scene::MakeScene(int scene)
 	redGlassMat->m_ReflectionColor = glm::vec3(1.0f, 0.3f, 0.3f);
 	redGlassMat->m_RefractionColor = glm::vec3(1.0f, 0.3f, 0.3f);
 	redGlassMat->m_EtaIn = 1.45f;
+	redGlassMat->m_Extinction = glm::vec3(0.5f);
 	m_Materials.push_back(redGlassMat);
 
 	std::shared_ptr<Material> greenGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIELECTRIC);
 	greenGlassMat->m_ReflectionColor = glm::vec3(0.3f, 1.0f, 0.3f);
 	greenGlassMat->m_RefractionColor = glm::vec3(0.3f, 1.0f, 0.3f);
 	greenGlassMat->m_EtaIn = 1.45f;
+	greenGlassMat->m_Extinction = glm::vec3(0.5f);
 	m_Materials.push_back(greenGlassMat);
 
 	std::shared_ptr<Material> blueGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIELECTRIC);
 	blueGlassMat->m_ReflectionColor = glm::vec3(0.3f, 0.3f, 1.0f);
 	blueGlassMat->m_RefractionColor = glm::vec3(0.3f, 0.3f, 1.0f);
 	blueGlassMat->m_EtaIn = 1.45f;
+	blueGlassMat->m_Extinction = glm::vec3(0.5f);
 	m_Materials.push_back(blueGlassMat);
+
+	std::shared_ptr<Material> transparentGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIELECTRIC);
+	transparentGlassMat->m_ReflectionColor = glm::vec3(1.0f);
+	transparentGlassMat->m_RefractionColor = glm::vec3(1.0f);
+	transparentGlassMat->m_EtaIn = 1.45f;
+	transparentGlassMat->m_Extinction = glm::vec3(0.0f);
+	m_Materials.push_back(transparentGlassMat);
 
 	std::shared_ptr<Material> fullWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_LAMBERTIAN);
 	fullWhiteMat->m_ReflectionColor = glm::vec3(1.0f);
@@ -152,47 +162,47 @@ void Scene::MakeScene(int scene)
 		m_SceneType = CORNELL_BOX;
 
 		/* === Walls === */
-		//std::shared_ptr<Object> bottom = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
-		//bottom->Scale(10.0f);
-		//PushToBoth(bottom);
+		std::shared_ptr<Object> bottom = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
+		bottom->Scale(10.0f);
+		PushToBoth(bottom);
 
-		//std::shared_ptr<Object> top = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
-		//top->Translate(0.0f, 0.0f, 10.0f);
-		//top->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f); /* technically not necessary */
-		//top->Scale(10.0f);
-		//PushToBoth(top);
+		std::shared_ptr<Object> top = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
+		top->Translate(0.0f, 0.0f, 10.0f);
+		top->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f); /* technically not necessary */
+		top->Scale(10.0f);
+		PushToBoth(top);
 
-		//std::shared_ptr<Object> left = std::make_shared<Object>(planeMesh, diffuseGreenMat);
-		//left->Translate(0.0f, -5.0f, 5.0f);
-		//left->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -90.0f);
-		//left->Scale(10.0f);
-		//PushToBoth(left);
+		std::shared_ptr<Object> left = std::make_shared<Object>(planeMesh, diffuseGreenMat);
+		left->Translate(0.0f, -5.0f, 5.0f);
+		left->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -90.0f);
+		left->Scale(10.0f);
+		PushToBoth(left);
 
-		//std::shared_ptr<Object> right = std::make_shared<Object>(planeMesh, diffuseRedMat);
-		//right->Translate(0.0f, 5.0f, 5.0f);
-		//right->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 90.0f);
-		//right->Scale(10.0f);
-		//PushToBoth(right);
+		std::shared_ptr<Object> right = std::make_shared<Object>(planeMesh, diffuseRedMat);
+		right->Translate(0.0f, 5.0f, 5.0f);
+		right->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 90.0f);
+		right->Scale(10.0f);
+		PushToBoth(right);
 
-		//std::shared_ptr<Object> back = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
-		//back->Translate(-5.0f, 0.0f, 5.0f);
-		//back->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -90.0f);
-		//back->Rotate(glm::vec3(0.0f, 1.0f, 0.0f), 90.0f);
-		//back->Scale(10.0f);
-		//PushToBoth(back);
+		std::shared_ptr<Object> back = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
+		back->Translate(-5.0f, 0.0f, 5.0f);
+		back->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -90.0f);
+		back->Rotate(glm::vec3(0.0f, 1.0f, 0.0f), 90.0f);
+		back->Scale(10.0f);
+		PushToBoth(back);
 
-		///* === Light === */
-		//std::shared_ptr<Object> light = std::make_shared<Object>(planeMesh, whiteDiffuseLightMat);
-		//light->Translate(0.0f, 0.0f, 10.0f - 0.001f);
-		//light->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f);
-		//light->Scale(3.0f);
-		//PushToBoth(light);
+		/* === Light === */
+		std::shared_ptr<Object> light = std::make_shared<Object>(planeMesh, whiteDiffuseLightMat);
+		light->Translate(0.0f, 0.0f, 10.0f - 0.001f);
+		light->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f);
+		light->Scale(3.0f);
+		PushToBoth(light);
 
-		///* === Scene Objects === */
-		//std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, diffuseWhiteMat);
-		//dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), -60.0f);
-		//dragon->Scale(7.0f);
-		//PushToBoth(dragon);
+		/* === Scene Objects === */
+		std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, transparentGlassMat);
+		dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), -60.0f);
+		dragon->Scale(7.0f);
+		PushToBoth(dragon);
 
 		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);
@@ -261,7 +271,7 @@ void Scene::VkSetup(ImVec2 viewportSize, VkSampleCountFlagBits sampleCount, VkRe
 	layoutBindings.push_back(normalSamplerLayoutBinding);
 
 	vk::CreateDescriptorSetLayout(layoutBindings, m_DescriptorSetLayout);
-	//vk::CreateDescriptorPool(static_cast<uint32_t>(m_RasterObjects.size()), m_DescriptorPool);
+	//vk::CreateDescriptorPool(static_cast<uint32_t>(m_RasterObjects.size()), m_DescriptorPool); /* Can't use this bc poolsize might be smaller than existing pool size... */
 	vk::CreateDescriptorPool(1000, m_DescriptorPool); /* WARNING: Make sure to update this according to the number of objects! */
 
 	/* Generate graphics pipelines with different shaders */
