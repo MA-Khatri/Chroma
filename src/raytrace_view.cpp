@@ -60,6 +60,7 @@ void RayTraceView::OnUpdate()
 		m_OptixRenderer->Resize(m_ViewportSize);
 		m_OptixRenderer->SetCamera(*m_Camera);
 		m_OptixRenderer->SetSamplesPerRender(m_SamplesPerRender);
+		m_OptixRenderer->SetMaxDepth(m_MaxDepth);
 	}
 
 	/* On hover, check for keyboard/mouse inputs */

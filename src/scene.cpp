@@ -32,6 +32,9 @@ void Scene::MakeScene(int scene)
 	TexturePaths vikingRoomTextures;
 	vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
 
+	TexturePaths blueCheckerTextures;
+	blueCheckerTextures.diffuse = "res/textures/checker.png";
+
 	/* === Create materials === */
 	std::shared_ptr<Material> linesMat = std::make_shared<Material>(noTextures, VK_PIPELINE_LINES, -1);
 	linesMat->m_DepthTest = false;
@@ -43,28 +46,28 @@ void Scene::MakeScene(int scene)
 	std::shared_ptr<Material> redGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIELECTRIC);
 	redGlassMat->m_ReflectionColor = glm::vec3(1.0f, 0.3f, 0.3f);
 	redGlassMat->m_RefractionColor = glm::vec3(1.0f, 0.3f, 0.3f);
-	redGlassMat->m_EtaIn = 1.45f;
+	redGlassMat->m_EtaIn = 1.5f;
 	redGlassMat->m_Extinction = glm::vec3(0.5f);
 	m_Materials.push_back(redGlassMat);
 
 	std::shared_ptr<Material> greenGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIELECTRIC);
 	greenGlassMat->m_ReflectionColor = glm::vec3(0.3f, 1.0f, 0.3f);
 	greenGlassMat->m_RefractionColor = glm::vec3(0.3f, 1.0f, 0.3f);
-	greenGlassMat->m_EtaIn = 1.45f;
+	greenGlassMat->m_EtaIn = 1.5f;
 	greenGlassMat->m_Extinction = glm::vec3(0.5f);
 	m_Materials.push_back(greenGlassMat);
 
 	std::shared_ptr<Material> blueGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIELECTRIC);
 	blueGlassMat->m_ReflectionColor = glm::vec3(0.3f, 0.3f, 1.0f);
 	blueGlassMat->m_RefractionColor = glm::vec3(0.3f, 0.3f, 1.0f);
-	blueGlassMat->m_EtaIn = 1.45f;
+	blueGlassMat->m_EtaIn = 1.5f;
 	blueGlassMat->m_Extinction = glm::vec3(0.5f);
 	m_Materials.push_back(blueGlassMat);
 
 	std::shared_ptr<Material> transparentGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIELECTRIC);
 	transparentGlassMat->m_ReflectionColor = glm::vec3(1.0f);
 	transparentGlassMat->m_RefractionColor = glm::vec3(1.0f);
-	transparentGlassMat->m_EtaIn = 1.45f;
+	transparentGlassMat->m_EtaIn = 1.5f;
 	transparentGlassMat->m_Extinction = glm::vec3(0.0f);
 	m_Materials.push_back(transparentGlassMat);
 
@@ -84,8 +87,11 @@ void Scene::MakeScene(int scene)
 	diffuseGreenMat->m_ReflectionColor = glm::vec3(0.12f, 0.45f, 0.15f);
 	m_Materials.push_back(diffuseGreenMat);
 
+	std::shared_ptr<Material> blueCheckerMat = std::make_shared<Material>(blueCheckerTextures, VK_PIPELINE_FLAT, MATERIAL_TYPE_LAMBERTIAN);
+	m_Materials.push_back(blueCheckerMat);
+
 	std::shared_ptr<Material> whiteDiffuseLightMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIFFUSE_LIGHT);
-	whiteDiffuseLightMat->m_ReflectionColor = glm::vec3(15.0f);
+	whiteDiffuseLightMat->m_ReflectionColor = glm::vec3(5.0f);
 	m_Materials.push_back(whiteDiffuseLightMat);
 
 	/* === Create Meshes === */
@@ -115,32 +121,32 @@ void Scene::MakeScene(int scene)
 		m_SceneType = DEFAULT;
 
 		/* === Scene Objects === */
-		std::shared_ptr<Object> vikingRoom = std::make_shared<Object>(vikingRoomMesh, vikingRoomMat);
-		vikingRoom->Translate(0.0f, 0.0f, 0.5f);
-		vikingRoom->Scale(5.0f);
-		PushToBoth(vikingRoom);
+		//std::shared_ptr<Object> vikingRoom = std::make_shared<Object>(vikingRoomMesh, vikingRoomMat);
+		//vikingRoom->Translate(0.0f, 0.0f, 0.5f);
+		//vikingRoom->Scale(5.0f);
+		//PushToBoth(vikingRoom);
 
-		std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, greenGlassMat);
-		dragon->Translate(10.0f, 0.0f, 0.0f);
-		dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 45.0f);
-		dragon->Scale(5.0f);
+		std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, fullWhiteMat);
+		dragon->Translate(0.0f, 0.0f, 0.0f);
+		dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), -60.0f);
+		dragon->Scale(7.0f);
 		PushToBoth(dragon);
 
-		std::shared_ptr<Object> lucy = std::make_shared<Object>(lucyMesh, blueGlassMat);
-		lucy->Translate(5.0f, -5.0f, 0.0f);
-		lucy->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 180.0f);
-		lucy->Scale(5.0f);
-		PushToBoth(lucy);
+		//std::shared_ptr<Object> lucy = std::make_shared<Object>(lucyMesh, blueGlassMat);
+		//lucy->Translate(5.0f, -5.0f, 0.0f);
+		//lucy->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 180.0f);
+		//lucy->Scale(5.0f);
+		//PushToBoth(lucy);
 
-		std::shared_ptr<Object> plane0 = std::make_shared<Object>(planeMesh, fullWhiteMat);
-		plane0->Scale(100.0f);
-		PushToBoth(plane0);
+		//std::shared_ptr<Object> plane0 = std::make_shared<Object>(planeMesh, fullWhiteMat);
+		//plane0->Scale(100.0f);
+		//PushToBoth(plane0);
 
 		/* === Light(s) === */
-		std::shared_ptr<Object> sphere0 = std::make_shared<Object>(sphereMesh, whiteDiffuseLightMat);
-		sphere0->Translate(5.0f, -5.0f, 8.0f);
-		sphere0->Scale(1.0f);
-		PushToBoth(sphere0);
+		//std::shared_ptr<Object> sphere0 = std::make_shared<Object>(sphereMesh, whiteDiffuseLightMat);
+		//sphere0->Translate(5.0f, -5.0f, 8.0f);
+		//sphere0->Scale(1.0f);
+		//PushToBoth(sphere0);
 
 		/* === Background === */
 		//m_BackgroundMode = BACKGROUND_MODE_GRADIENT;
@@ -184,7 +190,7 @@ void Scene::MakeScene(int scene)
 		right->Scale(10.0f);
 		PushToBoth(right);
 
-		std::shared_ptr<Object> back = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
+		std::shared_ptr<Object> back = std::make_shared<Object>(planeMesh, blueCheckerMat);
 		back->Translate(-5.0f, 0.0f, 5.0f);
 		back->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -90.0f);
 		back->Rotate(glm::vec3(0.0f, 1.0f, 0.0f), 90.0f);

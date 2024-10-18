@@ -108,7 +108,7 @@ namespace otx
 	/* Gamma correct a single float */
 	static __inline__ __device__ float GammaCorrect(float x)
 	{
-		return powf(x, 0.41666666666f); /* 0.41666666666f = 1.0f / 2.4f */
+		return powf(x, (1.0f / 2.2f));
 	}
 
 	/* Gamma correct each component of a float3 */

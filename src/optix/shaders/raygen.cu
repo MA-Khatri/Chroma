@@ -126,7 +126,7 @@ namespace otx
 		optixLaunchParams.frame.accumBuffer[fbIndex * 3 + 2] = tclr.z;
 
 		/* Gamma correct before converting to ints... */
-		//tclr = GammaCorrect(tclr); /* Should we? Make this a launchParam */
+		tclr = GammaCorrect(tclr); /* Make this a launchParam? */
 
 		/* Convert accumulated color to ints */
 		const int r = int(255.99f * tclr.x);

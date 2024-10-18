@@ -115,7 +115,7 @@ namespace otx
 		int m_SamplesPerRender = 1;
 
 		/* Maximum number of ray bounces before termination */
-		int m_MaxDepth = 4;
+		int m_MaxDepth = 12;
 
 		/* Our launch parameters on the host */
 		LaunchParams m_LaunchParams;
