@@ -844,20 +844,6 @@ namespace otx
 
 	void Optix::SetCamera(const Camera& camera)
 	{
-		/* === Update launch Params here === */
-		m_LaunchParams.frame.samples = m_SamplesPerRender;
-		m_LaunchParams.maxDepth = m_MaxDepth;
-		m_LaunchParams.cutoffColor = make_float3(0.0f);
-
-		/* Background settings */
-		m_LaunchParams.backgroundMode = m_Scene->m_BackgroundMode;
-		m_LaunchParams.clearColor = ToFloat3(m_Scene->m_ClearColor);
-		m_LaunchParams.gradientBottom = ToFloat3(m_Scene->m_GradientBottom);
-		m_LaunchParams.gradientTop = ToFloat3(m_Scene->m_GradientTop);
-
-		int backgroundID = m_Scene->m_BackgroundTexture.textureID;
-		if (backgroundID >= 0) m_LaunchParams.backgroundTexture = m_TextureObjects[backgroundID];
-
 		/* === Update camera === */
 		m_LastSetCamera = camera;
 		m_LaunchParams.camera.position = ToFloat3(camera.m_Position);
@@ -903,6 +889,7 @@ namespace otx
 
 		/* Reset accumulation */
 		m_LaunchParams.frame.accumID = 0;
+		m_AccumulatedSampleCount = 0;
 	}
 
 
@@ -920,6 +907,11 @@ namespace otx
 		m_LaunchParams.frame.accumID = 0;
 	}
 
+	void Optix::SetGammaCorrect(bool correct)
+	{
+		m_GammaCorrect = correct;
+	}
+
 	Camera* Optix::GetLastSetCamera()
 	{
 		return &m_LastSetCamera;
@@ -927,7 +919,22 @@ namespace otx
 
 	int Optix::GetAccumulatedSampleCount()
 	{
-		return m_SamplesPerRender * m_LaunchParams.frame.accumID;
+		return m_AccumulatedSampleCount;
+	}
+
+	bool Optix::GetGammaCorrect()
+	{
+		return m_GammaCorrect;
+	}
+
+	int Optix::GetSamplesPerRender()
+	{
+		return m_SamplesPerRender;
+	}
+
+	int Optix::GetMaxDepth()
+	{
+		return m_MaxDepth;
 	}
 
 	void Optix::Render()
@@ -935,6 +942,23 @@ namespace otx
 		/* Sanity check: make sure we launch only after first resize is already done */
 		if (m_LaunchParams.frame.size.x == 0 || m_LaunchParams.frame.size.y == 0) return;
 
+		/* === Update launch Params here === */
+		m_LaunchParams.frame.samples = m_SamplesPerRender;
+		m_LaunchParams.maxDepth = m_MaxDepth;
+		m_LaunchParams.cutoffColor = make_float3(0.0f);
+		m_LaunchParams.gammaCorrect = m_GammaCorrect;
+
+		/* Background settings */
+		m_LaunchParams.backgroundMode = m_Scene->m_BackgroundMode;
+		m_LaunchParams.clearColor = ToFloat3(m_Scene->m_ClearColor);
+		m_LaunchParams.gradientBottom = ToFloat3(m_Scene->m_GradientBottom);
+		m_LaunchParams.gradientTop = ToFloat3(m_Scene->m_GradientTop);
+
+		int backgroundID = m_Scene->m_BackgroundTexture.textureID;
+		if (backgroundID >= 0) m_LaunchParams.backgroundTexture = m_TextureObjects[backgroundID];
+		m_LaunchParams.gammaCorrect = m_GammaCorrect;
+
+		/* Upload launch params */
 		m_LaunchParamsBuffer.upload(&m_LaunchParams, 1);
 		m_LaunchParams.frame.accumID++; /* Must increment *after* upload */
 
@@ -948,6 +972,8 @@ namespace otx
 			m_LaunchParams.frame.size.y, 
 			1
 		));
+
+		m_AccumulatedSampleCount += m_SamplesPerRender;
 
 		/*
 		 * Make sure frame is rendered before we display. BUT -- Vulkan does not know when this is finished!

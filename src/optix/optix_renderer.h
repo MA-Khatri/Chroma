@@ -24,6 +24,7 @@ namespace otx
 		/* Resize frame buffer to given resolution */
 		void Resize(const ImVec2& newSize);
 
+		/* === Set Functions === */
 		/* Set camera for Optix */
 		void SetCamera(const Camera& camera);
 
@@ -33,8 +34,14 @@ namespace otx
 		/* Set the maximum number of ray bounces */
 		void SetMaxDepth(int maxDepth);
 
+		void SetGammaCorrect(bool correct);
+
+		/* === Get Functions === */
 		Camera* GetLastSetCamera();
 		int GetAccumulatedSampleCount();
+		bool GetGammaCorrect();
+		int GetSamplesPerRender();
+		int GetMaxDepth();
 
 		/* Render one frame */
 		void Render();
@@ -111,12 +118,6 @@ namespace otx
 		CUDABuffer m_HitgroupRecordsBuffer;
 		OptixShaderBindingTable m_SBT = {};
 
-		/* Samples per pixel per call to render */
-		int m_SamplesPerRender = 1;
-
-		/* Maximum number of ray bounces before termination */
-		int m_MaxDepth = 12;
-
 		/* Our launch parameters on the host */
 		LaunchParams m_LaunchParams;
 
@@ -155,6 +156,19 @@ namespace otx
 
 		/* The texture ID of our background image */
 		int m_BackgroundTextureID = -1;
+
+		/* Total accumulated samples per pixel */
+		int m_AccumulatedSampleCount = 0;
+
+		/* === Externally configurable params === */
+		/* Samples per pixel per call to render */
+		int m_SamplesPerRender = 1;
+
+		/* Maximum number of ray bounces before termination */
+		int m_MaxDepth = 12;
+
+		/* Whether to turn on gamma correction for the final (presented) render */
+		bool m_GammaCorrect = true;
 	};
 
 

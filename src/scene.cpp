@@ -71,6 +71,14 @@ void Scene::MakeScene(int scene)
 	transparentGlassMat->m_Extinction = glm::vec3(0.0f);
 	m_Materials.push_back(transparentGlassMat);
 
+	std::shared_ptr<Material> greenConductorMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_CONDUCTOR);
+	greenConductorMat->m_ReflectionColor = glm::vec3(0.2f, 0.7f, 0.2f);
+	m_Materials.push_back(greenConductorMat);
+
+	std::shared_ptr<Material> mirrorMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_CONDUCTOR);
+	mirrorMat->m_ReflectionColor = glm::vec3(0.7f);
+	m_Materials.push_back(mirrorMat);
+
 	std::shared_ptr<Material> fullWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_LAMBERTIAN);
 	fullWhiteMat->m_ReflectionColor = glm::vec3(1.0f);
 	m_Materials.push_back(fullWhiteMat);
@@ -102,6 +110,7 @@ void Scene::MakeScene(int scene)
 	std::shared_ptr<Mesh> dragonMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/dragon.obj")); m_Meshes.push_back(dragonMesh);
 	std::shared_ptr<Mesh> lucyMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/lucy.obj")); m_Meshes.push_back(lucyMesh);
 	std::shared_ptr<Mesh> sphereMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/sphere.obj")); m_Meshes.push_back(sphereMesh);
+	std::shared_ptr<Mesh> cubeMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/cube.obj")); m_Meshes.push_back(cubeMesh);
 
 	/* === World Grid Lines === */
 	std::shared_ptr<Object> grid = std::make_shared<Object>(gridMesh, linesMat);
@@ -121,37 +130,37 @@ void Scene::MakeScene(int scene)
 		m_SceneType = DEFAULT;
 
 		/* === Scene Objects === */
-		//std::shared_ptr<Object> vikingRoom = std::make_shared<Object>(vikingRoomMesh, vikingRoomMat);
-		//vikingRoom->Translate(0.0f, 0.0f, 0.5f);
-		//vikingRoom->Scale(5.0f);
-		//PushToBoth(vikingRoom);
+		std::shared_ptr<Object> vikingRoom = std::make_shared<Object>(vikingRoomMesh, vikingRoomMat);
+		vikingRoom->Translate(0.0f, 0.0f, 0.5f);
+		vikingRoom->Scale(5.0f);
+		PushToBoth(vikingRoom);
 
-		std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, fullWhiteMat);
-		dragon->Translate(0.0f, 0.0f, 0.0f);
-		dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), -60.0f);
+		std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, greenConductorMat);
+		dragon->Translate(10.0f, 0.0f, 0.0f);
+		dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 45.0f);
 		dragon->Scale(7.0f);
 		PushToBoth(dragon);
 
-		//std::shared_ptr<Object> lucy = std::make_shared<Object>(lucyMesh, blueGlassMat);
-		//lucy->Translate(5.0f, -5.0f, 0.0f);
-		//lucy->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 180.0f);
-		//lucy->Scale(5.0f);
-		//PushToBoth(lucy);
+		std::shared_ptr<Object> lucy = std::make_shared<Object>(lucyMesh, blueGlassMat);
+		lucy->Translate(5.0f, -5.0f, 0.0f);
+		lucy->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 180.0f);
+		lucy->Scale(5.0f);
+		PushToBoth(lucy);
 
-		//std::shared_ptr<Object> plane0 = std::make_shared<Object>(planeMesh, fullWhiteMat);
-		//plane0->Scale(100.0f);
-		//PushToBoth(plane0);
+		std::shared_ptr<Object> plane0 = std::make_shared<Object>(planeMesh, fullWhiteMat);
+		plane0->Scale(100.0f);
+		PushToBoth(plane0);
 
 		/* === Light(s) === */
-		//std::shared_ptr<Object> sphere0 = std::make_shared<Object>(sphereMesh, whiteDiffuseLightMat);
-		//sphere0->Translate(5.0f, -5.0f, 8.0f);
-		//sphere0->Scale(1.0f);
-		//PushToBoth(sphere0);
+		std::shared_ptr<Object> sphere0 = std::make_shared<Object>(sphereMesh, whiteDiffuseLightMat);
+		sphere0->Translate(5.0f, -5.0f, 8.0f);
+		sphere0->Scale(1.0f);
+		PushToBoth(sphere0);
 
 		/* === Background === */
-		//m_BackgroundMode = BACKGROUND_MODE_GRADIENT;
-		//m_GradientBottom = glm::vec3(0.3f);
-		//m_GradientTop = glm::vec3(1.0f);
+		m_BackgroundMode = BACKGROUND_MODE_GRADIENT;
+		m_GradientBottom = glm::vec3(0.3f);
+		m_GradientTop = glm::vec3(1.0f);
 
 		//m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
 		//m_ClearColor = glm::vec3(1.0f);
@@ -205,10 +214,21 @@ void Scene::MakeScene(int scene)
 		PushToBoth(light);
 
 		/* === Scene Objects === */
-		std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, transparentGlassMat);
-		dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), -60.0f);
-		dragon->Scale(7.0f);
-		PushToBoth(dragon);
+		//std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, transparentGlassMat);
+		//dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), -60.0f);
+		//dragon->Scale(7.0f);
+		//PushToBoth(dragon);
+
+		std::shared_ptr<Object> cube = std::make_shared<Object>(cubeMesh, mirrorMat);
+		cube->Translate(-2.0f, -2.0f, 3.0f);
+		cube->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 20.0f);
+		cube->Scale(2.5f, 2.5f, 6.0f);
+		PushToBoth(cube);
+
+		std::shared_ptr<Object> sphere = std::make_shared<Object>(sphereMesh, transparentGlassMat);
+		sphere->Translate(1.5f, 1.5f, 2.0f);
+		sphere->Scale(2.0f);
+		PushToBoth(sphere);
 
 		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);

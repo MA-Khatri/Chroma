@@ -63,6 +63,8 @@ namespace otx
 		float3 gradientBottom;
 		float3 gradientTop;
 		cudaTextureObject_t backgroundTexture;
+
+		bool gammaCorrect; /* Should gamma correction be applied to the final image? */
 	};
 
 } /* namspace otx */

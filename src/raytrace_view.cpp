@@ -36,8 +36,6 @@ void RayTraceView::OnAttach(Application* app)
 	else m_Camera = m_LocalCamera;
 
 	m_OptixRenderer->SetCamera(*m_Camera);
-	m_OptixRenderer->SetSamplesPerRender(m_SamplesPerRender);
-	m_OptixRenderer->SetMaxDepth(m_MaxDepth);
 }
 
 void RayTraceView::OnDetach()
@@ -59,8 +57,6 @@ void RayTraceView::OnUpdate()
 		m_OptixRenderer = m_OptixRenderers[m_SceneID];
 		m_OptixRenderer->Resize(m_ViewportSize);
 		m_OptixRenderer->SetCamera(*m_Camera);
-		m_OptixRenderer->SetSamplesPerRender(m_SamplesPerRender);
-		m_OptixRenderer->SetMaxDepth(m_MaxDepth);
 	}
 
 	/* On hover, check for keyboard/mouse inputs */
@@ -151,6 +147,27 @@ void RayTraceView::OnUIRender()
 			if (ImGui::Button("Reset Accumulation"))
 			{
 				m_Camera->m_CameraUIUpdate = true;
+			}
+
+			bool tempCorrect = m_OptixRenderer->GetGammaCorrect();
+			ImGui::Checkbox("Gamma Correct", &tempCorrect);
+			if (tempCorrect != m_OptixRenderer->GetGammaCorrect())
+			{
+				m_OptixRenderer->SetGammaCorrect(tempCorrect);
+			}
+
+			int tempSPP = m_OptixRenderer->GetSamplesPerRender();
+			ImGui::SliderInt("Samples Per Pixel", &tempSPP, 1, 16);
+			if (tempSPP != m_OptixRenderer->GetSamplesPerRender())
+			{
+				m_OptixRenderer->SetSamplesPerRender(tempSPP);
+			}
+
+			int tempDepth = m_OptixRenderer->GetMaxDepth();
+			ImGui::SliderInt("Max Ray Depth", &tempDepth, 1, 16);
+			if (tempDepth != m_OptixRenderer->GetMaxDepth())
+			{
+				m_OptixRenderer->SetMaxDepth(tempDepth);
 			}
 		}
 		ImGui::End();
