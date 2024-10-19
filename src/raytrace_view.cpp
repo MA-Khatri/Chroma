@@ -28,7 +28,7 @@ void RayTraceView::OnAttach(Application* app)
 	}
 	m_OptixRenderer = m_OptixRenderers[m_SceneID];
 
-	m_OptixRenderer->Resize(m_ViewportSize);
+	m_OptixRenderer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 	m_RenderedImage.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 	m_RenderedImagePixels.resize(static_cast<size_t>(m_ViewportSize.x * m_ViewportSize.y));
 
@@ -55,7 +55,7 @@ void RayTraceView::OnUpdate()
 	{
 		m_SceneID = m_AppHandle->GetSceneID();
 		m_OptixRenderer = m_OptixRenderers[m_SceneID];
-		m_OptixRenderer->Resize(m_ViewportSize);
+		m_OptixRenderer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_OptixRenderer->SetCamera(*m_Camera);
 	}
 
@@ -213,7 +213,7 @@ void RayTraceView::OnResize(ImVec2 newSize)
 		m_LocalCamera->UpdateProjectionMatrix(static_cast<int>(m_ViewportSize.x), static_cast<int>(m_ViewportSize.y));
 	}
 
-	m_OptixRenderer->Resize(m_ViewportSize);
+	m_OptixRenderer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 	m_RenderedImage.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 	m_RenderedImagePixels.resize(static_cast<size_t>(m_ViewportSize.x * m_ViewportSize.y));
 }

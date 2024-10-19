@@ -18,7 +18,7 @@ bool debug_mode = false;
  * https://github.com/ingowald/optix7course
  */
 
-#include "tone_map.cu"
+#include "shaders/tone_map.cuh"
 
 namespace otx
 {
@@ -822,7 +822,7 @@ namespace otx
 	}
 
 
-	void Optix::Resize(const ImVec2& newSize)
+	void Optix::Resize(uint32_t x, uint32_t y)
 	{
 		if (m_DenoiserOn)
 		{
@@ -837,8 +837,7 @@ namespace otx
 		OptixDenoiserSizes denoiserReturnSizes;
 		OPTIX_CHECK(optixDenoiserComputeMemoryResources(
 			m_Denoiser,
-			static_cast<unsigned int>(newSize.x),
-			static_cast<unsigned int>(newSize.y),
+			x, y,
 			&denoiserReturnSizes
 		));
 
@@ -846,16 +845,16 @@ namespace otx
 		m_DenoiserState.resize(denoiserReturnSizes.stateSizeInBytes);
 
 		/* Resize our CUDA framebuffer */
-		size_t fsize = static_cast<size_t>(newSize.x) * static_cast<size_t>(newSize.y) * sizeof(float4);
+		size_t fsize = static_cast<size_t>(x) * static_cast<size_t>(y) * sizeof(float4);
 		m_DenoisedBuffer.resize(fsize);
 		m_FBColor.resize(fsize);
 		m_FBNormal.resize(fsize);
 		m_FBAlbedo.resize(fsize);
-		m_FinalColorBuffer.resize(static_cast<size_t>(newSize.x) * static_cast<size_t>(newSize.y) * sizeof(uint32_t));
+		m_FinalColorBuffer.resize(static_cast<size_t>(x) * static_cast<size_t>(y) * sizeof(uint32_t));
 
 		/* Update our launch parameters */
-		m_LaunchParams.frame.size.x = static_cast<int>(newSize.x);
-		m_LaunchParams.frame.size.y = static_cast<int>(newSize.y);
+		m_LaunchParams.frame.size.x = static_cast<int>(x);
+		m_LaunchParams.frame.size.y = static_cast<int>(y);
 		m_LaunchParams.frame.colorBuffer = (float4*)m_FBColor.d_pointer();
 		m_LaunchParams.frame.normalBuffer = (float4*)m_FBNormal.d_pointer();
 		m_LaunchParams.frame.albedoBuffer = (float4*)m_FBAlbedo.d_pointer();
@@ -864,8 +863,7 @@ namespace otx
 		OPTIX_CHECK(optixDenoiserSetup(
 			m_Denoiser,
 			0,
-			static_cast<unsigned int>(newSize.x),
-			static_cast<unsigned int>(newSize.y),
+			x, y,
 			m_DenoiserState.d_pointer(),
 			m_DenoiserState.sizeInBytes,
 			m_DenoiserScratch.d_pointer(),
@@ -1096,7 +1094,6 @@ namespace otx
 			);
 		}
 		ComputeFinalPixelColors(m_LaunchParams.frame.size, (uint32_t*)m_FinalColorBuffer.d_pointer(), (float4*)m_DenoisedBuffer.d_pointer(), m_GammaCorrect);
-		//ComputeFinalPixelColors();
 
 		/*
 		 * Make sure frame is rendered before we display. BUT -- Vulkan does not know when this is finished!

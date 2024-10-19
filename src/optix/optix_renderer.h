@@ -4,9 +4,6 @@
 
 #pragma once
 
-//#include "imgui.h"
-#include "../../external/imgui-docking/imgui.h"
-
 #include "cuda_buffer.h"
 #include "launch_params.h"
 
@@ -23,7 +20,7 @@ namespace otx
 		Optix(std::shared_ptr<Scene> scene);
 
 		/* Resize frame buffer to given resolution */
-		void Resize(const ImVec2& newSize);
+		void Resize(uint32_t x, uint32_t y);
 
 		/* === Set Functions === */
 		/* Set camera for Optix */
@@ -187,7 +184,7 @@ namespace otx
 		bool m_GammaCorrect = true;
 
 		/* Is the denoiser on? */
-		bool m_DenoiserOn = true;
+		bool m_DenoiserOn = false;
 	};
 
 

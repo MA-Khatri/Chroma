@@ -1,7 +1,7 @@
+#include "tone_map.cuh"
+
 #include <cuda_runtime.h>
 #include <vector_math.h>
-
-//#include "optix_renderer.h"
 
 /* 
  * Based on: https://github.com/ingowald/optix7course/blob/29e279745161003cf905a8a4f1fb603268d48efa/example12_denoiseSeparateChannels/toneMap.cu 
@@ -54,19 +54,4 @@ namespace otx
 
         computeFinalPixelColorsKernel<<<dim3(numBlocks.x, numBlocks.y), dim3(blockSize.x, blockSize.y)>>>(finalColorBuffer, denoisedBuffer, fbSize, gammaCorrect);
     }
-
-    //void Optix::ComputeFinalPixelColors()
-    //{
-    //    int2 fbSize = m_LaunchParams.frame.size;
-    //    int2 blockSize = make_int2(32);
-    //    int2 numBlocks = make_int2((fbSize.x + blockSize.x - 1) / blockSize.x, (fbSize.y + blockSize.y - 1) / blockSize.y);
-    //    computeFinalPixelColorsKernel
-    //        <<<dim3(numBlocks.x, numBlocks.y), dim3(blockSize.x, blockSize.y)>>>
-    //        (
-    //            (uint32_t*)m_FinalColorBuffer.d_pointer(),
-    //            (float4*)m_DenoisedBuffer.d_pointer(),
-    //            fbSize,
-    //            m_GammaCorrect
-    //        );
-    //}
 }
