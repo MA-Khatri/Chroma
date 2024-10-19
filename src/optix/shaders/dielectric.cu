@@ -78,6 +78,13 @@ namespace otx
 			prd.direction = w_in;
 			prd.radiance *= sbtData.refractionColor * transmittance;
 		}
+
+		/* If this is the first intersection of the ray, set the albedo and normal */
+		if (prd.depth == 0)
+		{
+			prd.albedo = sbtData.reflectionColor;
+			prd.normal = N;
+		}
 	}
 
 

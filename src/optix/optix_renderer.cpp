@@ -18,6 +18,7 @@ bool debug_mode = false;
  * https://github.com/ingowald/optix7course
  */
 
+#include "tone_map.cu"
 
 namespace otx
 {
@@ -823,19 +824,53 @@ namespace otx
 
 	void Optix::Resize(const ImVec2& newSize)
 	{
-		/* If window is minimized */
-		if (newSize.x == 0 || newSize.y == 0) return;
+		if (m_DenoiserOn)
+		{
+			OPTIX_CHECK(optixDenoiserDestroy(m_Denoiser));
+		}
+
+		/* === Create the denoiser === */
+		OptixDenoiserOptions denoiserOptions = {};
+		OPTIX_CHECK(optixDenoiserCreate(m_OptixContext, OPTIX_DENOISER_MODEL_KIND_LDR, &denoiserOptions, &m_Denoiser));
+
+		/* Compute and allocate memory resources for the denoiser */
+		OptixDenoiserSizes denoiserReturnSizes;
+		OPTIX_CHECK(optixDenoiserComputeMemoryResources(
+			m_Denoiser,
+			static_cast<unsigned int>(newSize.x),
+			static_cast<unsigned int>(newSize.y),
+			&denoiserReturnSizes
+		));
+
+		m_DenoiserScratch.resize(std::max(denoiserReturnSizes.withoutOverlapScratchSizeInBytes, denoiserReturnSizes.withoutOverlapScratchSizeInBytes));
+		m_DenoiserState.resize(denoiserReturnSizes.stateSizeInBytes);
 
 		/* Resize our CUDA framebuffer */
-		m_ColorBuffer.resize(static_cast<size_t>(newSize.x * newSize.y * sizeof(uint32_t))); /* Store RGBA channels as 8bit components of uint32_t */
-		m_AccumBuffer.resize(static_cast<size_t>(newSize.x * newSize.y * sizeof(float) * 3)); /* Store RGB channels as floats */
+		size_t fsize = static_cast<size_t>(newSize.x) * static_cast<size_t>(newSize.y) * sizeof(float4);
+		m_DenoisedBuffer.resize(fsize);
+		m_FBColor.resize(fsize);
+		m_FBNormal.resize(fsize);
+		m_FBAlbedo.resize(fsize);
+		m_FinalColorBuffer.resize(static_cast<size_t>(newSize.x) * static_cast<size_t>(newSize.y) * sizeof(uint32_t));
 
 		/* Update our launch parameters */
 		m_LaunchParams.frame.size.x = static_cast<int>(newSize.x);
 		m_LaunchParams.frame.size.y = static_cast<int>(newSize.y);
-		m_LaunchParams.frame.colorBuffer = (uint32_t*)m_ColorBuffer.d_ptr;
-		m_LaunchParams.frame.accumBuffer = (float*)m_AccumBuffer.d_ptr;
+		m_LaunchParams.frame.colorBuffer = (float4*)m_FBColor.d_pointer();
+		m_LaunchParams.frame.normalBuffer = (float4*)m_FBNormal.d_pointer();
+		m_LaunchParams.frame.albedoBuffer = (float4*)m_FBAlbedo.d_pointer();
 		m_LaunchParams.frame.accumID = 0;
+
+		OPTIX_CHECK(optixDenoiserSetup(
+			m_Denoiser,
+			0,
+			static_cast<unsigned int>(newSize.x),
+			static_cast<unsigned int>(newSize.y),
+			m_DenoiserState.d_pointer(),
+			m_DenoiserState.sizeInBytes,
+			m_DenoiserScratch.d_pointer(),
+			m_DenoiserScratch.sizeInBytes
+		));
 
 		/* Reset the camera because our aspect ratio may have changed */
 		SetCamera(m_LastSetCamera);
@@ -962,6 +997,7 @@ namespace otx
 		m_LaunchParamsBuffer.upload(&m_LaunchParams, 1);
 		m_LaunchParams.frame.accumID++; /* Must increment *after* upload */
 
+		/* === OptixLaunch === */
 		OPTIX_CHECK(optixLaunch(
 			m_Pipeline,
 			m_Stream, 
@@ -975,6 +1011,93 @@ namespace otx
 
 		m_AccumulatedSampleCount += m_SamplesPerRender;
 
+
+		/* === Denoiser Setup === */
+		m_DenoiserIntensity.resize(sizeof(float));
+		
+		OptixDenoiserParams denoiserParams = {};
+		if (m_DenoiserIntensity.sizeInBytes != sizeof(float))
+		{
+			m_DenoiserIntensity.alloc(sizeof(float));
+		}
+		denoiserParams.hdrIntensity = m_DenoiserIntensity.d_pointer();
+		denoiserParams.blendFactor = 1.0f / (m_LaunchParams.frame.accumID);
+
+		OptixImage2D inputLayer[3];
+		inputLayer[0].data = m_FBColor.d_pointer();
+		inputLayer[0].width = m_LaunchParams.frame.size.x; /* Width in pixels */
+		inputLayer[0].height = m_LaunchParams.frame.size.y; /* Height in pixels */
+		inputLayer[0].rowStrideInBytes = m_LaunchParams.frame.size.x * sizeof(float4);
+		inputLayer[0].pixelStrideInBytes = sizeof(float4);
+		inputLayer[0].format = OPTIX_PIXEL_FORMAT_FLOAT4;
+
+		inputLayer[1].data = m_FBAlbedo.d_pointer();
+		inputLayer[1].width = m_LaunchParams.frame.size.x;
+		inputLayer[1].height = m_LaunchParams.frame.size.y;
+		inputLayer[1].rowStrideInBytes = m_LaunchParams.frame.size.x * sizeof(float4);
+		inputLayer[1].pixelStrideInBytes = sizeof(float4);
+		inputLayer[1].format = OPTIX_PIXEL_FORMAT_FLOAT4;
+
+		inputLayer[2].data = m_FBNormal.d_pointer();
+		inputLayer[2].width = m_LaunchParams.frame.size.x;
+		inputLayer[2].height = m_LaunchParams.frame.size.y;
+		inputLayer[2].rowStrideInBytes = m_LaunchParams.frame.size.x * sizeof(float4);
+		inputLayer[2].pixelStrideInBytes = sizeof(float4);
+		inputLayer[2].format = OPTIX_PIXEL_FORMAT_FLOAT4;
+
+		OptixImage2D outputLayer;
+		outputLayer.data = m_DenoisedBuffer.d_pointer();
+		outputLayer.width = m_LaunchParams.frame.size.x;
+		outputLayer.height = m_LaunchParams.frame.size.y;
+		outputLayer.rowStrideInBytes = m_LaunchParams.frame.size.x * sizeof(float4);
+		outputLayer.pixelStrideInBytes = sizeof(float4);
+		outputLayer.format = OPTIX_PIXEL_FORMAT_FLOAT4;
+
+		if (m_DenoiserOn)
+		{
+			OPTIX_CHECK(optixDenoiserComputeIntensity(
+				m_Denoiser, 
+				0, /* stream */
+				&inputLayer[0], 
+				(CUdeviceptr)m_DenoiserIntensity.d_pointer(),
+				(CUdeviceptr)m_DenoiserScratch.d_pointer(),
+				m_DenoiserScratch.sizeInBytes
+			));
+
+			OptixDenoiserGuideLayer denoiserGuideLayer = {};
+			denoiserGuideLayer.albedo = inputLayer[1];
+			denoiserGuideLayer.normal = inputLayer[2];
+
+			OptixDenoiserLayer denoiserLayer = {};
+			denoiserLayer.input = inputLayer[0];
+			denoiserLayer.output = outputLayer;
+
+			OPTIX_CHECK(optixDenoiserInvoke(
+				m_Denoiser,
+				0, /* stream */
+				&denoiserParams,
+				m_DenoiserState.d_pointer(),
+				m_DenoiserState.sizeInBytes,
+				&denoiserGuideLayer,
+				&denoiserLayer, 1,
+				0, /* input offset x */
+				0, /* input offset y */
+				m_DenoiserScratch.d_pointer(),
+				m_DenoiserScratch.sizeInBytes
+			));
+		}
+		else
+		{
+			cudaMemcpy(
+				(void*)outputLayer.data, 
+				(void*)inputLayer[0].data,
+				outputLayer.width * outputLayer.height * sizeof(float4),
+				cudaMemcpyDeviceToDevice
+			);
+		}
+		ComputeFinalPixelColors(m_LaunchParams.frame.size, (uint32_t*)m_FinalColorBuffer.d_pointer(), (float4*)m_DenoisedBuffer.d_pointer(), m_GammaCorrect);
+		//ComputeFinalPixelColors();
+
 		/*
 		 * Make sure frame is rendered before we display. BUT -- Vulkan does not know when this is finished!
 		 * For higher performance, we should use streams and do double-buffering
@@ -985,6 +1108,6 @@ namespace otx
 
 	void Optix::DownloadPixels(uint32_t h_pixels[])
 	{
-		m_ColorBuffer.download(h_pixels, m_LaunchParams.frame.size.x * m_LaunchParams.frame.size.y);
+		m_FinalColorBuffer.download(h_pixels, m_LaunchParams.frame.size.x * m_LaunchParams.frame.size.y);
 	}
 }

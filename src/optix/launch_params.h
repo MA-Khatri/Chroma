@@ -34,8 +34,9 @@ namespace otx
 	struct LaunchParams
 	{
 		struct {
-			uint32_t* colorBuffer; /* Where final result is stored */
-			float* accumBuffer; /* Where accumulated color is stored before conversion to colorBuffer */
+			float4* colorBuffer;
+			float4* normalBuffer;
+			float4* albedoBuffer;
 			int2 size; /* Width, height of frame */
 			int samples; /* Pixel samples per launch (i.e., call to render) */
 			int accumID{ 0 }; /* Current accumulated frame count */

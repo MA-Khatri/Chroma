@@ -18,16 +18,6 @@ namespace otx
 		/* Get the camera from launchParams */
 		const auto& camera = optixLaunchParams.camera;
 
-		/* Get the current pixel's accumulated color */
-		float3 aclr = make_float3(0.0f);
-		if (accumID > 0)
-		{
-			float r = optixLaunchParams.frame.accumBuffer[fbIndex * 3 + 0];
-			float g = optixLaunchParams.frame.accumBuffer[fbIndex * 3 + 1];
-			float b = optixLaunchParams.frame.accumBuffer[fbIndex * 3 + 2];
-			aclr = make_float3(r, g, b);
-		}
-
 		/* Initialize per-ray data */
 		PRD_radiance prd;
 
@@ -40,6 +30,8 @@ namespace otx
 
 		const int numPixelSamples = optixLaunchParams.frame.samples; /* Pixel samples per call to render */
 		float3 pixelColor = make_float3(0.0f); /* Accumulated color for all pixel samples */
+		float3 pixelNormal = make_float3(0.0f); /* Accumulated normals for all pixel samples */
+		float3 pixelAlbedo = make_float3(0.0f); /* Accumulated albedo for all pixel samples */
 		for (int sampleID = 0; sampleID < numPixelSamples; sampleID++)
 		{
 			/* Initial prd values */
@@ -107,6 +99,8 @@ namespace otx
 			}
 
 			pixelColor += prd.radiance;
+			pixelNormal += prd.normal;
+			pixelAlbedo += prd.albedo;
 		}
 		
 		/* Determine average color for this call. Cap to prevent speckles (even though this breaks pbr condition) */
@@ -114,30 +108,37 @@ namespace otx
 		const float cr = min(pixelColor.x / numPixelSamples, cap);
 		const float cg = min(pixelColor.y / numPixelSamples, cap);
 		const float cb = min(pixelColor.z / numPixelSamples, cap);
-		const float3 cclr = make_float3(cr, cg, cb);
+		const float4 ccolor = make_float4(cr, cg, cb, 1.0f);
 
-		/* Determine the new accumulated color */
-		float3 tclr = (cclr + accumID * aclr) / (accumID + 1);
-		tclr = make_float3(min(tclr.x, 1.0f), min(tclr.y, 1.0f), min(tclr.z, 1.0f));
+		/* Determine the average albedo and normal for this call */
+		pixelAlbedo = pixelAlbedo / numPixelSamples;
+		const float4 albedo = make_float4(pixelAlbedo.x, pixelAlbedo.y, pixelAlbedo.z, 1.0f);
 
-		/* Update the accumulated color buffer */
-		optixLaunchParams.frame.accumBuffer[fbIndex * 3 + 0] = tclr.x;
-		optixLaunchParams.frame.accumBuffer[fbIndex * 3 + 1] = tclr.y;
-		optixLaunchParams.frame.accumBuffer[fbIndex * 3 + 2] = tclr.z;
+		pixelNormal = pixelNormal / numPixelSamples;
+		const float4 normal = make_float4(pixelNormal.x, pixelNormal.y, pixelNormal.z, 1.0f);
 
-		/* Gamma correct before converting to ints */
-		if (optixLaunchParams.gammaCorrect) tclr = GammaCorrect(tclr);
+		/* Get the current pixel's previously accumulated color, albedo, normal */
+		float4 acolor = make_float4(0.0f);
+		float4 aalbedo = make_float4(0.0f);
+		float4 anormal = make_float4(0.0f);
+		if (accumID > 0)
+		{
+			acolor = optixLaunchParams.frame.colorBuffer[fbIndex];
+			aalbedo = optixLaunchParams.frame.albedoBuffer[fbIndex];
+			anormal = optixLaunchParams.frame.normalBuffer[fbIndex];
+		}
 
-		/* Convert accumulated color to ints */
-		const int r = int(255.99f * tclr.x);
-		const int g = int(255.99f * tclr.y);
-		const int b = int(255.99f * tclr.z);
+		/* Determine the new accumulated color, albedo, and normal */
+		float4 tcolor = (ccolor + accumID * acolor) / (accumID + 1);
+		tcolor = make_float4(min(tcolor.x, 1.0f), min(tcolor.y, 1.0f), min(tcolor.z, 1.0f), 1.0f);
 
-		/* Convert to 32-bit RGBA value, explicitly setting alpha to 0xff */
-		const uint32_t rgba = 0xff000000 | (r << 0) | (g << 8) | (b << 16);
+		float4 talbedo = (albedo + accumID * aalbedo) / (accumID + 1);
+		float4 tnormal = (normal + accumID * anormal) / (accumID + 1);
 
-		/* Write to the frame buffer */
-		optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
+		/* Update the buffers */
+		optixLaunchParams.frame.colorBuffer[fbIndex] = tcolor;
+		optixLaunchParams.frame.albedoBuffer[fbIndex] = talbedo;
+		optixLaunchParams.frame.normalBuffer[fbIndex] = tnormal;
 	}
 
 } /* namespace otx */

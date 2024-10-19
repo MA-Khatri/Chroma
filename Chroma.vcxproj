@@ -106,6 +106,15 @@
     <CudaCompile Include="src\optix\shaders\raygen.cu" />
     <CudaCompile Include="src\optix\shaders\lambertian.cu" />
     <CudaCompile Include="src\optix\shaders\shadow.cu" />
+    <CudaCompile Include="src\optix\tone_map.cu">
+      <CompileOut Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)src\optix\shaders\compiled\%(Filename).cubin</CompileOut>
+      <Include Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(CUDA_PATH)\include;$(ProjectDir)external\optix_utils;</Include>
+      <NvccCompilation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">compile</NvccCompilation>
+      <CompileOut Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)src\optix\shaders\compiled\%(Filename).cubin</CompileOut>
+      <Include Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(CUDA_PATH)\include;$(ProjectDir)external\optix_utils;</Include>
+      <NvccCompilation Condition="'$(Configuration)|$(Platform)'=='Release|x64'">compile</NvccCompilation>
+      <FileType>Document</FileType>
+    </CudaCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{90638171-EF99-44F8-A2E3-28D93A30A9C8}</ProjectGuid>

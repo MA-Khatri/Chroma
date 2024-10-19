@@ -4,7 +4,8 @@
 
 #pragma once
 
-#include "imgui.h"
+//#include "imgui.h"
+#include "../../external/imgui-docking/imgui.h"
 
 #include "cuda_buffer.h"
 #include "launch_params.h"
@@ -82,6 +83,9 @@ namespace otx
 		/* Upload textures and create cuda texture objects for them */
 		void CreateTextures();
 
+		///* Runs a cuda kernel that performs gamma correction and float4 to uint8 rgba conversion */
+		//void ComputeFinalPixelColors();
+
 	protected:
 		/* 
 		 * CUDA device context and stream that Optix popeline will run on,
@@ -124,12 +128,6 @@ namespace otx
 		/* The buffer to store LaunchParams on the device*/
 		CUDABuffer m_LaunchParamsBuffer;
 
-		/* Our output color buffer */
-		CUDABuffer m_ColorBuffer;
-
-		/* Our accumulated color buffer (where colors are accumulated as floats before conversion to ints) */
-		CUDABuffer m_AccumBuffer;
-
 		/* The camera we are using to render */
 		Camera m_LastSetCamera;
 
@@ -160,6 +158,24 @@ namespace otx
 		/* Total accumulated samples per pixel */
 		int m_AccumulatedSampleCount = 0;
 
+
+		/* === Denoiser Components === */
+		CUDABuffer m_FBColor; /* The buffer we store the initial, accumulated rendered pixels to, in float4 format */
+		CUDABuffer m_FBNormal;
+		CUDABuffer m_FBAlbedo;
+
+		/* Output of the denoiser pass, in float4 */
+		CUDABuffer m_DenoisedBuffer;
+
+		/* The actual final color buffer to display, in uint8 rgba components */
+		CUDABuffer m_FinalColorBuffer;
+
+		OptixDenoiser m_Denoiser = nullptr;
+		CUDABuffer m_DenoiserScratch;
+		CUDABuffer m_DenoiserState;
+		CUDABuffer m_DenoiserIntensity;
+
+
 		/* === Externally configurable params === */
 		/* Samples per pixel per call to render */
 		int m_SamplesPerRender = 1;
@@ -169,6 +185,9 @@ namespace otx
 
 		/* Whether to turn on gamma correction for the final (presented) render */
 		bool m_GammaCorrect = true;
+
+		/* Is the denoiser on? */
+		bool m_DenoiserOn = true;
 	};
 
 

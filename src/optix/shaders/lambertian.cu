@@ -44,6 +44,13 @@ namespace otx
 		float3 reflectOrigin = FrontHitPosition(N);
 		prd.origin = reflectOrigin;
 		prd.direction = reflectDir;
+
+		/* If this is the first intersection of the ray, set the albedo and normal */
+		if (prd.depth == 0)
+		{
+			prd.albedo = diffuseColor;
+			prd.normal = N;
+		}
 	}
 
 

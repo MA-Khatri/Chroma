@@ -105,17 +105,17 @@ namespace otx
 	}
 
 
-	/* Gamma correct a single float */
-	static __inline__ __device__ float GammaCorrect(float x)
-	{
-		return powf(x, (1.0f / 2.2f));
-	}
+	///* Gamma correct a single float */
+	//static __inline__ __device__ float GammaCorrect(float x)
+	//{
+	//	return powf(x, (1.0f / 2.2f));
+	//}
 
-	/* Gamma correct each component of a float3 */
-	static __inline__ __device__ float3 GammaCorrect(float3 v)
-	{
-		return make_float3(GammaCorrect(v.x), GammaCorrect(v.y), GammaCorrect(v.z));
-	}
+	///* Gamma correct each component of a float3 */
+	//static __inline__ __device__ float3 GammaCorrect(float3 v)
+	//{
+	//	return make_float3(GammaCorrect(v.x), GammaCorrect(v.y), GammaCorrect(v.z));
+	//}
 
 	/* ========================== *
 	 * === Sampling functions === *
@@ -331,9 +331,11 @@ namespace otx
 		int depth; /* Recursion depth */
 
 		/* Shading state */
-		bool done; /* boolean allowing for early termination, e.g. if ray gets fully absorbed */
-		float3 radiance;
-		float3 origin;
-		float3 direction;
+		bool done; /* boolean allowing for early termination, e.g. if ray gets fully absorbed/misses */
+		float3 radiance; /* I.e., pixel color */
+		float3 normal; /* Surface normal of first intersection */
+		float3 albedo; /* Diffuse color of first intersection */
+		float3 origin; /* ray origin */
+		float3 direction; /* ray direction */
 	};
 }

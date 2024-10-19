@@ -25,6 +25,24 @@ namespace otx
 
 		/* Terminate ray */
 		prd.done = true;
+
+		/* If this is the first intersection of the ray, set the albedo and normal */
+		if (prd.depth == 0)
+		{
+			prd.albedo = sbtData.reflectionColor;
+
+			/* Use shading normal if available, else use geometry normal */
+			const float3& v0 = sbtData.position[index.x];
+			const float3& v1 = sbtData.position[index.y];
+			const float3& v2 = sbtData.position[index.z];
+			float3 N = (sbtData.normal)
+				? InterpolateNormals(uv, sbtData.normal[index.x], sbtData.normal[index.y], sbtData.normal[index.z])
+				: cross(v1 - v0, v2 - v0);
+
+			/* Compute world-space normal and normalize */
+			N = normalize(optixTransformNormalFromObjectToWorldSpace(N));
+			prd.normal = N;
+		}
 	}
 
 
