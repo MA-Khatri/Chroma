@@ -33,6 +33,7 @@ namespace otx
 		void SetMaxDepth(int maxDepth);
 
 		void SetGammaCorrect(bool correct);
+		void SetDenoiserEnabled(bool enabled);
 
 		/* === Get Functions === */
 		Camera* GetLastSetCamera();
@@ -40,6 +41,7 @@ namespace otx
 		bool GetGammaCorrect();
 		int GetSamplesPerRender();
 		int GetMaxDepth();
+		bool GetDenoiserEnabled();
 
 		/* Render one frame */
 		void Render();
@@ -184,7 +186,7 @@ namespace otx
 		bool m_GammaCorrect = true;
 
 		/* Is the denoiser on? */
-		bool m_DenoiserOn = false;
+		bool m_DenoiserEnabled = true;
 	};
 
 

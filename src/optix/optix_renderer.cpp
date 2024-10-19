@@ -824,7 +824,7 @@ namespace otx
 
 	void Optix::Resize(uint32_t x, uint32_t y)
 	{
-		if (m_DenoiserOn)
+		if (m_Denoiser)
 		{
 			OPTIX_CHECK(optixDenoiserDestroy(m_Denoiser));
 		}
@@ -926,50 +926,6 @@ namespace otx
 	}
 
 
-	void Optix::SetSamplesPerRender(int nSamples)
-	{
-		m_SamplesPerRender = nSamples;
-	}
-
-
-	void Optix::SetMaxDepth(int maxDepth)
-	{
-		m_MaxDepth = maxDepth;
-
-		/* Reset accumulation */
-		m_LaunchParams.frame.accumID = 0;
-	}
-
-	void Optix::SetGammaCorrect(bool correct)
-	{
-		m_GammaCorrect = correct;
-	}
-
-	Camera* Optix::GetLastSetCamera()
-	{
-		return &m_LastSetCamera;
-	}
-
-	int Optix::GetAccumulatedSampleCount()
-	{
-		return m_AccumulatedSampleCount;
-	}
-
-	bool Optix::GetGammaCorrect()
-	{
-		return m_GammaCorrect;
-	}
-
-	int Optix::GetSamplesPerRender()
-	{
-		return m_SamplesPerRender;
-	}
-
-	int Optix::GetMaxDepth()
-	{
-		return m_MaxDepth;
-	}
-
 	void Optix::Render()
 	{
 		/* Sanity check: make sure we launch only after first resize is already done */
@@ -1051,7 +1007,7 @@ namespace otx
 		outputLayer.pixelStrideInBytes = sizeof(float4);
 		outputLayer.format = OPTIX_PIXEL_FORMAT_FLOAT4;
 
-		if (m_DenoiserOn)
+		if (m_DenoiserEnabled)
 		{
 			OPTIX_CHECK(optixDenoiserComputeIntensity(
 				m_Denoiser, 
@@ -1106,5 +1062,58 @@ namespace otx
 	void Optix::DownloadPixels(uint32_t h_pixels[])
 	{
 		m_FinalColorBuffer.download(h_pixels, m_LaunchParams.frame.size.x * m_LaunchParams.frame.size.y);
+	}
+
+	void Optix::SetSamplesPerRender(int nSamples)
+	{
+		m_SamplesPerRender = nSamples;
+	}
+
+	void Optix::SetMaxDepth(int maxDepth)
+	{
+		m_MaxDepth = maxDepth;
+
+		/* Reset accumulation */
+		m_LaunchParams.frame.accumID = 0;
+	}
+
+	void Optix::SetGammaCorrect(bool correct)
+	{
+		m_GammaCorrect = correct;
+	}
+
+	void Optix::SetDenoiserEnabled(bool enabled)
+	{
+		m_DenoiserEnabled = enabled;
+	}
+
+	Camera* Optix::GetLastSetCamera()
+	{
+		return &m_LastSetCamera;
+	}
+
+	int Optix::GetAccumulatedSampleCount()
+	{
+		return m_AccumulatedSampleCount;
+	}
+
+	bool Optix::GetGammaCorrect()
+	{
+		return m_GammaCorrect;
+	}
+
+	int Optix::GetSamplesPerRender()
+	{
+		return m_SamplesPerRender;
+	}
+
+	int Optix::GetMaxDepth()
+	{
+		return m_MaxDepth;
+	}
+
+	bool Optix::GetDenoiserEnabled()
+	{
+		return m_DenoiserEnabled;
 	}
 }

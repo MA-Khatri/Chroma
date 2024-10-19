@@ -39,6 +39,7 @@ namespace otx
 
         float4 f4 = denoisedBuffer[pixelID];
         if (gammaCorrect) f4 = clamp(sqrt(f4));
+        else f4 = clamp(f4);
         uint32_t rgba = 0;
         rgba |= (uint32_t)(f4.x * 255.9f) << 0;
         rgba |= (uint32_t)(f4.y * 255.9f) << 8;

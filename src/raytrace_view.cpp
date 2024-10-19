@@ -156,6 +156,13 @@ void RayTraceView::OnUIRender()
 				m_OptixRenderer->SetGammaCorrect(tempCorrect);
 			}
 
+			bool tempDenoise = m_OptixRenderer->GetDenoiserEnabled();
+			ImGui::Checkbox("Enable Denoiser", &tempDenoise);
+			if (tempDenoise != m_OptixRenderer->GetDenoiserEnabled())
+			{
+				m_OptixRenderer->SetDenoiserEnabled(tempDenoise);
+			}
+
 			int tempSPP = m_OptixRenderer->GetSamplesPerRender();
 			ImGui::SliderInt("Samples Per Pixel", &tempSPP, 1, 16);
 			if (tempSPP != m_OptixRenderer->GetSamplesPerRender())
