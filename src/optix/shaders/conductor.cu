@@ -25,6 +25,8 @@ namespace otx
 		/* Face forward normal */
 		if (dot(rayDir, N) > 0.0f) N = -N;
 
+		if (sbtData.roughness > 0.0f) N = normalize(N + prd.random.RandomOnUnitSphere() * sbtData.roughness);
+
 		/* Default diffuse color if no diffuse texture */
 		float3 diffuseColor = sbtData.reflectionColor;
 
@@ -39,7 +41,7 @@ namespace otx
 
 		/* === Set ray data for next trace call === */
 		/* Determine reflected ray origin and direction */
-		float3 reflectDir = reflect(rayDir, N); /* Reflected ray direction */
+		float3 reflectDir = reflect(rayDir, N); /* Perfect reflection direction */
 		float3 reflectOrigin = FrontHitPosition(N);
 		prd.origin = reflectOrigin;
 		prd.direction = reflectDir;

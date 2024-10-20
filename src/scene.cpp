@@ -69,6 +69,7 @@ void Scene::MakeScene(int scene)
 	transparentGlassMat->m_RefractionColor = glm::vec3(1.0f);
 	transparentGlassMat->m_EtaIn = 1.5f;
 	transparentGlassMat->m_Extinction = glm::vec3(0.0f);
+	transparentGlassMat->m_Roughness = 0.0f;
 	m_Materials.push_back(transparentGlassMat);
 
 	std::shared_ptr<Material> greenConductorMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_CONDUCTOR);
@@ -77,6 +78,7 @@ void Scene::MakeScene(int scene)
 
 	std::shared_ptr<Material> mirrorMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_CONDUCTOR);
 	mirrorMat->m_ReflectionColor = glm::vec3(0.7f);
+	mirrorMat->m_Roughness = 1.0f;
 	m_Materials.push_back(mirrorMat);
 
 	std::shared_ptr<Material> fullWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_LAMBERTIAN);

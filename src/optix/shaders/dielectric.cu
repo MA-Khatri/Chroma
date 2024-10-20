@@ -28,7 +28,7 @@ namespace otx
 
 		/* Compute world-space normal and normalize */
 		N = normalize(optixTransformNormalFromObjectToWorldSpace(N));
-
+		if (sbtData.roughness > 0.0f) N = normalize(N + prd.random.RandomOnUnitSphere() * sbtData.roughness);
 		
 		/* Determine if ray is entering/exiting */
 		const float3 w_out = -rayDir;
