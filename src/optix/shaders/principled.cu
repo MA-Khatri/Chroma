@@ -25,8 +25,6 @@ namespace otx
 		/* Face forward normal */
 		if (dot(rayDir, N) > 0.0f) N = -N;
 
-		if (sbtData.roughness > 0.0f) N = normalize(N + prd.random.RandomOnUnitSphere() * sbtData.roughness);
-
 		/* Default diffuse color if no diffuse texture */
 		float3 diffuseColor = sbtData.reflectionColor;
 
@@ -40,8 +38,9 @@ namespace otx
 		prd.radiance *= diffuseColor;
 
 		/* === Set ray data for next trace call === */
-		/* Determine reflected ray's origin and direction */
-		float3 reflectDir = reflect(rayDir, N);
+		/* Determine reflected ray origin and direction */
+		OrthonormalBasis basis = OrthonormalBasis(N);
+		float3 reflectDir = basis.Local(prd.random.RandomOnUnitCosineHemisphere());
 		float3 reflectOrigin = FrontHitPosition(N);
 		prd.origin = reflectOrigin;
 		prd.direction = reflectDir;
@@ -49,7 +48,7 @@ namespace otx
 		/* If this is the first intersection of the ray, set the albedo and normal */
 		if (prd.depth == 0)
 		{
-			prd.albedo = sbtData.reflectionColor;
+			prd.albedo = diffuseColor;
 			prd.normal = N;
 		}
 	}

@@ -164,6 +164,7 @@ namespace otx
 			{ std::string("src/optix/shaders/compiled/lambertian.optixir"), &m_LambertianModule },
 			{ std::string("src/optix/shaders/compiled/conductor.optixir"), &m_ConductorModule },
 			{ std::string("src/optix/shaders/compiled/dielectric.optixir"), &m_DielectricModule },
+			{ std::string("src/optix/shaders/compiled/principled.optixir"), &m_PrincipledModule },
 			{ std::string("src/optix/shaders/compiled/diffuse_light.optixir"), &m_DiffuseLightModule },
 			{ std::string("src/optix/shaders/compiled/shadow.optixir"), &m_ShadowModule },
 			{ std::string("src/optix/shaders/compiled/miss.optixir"), &m_MissModule }
@@ -320,6 +321,20 @@ namespace otx
 			log,
 			&sizeof_log,
 			&m_HitgroupPGs[MATERIAL_TYPE_DIELECTRIC]
+		));
+		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+
+		/* Principled BSDF */
+		pgDesc.hitgroup.moduleAH = m_PrincipledModule;
+		pgDesc.hitgroup.moduleCH = m_PrincipledModule;
+		OPTIX_CHECK(optixProgramGroupCreate(
+			m_OptixContext,
+			&pgDesc,
+			1,
+			&pgOptions,
+			log,
+			&sizeof_log,
+			&m_HitgroupPGs[MATERIAL_TYPE_PRINCIPLED]
 		));
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 

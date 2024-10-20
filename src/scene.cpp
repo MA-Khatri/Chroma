@@ -35,6 +35,8 @@ void Scene::MakeScene(int scene)
 	TexturePaths blueCheckerTextures;
 	blueCheckerTextures.diffuse = "res/textures/checker.png";
 
+
+
 	/* === Create materials === */
 	std::shared_ptr<Material> linesMat = std::make_shared<Material>(noTextures, VK_PIPELINE_LINES, -1);
 	linesMat->m_DepthTest = false;
@@ -78,7 +80,7 @@ void Scene::MakeScene(int scene)
 
 	std::shared_ptr<Material> mirrorMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_CONDUCTOR);
 	mirrorMat->m_ReflectionColor = glm::vec3(0.7f);
-	mirrorMat->m_Roughness = 1.0f;
+	mirrorMat->m_Roughness = 0.0f;
 	m_Materials.push_back(mirrorMat);
 
 	std::shared_ptr<Material> fullWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_LAMBERTIAN);

@@ -104,6 +104,7 @@
     <CudaCompile Include="src\optix\shaders\dielectric.cu" />
     <CudaCompile Include="src\optix\shaders\diffuse_light.cu" />
     <CudaCompile Include="src\optix\shaders\miss.cu" />
+    <CudaCompile Include="src\optix\shaders\principled.cu" />
     <CudaCompile Include="src\optix\shaders\raygen.cu" />
     <CudaCompile Include="src\optix\shaders\lambertian.cu" />
     <CudaCompile Include="src\optix\shaders\shadow.cu" />

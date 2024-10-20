@@ -114,6 +114,7 @@ namespace otx
 		OptixModule m_LambertianModule;
 		OptixModule m_ConductorModule;
 		OptixModule m_DielectricModule;
+		OptixModule m_PrincipledModule;
 		OptixModule m_DiffuseLightModule;
 		OptixModule m_ShadowModule;
 		OptixModule m_MissModule;
@@ -194,8 +195,8 @@ namespace otx
 		/* Whether to turn on gamma correction for the final (presented) render */
 		bool m_GammaCorrect = true;
 
-		/* Is the denoiser on? */
-		bool m_DenoiserEnabled = true;
+		/* Is the denoiser on? We keep it off by default since it really only needs to run once the render is complete. */
+		bool m_DenoiserEnabled = false;
 
 		/* Adjust horizontal offset angle of sky texture, locally expressed as degrees */
 		float m_BackgroundRotation = 0.0f;

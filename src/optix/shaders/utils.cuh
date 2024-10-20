@@ -104,19 +104,6 @@ namespace otx
 		return make_float3(logf(v.x), logf(v.y), logf(v.z));
 	}
 
-
-	///* Gamma correct a single float */
-	//static __inline__ __device__ float GammaCorrect(float x)
-	//{
-	//	return powf(x, (1.0f / 2.2f));
-	//}
-
-	///* Gamma correct each component of a float3 */
-	//static __inline__ __device__ float3 GammaCorrect(float3 v)
-	//{
-	//	return make_float3(GammaCorrect(v.x), GammaCorrect(v.y), GammaCorrect(v.z));
-	//}
-
 	/* ========================== *
 	 * === Sampling functions === *
 	 * ========================== *
@@ -190,6 +177,27 @@ namespace otx
 		return make_float3(d.x, d.y, z);
 	}
 
+	/* ==========================================
+	 * === Probability Distribution Functions ===
+	 * ==========================================
+	 * PDFs for different types of samplers
+	 */
+
+	inline __host__ __device__ float UnitSpherePDF()
+	{
+		return 0.07957747154f; /* 0.07957747154 = 1 / (4 * PI) */
+	}
+
+	inline __host__ __device__ float UnitHemispherePDF()
+	{
+		return 0.15915494309f; /* 0.15915494309 = 1 / (2 * PI) */
+	}
+
+	inline __host__ __device__ float CosineHemispherePDF(float3 v)
+	{
+		float cosTheta = sqrt(v.x * v.x + v.y * v.y);
+		return cosTheta * M_1_PIf;
+	}
 
 	/* ========================= *
 	 * === Orthonormal basis === *

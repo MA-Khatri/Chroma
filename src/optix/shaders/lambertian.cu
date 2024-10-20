@@ -35,7 +35,6 @@ namespace otx
 			float4 tex = tex2D<float4>(sbtData.diffuseTexture, tc.x, tc.y);
 			diffuseColor = make_float3(tex.x, tex.y, tex.z);
 		}
-		prd.radiance *= diffuseColor;
 
 		/* === Set ray data for next trace call === */
 		/* Determine reflected ray origin and direction */
@@ -44,6 +43,9 @@ namespace otx
 		float3 reflectOrigin = FrontHitPosition(N);
 		prd.origin = reflectOrigin;
 		prd.direction = reflectDir;
+
+		/* Update the ray color */
+		prd.radiance *= diffuseColor;
 
 		/* If this is the first intersection of the ray, set the albedo and normal */
 		if (prd.depth == 0)
