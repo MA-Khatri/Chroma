@@ -27,7 +27,7 @@ namespace otx
 			float3 rayDir = optixGetWorldRayDirection();
 
 			/* Convert the input ray direction to UV coordinates to access the background texture */
-			float u = 0.5f * (1.0f + atan2(rayDir.x, rayDir.y) * M_1_PIf);
+			float u = 0.5f * (1.0f + atan2(rayDir.x, rayDir.y) * M_1_PIf) + optixLaunchParams.backgroundRotation;
 			float v = atan2(length(make_float2(rayDir.x, rayDir.y)), rayDir.z) * M_1_PIf;
 
 			float4 tex = tex2D<float4>(optixLaunchParams.backgroundTexture, u, v);

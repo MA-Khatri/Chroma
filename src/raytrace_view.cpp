@@ -146,7 +146,7 @@ void RayTraceView::OnUIRender()
 
 			if (ImGui::Button("Reset Accumulation"))
 			{
-				m_Camera->m_CameraUIUpdate = true;
+				m_OptixRenderer->ResetAccumulation();
 			}
 
 			bool tempCorrect = m_OptixRenderer->GetGammaCorrect();
@@ -170,11 +170,25 @@ void RayTraceView::OnUIRender()
 				m_OptixRenderer->SetSamplesPerRender(tempSPP);
 			}
 
+			int tempMaxSPP = m_OptixRenderer->GetMaxSampleCount();
+			ImGui::DragInt("Max Sample Count", &tempMaxSPP, 1.0f, 0);
+			if (tempMaxSPP != m_OptixRenderer->GetMaxSampleCount())
+			{
+				m_OptixRenderer->SetMaxSampleCount(tempMaxSPP);
+			}
+
 			int tempDepth = m_OptixRenderer->GetMaxDepth();
 			ImGui::SliderInt("Max Ray Depth", &tempDepth, 1, 16);
 			if (tempDepth != m_OptixRenderer->GetMaxDepth())
 			{
 				m_OptixRenderer->SetMaxDepth(tempDepth);
+			}
+
+			float tempBR = m_OptixRenderer->GetBackgroundRotation();
+			ImGui::SliderFloat("Background Rotation", &tempBR, 0.0f, 360.0f);
+			if (tempBR != m_OptixRenderer->GetBackgroundRotation())
+			{
+				m_OptixRenderer->SetBackgroundRotation(tempBR);
 			}
 		}
 		ImGui::End();

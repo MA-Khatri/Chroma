@@ -34,6 +34,8 @@ namespace otx
 
 		void SetGammaCorrect(bool correct);
 		void SetDenoiserEnabled(bool enabled);
+		void SetMaxSampleCount(int nSamples);
+		void SetBackgroundRotation(float deg);
 
 		/* === Get Functions === */
 		Camera* GetLastSetCamera();
@@ -42,12 +44,17 @@ namespace otx
 		int GetSamplesPerRender();
 		int GetMaxDepth();
 		bool GetDenoiserEnabled();
+		int GetMaxSampleCount();
+		float GetBackgroundRotation();
 
 		/* Render one frame */
 		void Render();
 
 		/* Download the rendered color buffer */
 		void DownloadPixels(uint32_t h_pixels[]);
+
+		/* Set accumulation back to 0 */
+		void ResetAccumulation();
 
 	protected:
 		/* Initializes Optix and checks for errors */
@@ -82,8 +89,8 @@ namespace otx
 		/* Upload textures and create cuda texture objects for them */
 		void CreateTextures();
 
-		///* Runs a cuda kernel that performs gamma correction and float4 to uint8 rgba conversion */
-		//void ComputeFinalPixelColors();
+		/* Sets up and launches the denoiser (if m_DenoiserEnabled) */
+		void LaunchDenoiser();
 
 	protected:
 		/* 
@@ -157,6 +164,8 @@ namespace otx
 		/* Total accumulated samples per pixel */
 		int m_AccumulatedSampleCount = 0;
 
+		/* Maximum allowed number of accumulated samples -- set to 0 for unlimited */
+		int m_MaxSampleCount = 1024;
 
 		/* === Denoiser Components === */
 		CUDABuffer m_FBColor; /* The buffer we store the initial, accumulated rendered pixels to, in float4 format */
@@ -187,6 +196,9 @@ namespace otx
 
 		/* Is the denoiser on? */
 		bool m_DenoiserEnabled = true;
+
+		/* Adjust horizontal offset angle of sky texture, locally expressed as degrees */
+		float m_BackgroundRotation = 0.0f;
 	};
 
 

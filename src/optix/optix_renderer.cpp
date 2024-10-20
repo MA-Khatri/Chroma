@@ -858,7 +858,7 @@ namespace otx
 		m_LaunchParams.frame.colorBuffer = (float4*)m_FBColor.d_pointer();
 		m_LaunchParams.frame.normalBuffer = (float4*)m_FBNormal.d_pointer();
 		m_LaunchParams.frame.albedoBuffer = (float4*)m_FBAlbedo.d_pointer();
-		m_LaunchParams.frame.accumID = 0;
+		m_LaunchParams.frame.frameID = 0;
 
 		OPTIX_CHECK(optixDenoiserSetup(
 			m_Denoiser,
@@ -921,7 +921,7 @@ namespace otx
 		}
 
 		/* Reset accumulation */
-		m_LaunchParams.frame.accumID = 0;
+		m_LaunchParams.frame.frameID = 0;
 		m_AccumulatedSampleCount = 0;
 	}
 
@@ -931,8 +931,24 @@ namespace otx
 		/* Sanity check: make sure we launch only after first resize is already done */
 		if (m_LaunchParams.frame.size.x == 0 || m_LaunchParams.frame.size.y == 0) return;
 
+		int nSamples = m_SamplesPerRender;
+
+		/* If we have a MaxSampleCount set */
+		if (m_MaxSampleCount > 0)
+		{
+			/* Do not render if past MaxSampleCount */
+			if (m_AccumulatedSampleCount >= m_MaxSampleCount) return;
+
+			/*
+			 * Determine the number of samples for this call to render
+			 * (i.e., set to less than m_SamplesPerRender if added samples would go past m_MaxSampleCount)
+			 */
+			int diff = m_MaxSampleCount - m_AccumulatedSampleCount;
+			nSamples = diff > m_SamplesPerRender ? m_SamplesPerRender : diff;
+		}
+
 		/* === Update launch Params here === */
-		m_LaunchParams.frame.samples = m_SamplesPerRender;
+		m_LaunchParams.frame.samples = nSamples;
 		m_LaunchParams.maxDepth = m_MaxDepth;
 		m_LaunchParams.cutoffColor = make_float3(0.0f);
 		m_LaunchParams.gammaCorrect = m_GammaCorrect;
@@ -945,11 +961,11 @@ namespace otx
 
 		int backgroundID = m_Scene->m_BackgroundTexture.textureID;
 		if (backgroundID >= 0) m_LaunchParams.backgroundTexture = m_TextureObjects[backgroundID];
-		m_LaunchParams.gammaCorrect = m_GammaCorrect;
+		m_LaunchParams.backgroundRotation = glm::radians(m_BackgroundRotation) * 0.5f * M_1_PIf; /* Convert from degrees to [0, 1] tex coord offset */
 
 		/* Upload launch params */
 		m_LaunchParamsBuffer.upload(&m_LaunchParams, 1);
-		m_LaunchParams.frame.accumID++; /* Must increment *after* upload */
+		m_LaunchParams.frame.frameID++; /* Must increment *after* upload */
 
 		/* === OptixLaunch === */
 		OPTIX_CHECK(optixLaunch(
@@ -963,19 +979,31 @@ namespace otx
 			1
 		));
 
-		m_AccumulatedSampleCount += m_SamplesPerRender;
+		m_AccumulatedSampleCount += nSamples;
+
+		/* Run the denoiser */
+		LaunchDenoiser();
+
+		/*
+		 * Make sure frame is rendered before we display. BUT -- Vulkan does not know when this is finished!
+		 * For higher performance, we should use streams and do double-buffering
+		 */
+		CUDA_SYNC_CHECK();
+	}
 
 
+	void Optix::LaunchDenoiser()
+	{
 		/* === Denoiser Setup === */
 		m_DenoiserIntensity.resize(sizeof(float));
-		
+
 		OptixDenoiserParams denoiserParams = {};
 		if (m_DenoiserIntensity.sizeInBytes != sizeof(float))
 		{
 			m_DenoiserIntensity.alloc(sizeof(float));
 		}
 		denoiserParams.hdrIntensity = m_DenoiserIntensity.d_pointer();
-		denoiserParams.blendFactor = 1.0f / (m_LaunchParams.frame.accumID);
+		denoiserParams.blendFactor = 1.0f / (m_LaunchParams.frame.frameID);
 
 		OptixImage2D inputLayer[3];
 		inputLayer[0].data = m_FBColor.d_pointer();
@@ -1010,9 +1038,9 @@ namespace otx
 		if (m_DenoiserEnabled)
 		{
 			OPTIX_CHECK(optixDenoiserComputeIntensity(
-				m_Denoiser, 
+				m_Denoiser,
 				0, /* stream */
-				&inputLayer[0], 
+				&inputLayer[0],
 				(CUdeviceptr)m_DenoiserIntensity.d_pointer(),
 				(CUdeviceptr)m_DenoiserScratch.d_pointer(),
 				m_DenoiserScratch.sizeInBytes
@@ -1043,25 +1071,25 @@ namespace otx
 		else
 		{
 			cudaMemcpy(
-				(void*)outputLayer.data, 
+				(void*)outputLayer.data,
 				(void*)inputLayer[0].data,
 				outputLayer.width * outputLayer.height * sizeof(float4),
 				cudaMemcpyDeviceToDevice
 			);
 		}
 		ComputeFinalPixelColors(m_LaunchParams.frame.size, (uint32_t*)m_FinalColorBuffer.d_pointer(), (float4*)m_DenoisedBuffer.d_pointer(), m_GammaCorrect);
-
-		/*
-		 * Make sure frame is rendered before we display. BUT -- Vulkan does not know when this is finished!
-		 * For higher performance, we should use streams and do double-buffering
-		 */
-		CUDA_SYNC_CHECK();
 	}
 
 
 	void Optix::DownloadPixels(uint32_t h_pixels[])
 	{
 		m_FinalColorBuffer.download(h_pixels, m_LaunchParams.frame.size.x * m_LaunchParams.frame.size.y);
+	}
+
+	void Optix::ResetAccumulation()
+	{
+		m_AccumulatedSampleCount = 0;
+		m_LaunchParams.frame.frameID = 0;
 	}
 
 	void Optix::SetSamplesPerRender(int nSamples)
@@ -1072,19 +1100,30 @@ namespace otx
 	void Optix::SetMaxDepth(int maxDepth)
 	{
 		m_MaxDepth = maxDepth;
-
-		/* Reset accumulation */
-		m_LaunchParams.frame.accumID = 0;
+		ResetAccumulation();
 	}
 
 	void Optix::SetGammaCorrect(bool correct)
 	{
 		m_GammaCorrect = correct;
+		LaunchDenoiser();
 	}
 
 	void Optix::SetDenoiserEnabled(bool enabled)
 	{
 		m_DenoiserEnabled = enabled;
+		LaunchDenoiser();
+	}
+
+	void Optix::SetMaxSampleCount(int nSamples)
+	{
+		m_MaxSampleCount = nSamples;
+	}
+
+	void Optix::SetBackgroundRotation(float deg)
+	{
+		m_BackgroundRotation = deg;
+		ResetAccumulation();
 	}
 
 	Camera* Optix::GetLastSetCamera()
@@ -1115,5 +1154,15 @@ namespace otx
 	bool Optix::GetDenoiserEnabled()
 	{
 		return m_DenoiserEnabled;
+	}
+
+	int Optix::GetMaxSampleCount()
+	{
+		return m_MaxSampleCount;
+	}
+
+	float Optix::GetBackgroundRotation()
+	{
+		return m_BackgroundRotation;
 	}
 }

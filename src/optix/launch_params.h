@@ -39,7 +39,7 @@ namespace otx
 			float4* albedoBuffer;
 			int2 size; /* Width, height of frame */
 			int samples; /* Pixel samples per launch (i.e., call to render) */
-			int accumID{ 0 }; /* Current accumulated frame count */
+			int frameID{ 0 }; /* Current frame count */
 		} frame;
 
 		struct {
@@ -64,6 +64,7 @@ namespace otx
 		float3 gradientBottom;
 		float3 gradientTop;
 		cudaTextureObject_t backgroundTexture;
+		float backgroundRotation;
 
 		bool gammaCorrect; /* Should gamma correction be applied to the final image? */
 	};

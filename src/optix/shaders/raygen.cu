@@ -12,8 +12,8 @@ namespace otx
 		const int iy = optixGetLaunchIndex().y;
 		const uint32_t fbIndex = ix + iy * optixLaunchParams.frame.size.x;
 
-		/* Get the current frame's accumulation ID */
-		const int accumID = optixLaunchParams.frame.accumID;
+		/* Get the current frame's frameID -- i.e., which render call is this? */
+		const int accumID = optixLaunchParams.frame.frameID;
 
 		/* Get the camera from launchParams */
 		const auto& camera = optixLaunchParams.camera;
@@ -28,10 +28,10 @@ namespace otx
 		uint32_t u0, u1;
 		packPointer(&prd, u0, u1);
 
-		const int numPixelSamples = optixLaunchParams.frame.samples; /* Pixel samples per call to render */
-		float3 pixelColor = make_float3(0.0f); /* Accumulated color for all pixel samples */
-		float3 pixelNormal = make_float3(0.0f); /* Accumulated normals for all pixel samples */
-		float3 pixelAlbedo = make_float3(0.0f); /* Accumulated albedo for all pixel samples */
+		const int numPixelSamples = optixLaunchParams.frame.samples; /* N Pixel samples for this render call */
+		float3 pixelColor = make_float3(0.0f); /* Accumulated color for all pixel samples for this call */
+		float3 pixelNormal = make_float3(0.0f); /* Accumulated normals for all pixel samples for this call */
+		float3 pixelAlbedo = make_float3(0.0f); /* Accumulated albedo for all pixel samples for this call */
 		for (int sampleID = 0; sampleID < numPixelSamples; sampleID++)
 		{
 			/* Initial prd values */
@@ -90,6 +90,9 @@ namespace otx
 				);
 
 				if (prd.done) break;
+
+				/* Special case for when maxDepth = 1 -- Show albedo color */
+				if (optixLaunchParams.maxDepth == 1) break;
 
 				/* Update ray data for next ray path segment */
 				rayOrg = prd.origin;
