@@ -67,6 +67,7 @@ namespace otx
 		float backgroundRotation;
 
 		bool gammaCorrect; /* Should gamma correction be applied to the final image? */
+		bool stratifiedSampling; /* Are we using stratified sampling? */
 	};
 
 } /* namspace otx */

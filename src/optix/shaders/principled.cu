@@ -1,5 +1,9 @@
 #include "utils.cuh"
 
+/*
+ * THIS IS A TODO -- Currently the same as Lambertian...
+ */
+
 namespace otx
 {
 	extern "C" __global__ void __closesthit__radiance()

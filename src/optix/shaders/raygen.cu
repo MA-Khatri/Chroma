@@ -28,7 +28,9 @@ namespace otx
 		uint32_t u0, u1;
 		packPointer(&prd, u0, u1);
 
-		const int numPixelSamples = optixLaunchParams.frame.samples; /* N Pixel samples for this render call */
+		const int nps = optixLaunchParams.frame.samples;
+		const int numPixelSamples = optixLaunchParams.stratifiedSampling ? nps * nps : nps; /* N Pixel samples for this render call */
+		const float spd = 1.0f / float(nps); /* sub-pixel delta (spd) */
 		float3 pixelColor = make_float3(0.0f); /* Accumulated color for all pixel samples for this call */
 		float3 pixelNormal = make_float3(0.0f); /* Accumulated normals for all pixel samples for this call */
 		float3 pixelAlbedo = make_float3(0.0f); /* Accumulated albedo for all pixel samples for this call */
@@ -41,8 +43,24 @@ namespace otx
 			prd.origin = make_float3(0.0f);
 			prd.direction = make_float3(0.0f);
 
-			/* Normalized screen plane position in [0, 1]^2 with randomized sub-pixel position */
-			const float2 screen = make_float2(ix + prd.random(), iy + prd.random()) / make_float2(optixLaunchParams.frame.size.x, optixLaunchParams.frame.size.y);
+			/* Determine the screen sampling position */
+			float2 screen;
+			if (optixLaunchParams.stratifiedSampling)
+			{
+				/* Determine the sub pixel offset (spo) for this sampleID */
+				float2 spo = make_float2(float(sampleID % nps), float(sampleID / nps));
+
+				/* Determine posn within sub pixel (spp) */
+				float2 spp = make_float2(prd.random(), prd.random());
+
+				/* Normalized screen plane position in [0, 1]^2 with stratified random sub-pixel position */
+				screen = (make_float2(ix, iy) + (spo + spp) * spd) / make_float2(optixLaunchParams.frame.size.x, optixLaunchParams.frame.size.y);
+			}
+			else
+			{
+				/* Normalized screen plane position in [0, 1]^2 with randomized sub-pixel position */
+				screen = make_float2(ix + prd.random(), iy + prd.random()) / make_float2(optixLaunchParams.frame.size.x, optixLaunchParams.frame.size.y);
+			}
 
 			/* Ray origin and direction */
 			float3 rayOrg, rayDir;

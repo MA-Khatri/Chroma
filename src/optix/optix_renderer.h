@@ -36,6 +36,7 @@ namespace otx
 		void SetDenoiserEnabled(bool enabled);
 		void SetMaxSampleCount(int nSamples);
 		void SetBackgroundRotation(float deg);
+		void SetStratifyEnabled(bool enabled);
 
 		/* === Get Functions === */
 		Camera* GetLastSetCamera();
@@ -46,6 +47,7 @@ namespace otx
 		bool GetDenoiserEnabled();
 		int GetMaxSampleCount();
 		float GetBackgroundRotation();
+		bool GetStratifyEnabled();
 
 		/* Render one frame */
 		void Render();
@@ -186,7 +188,7 @@ namespace otx
 
 
 		/* === Externally configurable params === */
-		/* Samples per pixel per call to render */
+		/* Samples per pixel per call to render -- will be squared if using stratified sampling */
 		int m_SamplesPerRender = 1;
 
 		/* Maximum number of ray bounces before termination */
@@ -197,6 +199,9 @@ namespace otx
 
 		/* Is the denoiser on? We keep it off by default since it really only needs to run once the render is complete. */
 		bool m_DenoiserEnabled = false;
+
+		/* Are we using stratified sampling? If true, m_SamplesPerRender represents the number of samples along u, v axis of each pixel. */
+		bool m_StratifiedSampling = true;
 
 		/* Adjust horizontal offset angle of sky texture, locally expressed as degrees */
 		float m_BackgroundRotation = 0.0f;

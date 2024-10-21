@@ -967,6 +967,7 @@ namespace otx
 		m_LaunchParams.maxDepth = m_MaxDepth;
 		m_LaunchParams.cutoffColor = make_float3(0.0f);
 		m_LaunchParams.gammaCorrect = m_GammaCorrect;
+		m_LaunchParams.stratifiedSampling = m_StratifiedSampling;
 
 		/* Background settings */
 		m_LaunchParams.backgroundMode = m_Scene->m_BackgroundMode;
@@ -994,7 +995,7 @@ namespace otx
 			1
 		));
 
-		m_AccumulatedSampleCount += nSamples;
+		m_AccumulatedSampleCount += m_StratifiedSampling ? nSamples * nSamples : nSamples;
 
 		/* Run the denoiser */
 		LaunchDenoiser();
@@ -1141,6 +1142,12 @@ namespace otx
 		ResetAccumulation();
 	}
 
+	void Optix::SetStratifyEnabled(bool enabled)
+	{
+		m_StratifiedSampling = enabled;
+		ResetAccumulation(); /* Technically, we don't need to. But this will help to be consistent while testing. */
+	}
+
 	Camera* Optix::GetLastSetCamera()
 	{
 		return &m_LastSetCamera;
@@ -1179,5 +1186,10 @@ namespace otx
 	float Optix::GetBackgroundRotation()
 	{
 		return m_BackgroundRotation;
+	}
+
+	bool Optix::GetStratifyEnabled()
+	{
+		return m_StratifiedSampling;
 	}
 }

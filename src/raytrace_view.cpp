@@ -163,8 +163,24 @@ void RayTraceView::OnUIRender()
 				m_OptixRenderer->SetDenoiserEnabled(tempDenoise);
 			}
 
+			bool tempStratify = m_OptixRenderer->GetStratifyEnabled();
+			ImGui::Checkbox("Enable Stratified Sampling", &tempStratify);
+			if (tempStratify != m_OptixRenderer->GetStratifyEnabled())
+			{
+				m_OptixRenderer->SetStratifyEnabled(tempStratify);
+			}
+
+			const int maxStratifiedDimension = 8;
 			int tempSPP = m_OptixRenderer->GetSamplesPerRender();
-			ImGui::SliderInt("Samples Per Pixel", &tempSPP, 1, 16);
+			if (tempStratify)
+			{
+				if (tempSPP > maxStratifiedDimension) tempSPP = maxStratifiedDimension;
+				ImGui::SliderInt("Sub-Pixel Dimensions", &tempSPP, 1, maxStratifiedDimension);
+			}
+			else
+			{
+				ImGui::SliderInt("Samples Per Pixel", &tempSPP, 1, 16);
+			}
 			if (tempSPP != m_OptixRenderer->GetSamplesPerRender())
 			{
 				m_OptixRenderer->SetSamplesPerRender(tempSPP);
