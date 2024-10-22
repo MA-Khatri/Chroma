@@ -10,7 +10,7 @@ namespace otx
 	/* === Shader helpers === */
 	/* ====================== */
 
-#define RAY_EPS 1e-3f
+#define RAY_EPS 1e-5f
 
 	/*
 	 * To communicate between programs, we pass a pointer to per-ray data (PRD)

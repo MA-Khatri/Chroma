@@ -70,12 +70,13 @@ void Scene::MakeScene(int scene)
 	transparentGlassMat->m_ReflectionColor = glm::vec3(1.0f);
 	transparentGlassMat->m_RefractionColor = glm::vec3(1.0f);
 	transparentGlassMat->m_EtaIn = 1.5f;
-	transparentGlassMat->m_Extinction = glm::vec3(0.0f);
+	transparentGlassMat->m_Extinction = glm::vec3(0.5f);
 	transparentGlassMat->m_Roughness = 0.0f;
 	m_Materials.push_back(transparentGlassMat);
 
 	std::shared_ptr<Material> greenConductorMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_CONDUCTOR);
 	greenConductorMat->m_ReflectionColor = glm::vec3(0.2f, 0.7f, 0.2f);
+	greenConductorMat->m_Roughness = 0.0f;
 	m_Materials.push_back(greenConductorMat);
 
 	std::shared_ptr<Material> mirrorMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_CONDUCTOR);
@@ -134,6 +135,10 @@ void Scene::MakeScene(int scene)
 		m_SceneType = DEFAULT;
 
 		/* === Scene Objects === */
+		std::shared_ptr<Object> plane0 = std::make_shared<Object>(planeMesh, fullWhiteMat);
+		plane0->Scale(100.0f);
+		PushToBoth(plane0);
+		
 		std::shared_ptr<Object> vikingRoom = std::make_shared<Object>(vikingRoomMesh, vikingRoomMat);
 		vikingRoom->Translate(0.0f, 0.0f, 0.5f);
 		vikingRoom->Scale(5.0f);
@@ -151,15 +156,16 @@ void Scene::MakeScene(int scene)
 		lucy->Scale(5.0f);
 		PushToBoth(lucy);
 
-		std::shared_ptr<Object> plane0 = std::make_shared<Object>(planeMesh, fullWhiteMat);
-		plane0->Scale(100.0f);
-		PushToBoth(plane0);
+		std::shared_ptr<Object> sphere0 = std::make_shared<Object>(sphereMesh, transparentGlassMat);
+		sphere0->Translate(6.0f, 2.0f, 2.0f);
+		sphere0->Scale(2.0f);
+		PushToBoth(sphere0);
 
 		/* === Light(s) === */
-		std::shared_ptr<Object> sphere0 = std::make_shared<Object>(sphereMesh, whiteDiffuseLightMat);
-		sphere0->Translate(5.0f, -5.0f, 8.0f);
-		sphere0->Scale(1.0f);
-		PushToBoth(sphere0);
+		std::shared_ptr<Object> sphere1 = std::make_shared<Object>(sphereMesh, whiteDiffuseLightMat);
+		sphere1->Translate(5.0f, -5.0f, 8.0f);
+		sphere1->Scale(1.0f);
+		PushToBoth(sphere1);
 
 		/* === Background === */
 		m_BackgroundMode = BACKGROUND_MODE_GRADIENT;

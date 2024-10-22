@@ -28,7 +28,6 @@ namespace otx
 
 		/* Compute world-space normal and normalize */
 		N = normalize(optixTransformNormalFromObjectToWorldSpace(N));
-		if (sbtData.roughness > 0.0f) N = normalize(N + prd.random.RandomOnUnitSphere() * sbtData.roughness);
 		
 		/* Determine if ray is entering/exiting */
 		const float3 w_out = -rayDir;
@@ -78,6 +77,9 @@ namespace otx
 			prd.direction = w_in;
 			prd.radiance *= sbtData.refractionColor * transmittance;
 		}
+
+		/* Add a randomized direction proportional to the material's roughness */
+		if (sbtData.roughness > 0.0f) prd.direction = normalize(prd.direction + prd.random.RandomOnUnitSphere() * sbtData.roughness);
 
 		/* If this is the first intersection of the ray, set the albedo and normal */
 		if (prd.depth == 0)

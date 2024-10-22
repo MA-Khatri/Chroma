@@ -39,10 +39,9 @@ namespace otx
 		/* === Set ray data for next trace call === */
 		/* Determine reflected ray origin and direction */
 		OrthonormalBasis basis = OrthonormalBasis(N);
-		float3 reflectDir = basis.Local(prd.random.RandomOnUnitCosineHemisphere());
-		float3 reflectOrigin = FrontHitPosition(N);
-		prd.origin = reflectOrigin;
-		prd.direction = reflectDir;
+		prd.direction = basis.Local(prd.random.RandomOnUnitCosineHemisphere());
+		prd.origin = FrontHitPosition(N);
+		
 
 		/* Update the ray color */
 		prd.radiance *= diffuseColor;
