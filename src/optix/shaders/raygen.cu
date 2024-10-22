@@ -112,6 +112,43 @@ namespace otx
 				/* Special case for when maxDepth = 1 -- Show albedo color */
 				if (optixLaunchParams.maxDepth == 1) break;
 
+				/* === Direct Light Sampling === */
+				float3 surfaceIllumination = make_float3(0.0f); /* Direct light illumination on surface */
+				for (int i = 0; i < optixLaunchParams.nLightSamples; i++)
+				{
+					/* Pick a light to sample... */
+					// TODO
+					float3 lightSamplePosition = make_float3(0.0f, 0.0f, 8.0f);
+
+					float3 lightSampleDir = lightSamplePosition - prd.origin;
+
+					///* Only illuminate if *facing* the light */
+					//if (dot(lightSampleDir, N) < 0.0f) continue;
+
+					/* Launch a ray towards the selected light */
+					uint32_t u0, u1;
+					float3 sampleIllumination;
+					packPointer(&sampleIllumination, u0, u1);
+					optixTrace(
+						optixLaunchParams.traversable,
+						prd.origin,
+						lightSamplePosition,
+						RAY_EPS,
+						length(lightSampleDir) - RAY_EPS,
+						0.0f,
+						OptixVisibilityMask(255),
+						OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
+						RAY_TYPE_SHADOW,
+						RAY_TYPE_COUNT,
+						RAY_TYPE_SHADOW,
+						u0, u1
+					);
+
+					surfaceIllumination += sampleIllumination;
+				}
+				surfaceIllumination /= optixLaunchParams.nLightSamples;
+				prd.radiance *= surfaceIllumination * 2.0f;
+
 				/* Update ray data for next ray path segment */
 				rayOrg = prd.origin;
 				rayDir = prd.direction;

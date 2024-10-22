@@ -41,7 +41,6 @@ namespace otx
 		OrthonormalBasis basis = OrthonormalBasis(N);
 		prd.direction = basis.Local(prd.random.RandomOnUnitCosineHemisphere());
 		prd.origin = FrontHitPosition(N);
-		
 
 		/* Update the ray color */
 		prd.radiance *= diffuseColor;

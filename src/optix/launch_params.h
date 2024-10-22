@@ -56,8 +56,10 @@ namespace otx
 
 		float3 cutoffColor; /* radiance color for rays that reach depth limit */
 		int maxDepth; /* Max number of ray bounces */
+		int nLightSamples; /* Number of direct light samples per surface intersection */
 
-		OptixTraversableHandle traversable;
+		OptixTraversableHandle traversable; /* Optix traversable handle for top-level scene AS */
+
 
 		int backgroundMode;
 		float3 clearColor;

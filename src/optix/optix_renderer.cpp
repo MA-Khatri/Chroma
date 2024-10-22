@@ -968,6 +968,7 @@ namespace otx
 		m_LaunchParams.cutoffColor = make_float3(0.0f);
 		m_LaunchParams.gammaCorrect = m_GammaCorrect;
 		m_LaunchParams.stratifiedSampling = m_StratifiedSampling;
+		m_LaunchParams.nLightSamples = 1;
 
 		/* Background settings */
 		m_LaunchParams.backgroundMode = m_Scene->m_BackgroundMode;

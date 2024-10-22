@@ -70,7 +70,7 @@ void Scene::MakeScene(int scene)
 	transparentGlassMat->m_ReflectionColor = glm::vec3(1.0f);
 	transparentGlassMat->m_RefractionColor = glm::vec3(1.0f);
 	transparentGlassMat->m_EtaIn = 1.5f;
-	transparentGlassMat->m_Extinction = glm::vec3(0.5f);
+	transparentGlassMat->m_Extinction = glm::vec3(0.0f);
 	transparentGlassMat->m_Roughness = 0.0f;
 	m_Materials.push_back(transparentGlassMat);
 
@@ -217,11 +217,11 @@ void Scene::MakeScene(int scene)
 		PushToBoth(back);
 
 		/* === Light === */
-		std::shared_ptr<Object> light = std::make_shared<Object>(planeMesh, whiteDiffuseLightMat);
-		light->Translate(0.0f, 0.0f, 10.0f - 0.001f);
-		light->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f);
-		light->Scale(3.0f);
-		PushToBoth(light);
+		//std::shared_ptr<Object> light = std::make_shared<Object>(planeMesh, whiteDiffuseLightMat);
+		//light->Translate(0.0f, 0.0f, 10.0f - 0.001f);
+		//light->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f);
+		//light->Scale(3.0f);
+		//PushToBoth(light);
 
 		/* === Scene Objects === */
 		//std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, transparentGlassMat);
@@ -241,7 +241,7 @@ void Scene::MakeScene(int scene)
 		PushToBoth(sphere);
 
 		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
-		m_ClearColor = glm::vec3(0.0f);
+		m_ClearColor = glm::vec3(0.1f);
 
 		break;
 	}
