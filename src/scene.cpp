@@ -193,7 +193,7 @@ void Scene::MakeScene(int scene)
 
 		std::shared_ptr<Object> top = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
 		top->Translate(0.0f, 0.0f, 10.0f);
-		top->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f); /* technically not necessary */
+		top->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f); /* technically not necessary? */
 		top->Scale(10.0f);
 		PushToBoth(top);
 
@@ -221,7 +221,7 @@ void Scene::MakeScene(int scene)
 		light->Translate(0.0f, 0.0f, 10.0f - 0.001f);
 		light->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f);
 		light->Scale(3.0f);
-		//PushToBoth(light);
+		PushToBoth(light);
 
 		/* === Scene Objects === */
 		//std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, transparentGlassMat);
@@ -233,12 +233,12 @@ void Scene::MakeScene(int scene)
 		cube->Translate(-2.0f, -2.0f, 3.0f);
 		cube->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 20.0f);
 		cube->Scale(2.5f, 2.5f, 6.0f);
-		//PushToBoth(cube);
+		PushToBoth(cube);
 
 		std::shared_ptr<Object> sphere = std::make_shared<Object>(sphereMesh, transparentGlassMat);
 		sphere->Translate(1.5f, 1.5f, 2.0f);
 		sphere->Scale(2.0f);
-		//PushToBoth(sphere);
+		PushToBoth(sphere);
 
 		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);

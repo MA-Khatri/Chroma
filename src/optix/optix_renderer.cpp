@@ -968,7 +968,7 @@ namespace otx
 		m_LaunchParams.cutoffColor = m_CutoffColor;
 		m_LaunchParams.gammaCorrect = m_GammaCorrect;
 		m_LaunchParams.stratifiedSampling = m_StratifiedSampling;
-		m_LaunchParams.nLightSamples = m_LightSamples;
+		m_LaunchParams.lightSampleCount = m_LightSampleCount;
 
 		/* Background settings */
 		m_LaunchParams.backgroundMode = m_Scene->m_BackgroundMode;
@@ -1149,6 +1149,12 @@ namespace otx
 		ResetAccumulation(); /* Technically, we don't need to. But this will help to be consistent while testing. */
 	}
 
+	void Optix::SetLightSampleCount(int nSamples)
+	{
+		m_LightSampleCount = nSamples;
+		ResetAccumulation();
+	}
+
 	Camera* Optix::GetLastSetCamera()
 	{
 		return &m_LastSetCamera;
@@ -1192,5 +1198,10 @@ namespace otx
 	bool Optix::GetStratifyEnabled()
 	{
 		return m_StratifiedSampling;
+	}
+
+	int Optix::GetLightSampleCount()
+	{
+		return m_LightSampleCount;
 	}
 }

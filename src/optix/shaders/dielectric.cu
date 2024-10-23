@@ -66,7 +66,7 @@ namespace otx
 			const float3 fhp = FrontHitPosition(N);
 			prd.origin = fhp;
 			prd.direction = w_in;
-			prd.radiance = sbtData.reflectionColor * transmittance;
+			prd.radiance *= sbtData.reflectionColor * transmittance;
 		}
 		else
 		{
@@ -75,7 +75,7 @@ namespace otx
 			const float3 bhp = BackHitPosition(N);
 			prd.origin = bhp;
 			prd.direction = w_in;
-			prd.radiance = sbtData.refractionColor * transmittance;
+			prd.radiance *= sbtData.refractionColor * transmittance;
 		}
 
 		/* Add a randomized direction proportional to the material's roughness */

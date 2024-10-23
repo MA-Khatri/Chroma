@@ -200,6 +200,13 @@ void RayTraceView::OnUIRender()
 				m_OptixRenderer->SetMaxDepth(tempDepth);
 			}
 
+			int tempLightSamples = m_OptixRenderer->GetLightSampleCount();
+			ImGui::SliderInt("Light Sample Count", &tempLightSamples, 0, 4);
+			if (tempLightSamples != m_OptixRenderer->GetLightSampleCount())
+			{
+				m_OptixRenderer->SetLightSampleCount(tempLightSamples);
+			}
+
 			float tempBR = m_OptixRenderer->GetBackgroundRotation();
 			ImGui::SliderFloat("Background Rotation", &tempBR, 0.0f, 360.0f);
 			if (tempBR != m_OptixRenderer->GetBackgroundRotation())

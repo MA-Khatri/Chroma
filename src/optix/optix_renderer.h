@@ -37,6 +37,7 @@ namespace otx
 		void SetMaxSampleCount(int nSamples);
 		void SetBackgroundRotation(float deg);
 		void SetStratifyEnabled(bool enabled);
+		void SetLightSampleCount(int nSamples);
 
 		/* === Get Functions === */
 		Camera* GetLastSetCamera();
@@ -48,6 +49,7 @@ namespace otx
 		int GetMaxSampleCount();
 		float GetBackgroundRotation();
 		bool GetStratifyEnabled();
+		int GetLightSampleCount();
 
 		/* Render one frame */
 		void Render();
@@ -210,8 +212,8 @@ namespace otx
 		/* Adjust horizontal offset angle of sky texture, locally expressed as degrees */
 		float m_BackgroundRotation = 0.0f;
 
-		/* Number of random light samples to generate per ray-surface interaction */
-		int m_LightSamples = 1;
+		/* Number of random light samples to generate per ray-surface interaction -- setting this to 0 effectively disables direct light sampling */
+		int m_LightSampleCount = 1;
 
 		/* Color multiplied against rays past the depth limit. Typically should be 0.0f */
 		float3 m_CutoffColor = make_float3(0.0f);

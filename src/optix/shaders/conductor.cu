@@ -35,7 +35,7 @@ namespace otx
 			float4 tex = tex2D<float4>(sbtData.diffuseTexture, tc.x, tc.y);
 			diffuseColor = make_float3(tex.x, tex.y, tex.z);
 		}
-		prd.radiance = diffuseColor;
+		prd.radiance *= diffuseColor;
 
 		/* === Set ray data for next trace call === */
 		/* Determine reflected ray's origin and direction */

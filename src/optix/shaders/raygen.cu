@@ -39,7 +39,9 @@ namespace otx
 			/* Initial prd values for the random walk */
 			prd.depth = 0;
 			prd.done = false;
-			prd.radiance = make_float3(0.0f);
+			prd.radiance = make_float3(1.0f);
+			prd.totalRadiance = make_float3(0.0f);
+			prd.nLightPaths = 0;
 			prd.origin = make_float3(0.0f);
 			prd.direction = make_float3(0.0f);
 
@@ -83,9 +85,6 @@ namespace otx
 			}
 
 			/* Iterative (non-recursive) render loop */
-			float3 sampleColor = make_float3(0.0f); /* The sum of all light paths traced -- will be normalized by nLightPaths after the loop */
-			float3 randomWalkColor = make_float3(1.0f); /* The current color of the primary ray path -- i.e., bsdf sampling term */
-			int nLightPaths = 0; /* The total number of light paths traced for this sample */
 			while (true)
 			{
 				/* Take a random walk step */
@@ -109,66 +108,25 @@ namespace otx
 				rayDir = prd.direction;
 				prd.depth++;
 
-				/* Update the radiance of the primary ray path according to the latest intersection */
-				randomWalkColor *= prd.radiance;
-
 				/* If the random walk has terminated (e.g. hit a light / miss), end */
 				if (prd.done)
 				{
-					sampleColor += randomWalkColor;
-					nLightPaths++;
+					prd.totalRadiance += prd.radiance; /* Add the primary ray path's radiance */
+					prd.nLightPaths++;
 					break;
-				}
-
-				/* === Direct Light Sampling === */
-				for (int i = 0; i < optixLaunchParams.nLightSamples; i++)
-				{
-					/* Pick a light to sample... */
-					// TODO, multiple lights and position on selected light
-					float3 lightSamplePosition = make_float3(0.0f, 0.0f, 5.0f);
-					float3 lightSampleDirection = lightSamplePosition - rayOrg;
-
-					/* Initialize a shadow ray... */
-					PRD_Shadow shadowRay;
-					shadowRay.radiance = make_float3(0.0f);
-					shadowRay.reachedLight = false;
-					
-					/* Launch the shadow ray towards the selected light */
-					uint32_t s0, s1;
-					packPointer(&shadowRay, s0, s1);
-					optixTrace(
-						optixLaunchParams.traversable,
-						rayOrg, /* I.e., last hit position of the primary ray path */
-						normalize(lightSampleDirection),
-						0.0f, /* rayOrg should already be offset */
-						length(lightSampleDirection) - RAY_EPS,
-						0.0f, /* ray time */
-						OptixVisibilityMask(255),
-						OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
-						RAY_TYPE_SHADOW,
-						RAY_TYPE_COUNT,
-						RAY_TYPE_SHADOW,
-						s0, s1
-					);
-
-					/* Later, we could make sampleIllumination into a struct with a boolean to check... */
-					if (shadowRay.reachedLight)
-					{
-						sampleColor += randomWalkColor * shadowRay.radiance * (1.0f / (2.0f * M_PIf));
-						nLightPaths++;
-					}
 				}
 
 				/* Terminate the random walk if we're at/past the max depth */
 				if (prd.depth >= optixLaunchParams.maxDepth)
 				{
-					randomWalkColor *= optixLaunchParams.cutoffColor;
-					sampleColor += randomWalkColor;
+					prd.radiance *= optixLaunchParams.cutoffColor;
+					prd.totalRadiance += prd.radiance;
+					prd.nLightPaths++;
 					break;
 				}
 			}
 
-			pixelColor += sampleColor / float(nLightPaths);
+			pixelColor += prd.totalRadiance / float(prd.nLightPaths);
 			pixelNormal += prd.normal;
 			pixelAlbedo += prd.albedo;
 		}

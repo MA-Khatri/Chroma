@@ -195,7 +195,7 @@ namespace otx
 
 	inline __host__ __device__ float CosineHemispherePDF(float3 v)
 	{
-		float cosTheta = sqrt(v.x * v.x + v.y * v.y);
+		float cosTheta = sqrt(1 - v.x * v.x - v.y * v.y);
 		return cosTheta * M_1_PIf;
 	}
 
@@ -336,13 +336,18 @@ namespace otx
 	struct PRD_Radiance
 	{
 		Random random; /* Random number generator and its state */
-		int depth; /* Recursion depth */
+		int depth; /* Recursion depth (of primary ray path) */
 
-		/* Shading state */
+		/* === Shading state === */
 		bool done; /* boolean allowing for early termination, e.g. if ray gets fully absorbed/misses */
-		float3 radiance; /* I.e., pixel color */
+
+		float3 radiance; /* Primary ray path's cumulative color (bsdf sample) */
+		float3 totalRadiance; /* Total radiance for all light paths */
+		int nLightPaths; /* Cumulative number of traced ray paths */
+		
 		float3 normal; /* Surface normal of first intersection */
 		float3 albedo; /* Diffuse color of first intersection */
+		
 		float3 origin; /* Store the *next* ray's origin */
 		float3 direction; /* Store the *next* ray's direction */
 	};
