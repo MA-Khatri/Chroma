@@ -5,7 +5,7 @@ namespace otx
 	extern "C" __global__ void __closesthit__radiance()
 	{
 		const SBTData& sbtData = *(const SBTData*)optixGetSbtDataPointer();
-		PRD_radiance& prd = *getPRD<PRD_radiance>();
+		PRD_Radiance& prd = *getPRD<PRD_Radiance>();
 
 		const int primID = optixGetPrimitiveIndex();
 		const int3 index = sbtData.index[primID];
@@ -43,7 +43,7 @@ namespace otx
 		prd.origin = FrontHitPosition(N);
 
 		/* Update the ray color */
-		prd.radiance *= diffuseColor;
+		prd.radiance = diffuseColor;
 
 		/* If this is the first intersection of the ray, set the albedo and normal */
 		if (prd.depth == 0)

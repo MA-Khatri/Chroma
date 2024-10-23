@@ -5,7 +5,7 @@ namespace otx
 	extern "C" __global__ void __closesthit__radiance()
 	{
 		const SBTData& sbtData = *(const SBTData*)optixGetSbtDataPointer();
-		PRD_radiance& prd = *getPRD<PRD_radiance>();
+		PRD_Radiance& prd = *getPRD<PRD_Radiance>();
 
 		const int primID = optixGetPrimitiveIndex();
 		const int3 index = sbtData.index[primID];
@@ -21,7 +21,7 @@ namespace otx
 			float4 tex = tex2D<float4>(sbtData.diffuseTexture, tc.x, tc.y);
 			lightColor *= make_float3(tex.x, tex.y, tex.z);
 		}
-		prd.radiance *= lightColor;
+		prd.radiance = lightColor;
 
 		/* Terminate ray */
 		prd.done = true;

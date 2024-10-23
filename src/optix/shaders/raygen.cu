@@ -19,7 +19,7 @@ namespace otx
 		const auto& camera = optixLaunchParams.camera;
 
 		/* Initialize per-ray data */
-		PRD_radiance prd;
+		PRD_Radiance prd;
 
 		/* Random seed is current frame count * frame size + current (1D) pixel position such that every pixel for every accumulated frame has a unique seed. */
 		prd.random.Init(accumID * optixLaunchParams.frame.size.x * optixLaunchParams.frame.size.y + iy * optixLaunchParams.frame.size.x + ix);
@@ -30,16 +30,16 @@ namespace otx
 
 		const int nps = optixLaunchParams.frame.samples;
 		const int numPixelSamples = optixLaunchParams.stratifiedSampling ? nps * nps : nps; /* N Pixel samples for this render call */
-		const float spd = 1.0f / float(nps); /* sub-pixel delta (spd) */
+		const float spd = 1.0f / float(nps); /* sub-pixel delta (spd) used for stratified sampling */
 		float3 pixelColor = make_float3(0.0f); /* Accumulated color for all pixel samples for this call */
 		float3 pixelNormal = make_float3(0.0f); /* Accumulated normals for all pixel samples for this call */
 		float3 pixelAlbedo = make_float3(0.0f); /* Accumulated albedo for all pixel samples for this call */
 		for (int sampleID = 0; sampleID < numPixelSamples; sampleID++)
 		{
-			/* Initial prd values */
+			/* Initial prd values for the random walk */
 			prd.depth = 0;
 			prd.done = false;
-			prd.radiance = make_float3(1.0f);
+			prd.radiance = make_float3(0.0f);
 			prd.origin = make_float3(0.0f);
 			prd.direction = make_float3(0.0f);
 
@@ -64,7 +64,6 @@ namespace otx
 
 			/* Ray origin and direction */
 			float3 rayOrg, rayDir;
-
 			if (optixLaunchParams.camera.projectionMode == PROJECTION_MODE_PERSPECTIVE)
 			{
 				rayOrg = camera.position;
@@ -84,14 +83,12 @@ namespace otx
 			}
 
 			/* Iterative (non-recursive) render loop */
+			float3 sampleColor = make_float3(0.0f); /* The sum of all light paths traced -- will be normalized by nLightPaths after the loop */
+			float3 randomWalkColor = make_float3(1.0f); /* The current color of the primary ray path -- i.e., bsdf sampling term */
+			int nLightPaths = 0; /* The total number of light paths traced for this sample */
 			while (true)
 			{
-				if (prd.depth >=  optixLaunchParams.maxDepth)
-				{
-					prd.radiance *= optixLaunchParams.cutoffColor;
-					break;
-				}
-
+				/* Take a random walk step */
 				optixTrace(
 					optixLaunchParams.traversable,
 					rayOrg,
@@ -100,63 +97,78 @@ namespace otx
 					1e20f, /* tMax */
 					0.0f, /* ray time */
 					OptixVisibilityMask(255),
-					OPTIX_RAY_FLAG_DISABLE_ANYHIT, /* OPTIX_RAY_FLAG_NONE */
+					OPTIX_RAY_FLAG_DISABLE_ANYHIT,
 					RAY_TYPE_RADIANCE, /* SBT offset */
 					RAY_TYPE_COUNT, /* SBT stride */
 					RAY_TYPE_RADIANCE, /* miss SBT index */
 					u0, u1 /* packed pointer to our PRD */
 				);
+				
+				/* Set the ray orign and direction for the next segment of the random walk */
+				rayOrg = prd.origin;
+				rayDir = prd.direction;
+				prd.depth++;
 
-				if (prd.done) break;
+				/* Update the radiance of the primary ray path according to the latest intersection */
+				randomWalkColor *= prd.radiance;
 
-				/* Special case for when maxDepth = 1 -- Show albedo color */
-				if (optixLaunchParams.maxDepth == 1) break;
+				/* If the random walk has terminated (e.g. hit a light / miss), end */
+				if (prd.done)
+				{
+					sampleColor += randomWalkColor;
+					nLightPaths++;
+					break;
+				}
 
 				/* === Direct Light Sampling === */
-				float3 surfaceIllumination = make_float3(0.0f); /* Direct light illumination on surface */
 				for (int i = 0; i < optixLaunchParams.nLightSamples; i++)
 				{
 					/* Pick a light to sample... */
-					// TODO
-					float3 lightSamplePosition = make_float3(0.0f, 0.0f, 8.0f);
+					// TODO, multiple lights and position on selected light
+					float3 lightSamplePosition = make_float3(0.0f, 0.0f, 5.0f);
+					float3 lightSampleDirection = lightSamplePosition - rayOrg;
 
-					float3 lightSampleDir = lightSamplePosition - prd.origin;
-
-					///* Only illuminate if *facing* the light */
-					//if (dot(lightSampleDir, N) < 0.0f) continue;
-
-					/* Launch a ray towards the selected light */
-					uint32_t u0, u1;
-					float3 sampleIllumination;
-					packPointer(&sampleIllumination, u0, u1);
+					/* Initialize a shadow ray... */
+					PRD_Shadow shadowRay;
+					shadowRay.radiance = make_float3(0.0f);
+					shadowRay.reachedLight = false;
+					
+					/* Launch the shadow ray towards the selected light */
+					uint32_t s0, s1;
+					packPointer(&shadowRay, s0, s1);
 					optixTrace(
 						optixLaunchParams.traversable,
-						prd.origin,
-						lightSamplePosition,
-						RAY_EPS,
-						length(lightSampleDir) - RAY_EPS,
-						0.0f,
+						rayOrg, /* I.e., last hit position of the primary ray path */
+						normalize(lightSampleDirection),
+						0.0f, /* rayOrg should already be offset */
+						length(lightSampleDirection) - RAY_EPS,
+						0.0f, /* ray time */
 						OptixVisibilityMask(255),
 						OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
 						RAY_TYPE_SHADOW,
 						RAY_TYPE_COUNT,
 						RAY_TYPE_SHADOW,
-						u0, u1
+						s0, s1
 					);
 
-					surfaceIllumination += sampleIllumination;
+					/* Later, we could make sampleIllumination into a struct with a boolean to check... */
+					if (shadowRay.reachedLight)
+					{
+						sampleColor += randomWalkColor * shadowRay.radiance * (1.0f / (2.0f * M_PIf));
+						nLightPaths++;
+					}
 				}
-				surfaceIllumination /= optixLaunchParams.nLightSamples;
-				prd.radiance *= surfaceIllumination * 2.0f;
 
-				/* Update ray data for next ray path segment */
-				rayOrg = prd.origin;
-				rayDir = prd.direction;
-
-				prd.depth++;
+				/* Terminate the random walk if we're at/past the max depth */
+				if (prd.depth >= optixLaunchParams.maxDepth)
+				{
+					randomWalkColor *= optixLaunchParams.cutoffColor;
+					sampleColor += randomWalkColor;
+					break;
+				}
 			}
 
-			pixelColor += prd.radiance;
+			pixelColor += sampleColor / float(nLightPaths);
 			pixelNormal += prd.normal;
 			pixelAlbedo += prd.albedo;
 		}

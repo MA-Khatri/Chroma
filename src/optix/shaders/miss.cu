@@ -6,7 +6,7 @@ namespace otx
 {
 	extern "C" __global__ void __miss__radiance()
 	{
-		PRD_radiance& prd = *getPRD<PRD_radiance>();
+		PRD_Radiance& prd = *getPRD<PRD_Radiance>();
 
 		float3 result;
 
@@ -38,7 +38,7 @@ namespace otx
 			result = make_float3(0.0f);
 		}
 
-		prd.radiance *= result;
+		prd.radiance = result;
 		prd.done = true;
 	}
 }

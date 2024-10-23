@@ -168,7 +168,7 @@ namespace otx
 		int m_AccumulatedSampleCount = 0;
 
 		/* Maximum allowed number of accumulated samples -- set to 0 for unlimited */
-		int m_MaxSampleCount = 1024;
+		int m_MaxSampleCount = 4;
 
 		/* === Denoiser Components === */
 		CUDABuffer m_FBColor; /* The buffer we store the initial, accumulated rendered pixels to, in float4 format */
@@ -188,11 +188,15 @@ namespace otx
 
 
 		/* === Externally configurable params === */
-		/* Samples per pixel per call to render -- will be squared if using stratified sampling */
-		int m_SamplesPerRender = 1;
+		/*
+		 * Samples per pixel per call to render -- the true value will be
+		 * squared if using stratified sampling since it then represents 
+		 * the number of stratified samples along each axis of the pixel
+		 */
+		int m_SamplesPerRender = 2;
 
 		/* Maximum number of ray bounces before termination */
-		int m_MaxDepth = 12;
+		int m_MaxDepth = 2;
 
 		/* Whether to turn on gamma correction for the final (presented) render */
 		bool m_GammaCorrect = true;
@@ -205,6 +209,12 @@ namespace otx
 
 		/* Adjust horizontal offset angle of sky texture, locally expressed as degrees */
 		float m_BackgroundRotation = 0.0f;
+
+		/* Number of random light samples to generate per ray-surface interaction */
+		int m_LightSamples = 1;
+
+		/* Color multiplied against rays past the depth limit. Typically should be 0.0f */
+		float3 m_CutoffColor = make_float3(0.0f);
 	};
 
 

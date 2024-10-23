@@ -332,8 +332,8 @@ namespace otx
 
 	typedef PCG Random;
 
-	/* Per-ray data */
-	struct PRD_radiance
+	/* === Per-ray data structs === */
+	struct PRD_Radiance
 	{
 		Random random; /* Random number generator and its state */
 		int depth; /* Recursion depth */
@@ -343,7 +343,13 @@ namespace otx
 		float3 radiance; /* I.e., pixel color */
 		float3 normal; /* Surface normal of first intersection */
 		float3 albedo; /* Diffuse color of first intersection */
-		float3 origin; /* ray origin */
-		float3 direction; /* ray direction */
+		float3 origin; /* Store the *next* ray's origin */
+		float3 direction; /* Store the *next* ray's direction */
+	};
+
+	struct PRD_Shadow
+	{
+		float3 radiance; /* Light's radiance */
+		bool reachedLight; /* Did the shadow ray reach the light? */
 	};
 }

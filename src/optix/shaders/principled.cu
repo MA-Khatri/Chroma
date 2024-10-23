@@ -9,7 +9,7 @@ namespace otx
 	extern "C" __global__ void __closesthit__radiance()
 	{
 		const SBTData& sbtData = *(const SBTData*)optixGetSbtDataPointer();
-		PRD_radiance& prd = *getPRD<PRD_radiance>();
+		PRD_Radiance& prd = *getPRD<PRD_Radiance>();
 
 		const int primID = optixGetPrimitiveIndex();
 		const int3 index = sbtData.index[primID];
