@@ -26,12 +26,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* Features a few extensions by MA Khatri */
+
 #pragma once
 
 #ifndef VECTOR_MATH_H
 #define VECTOR_MATH_H
-
-//#include "config.h"
 
 #include <cuda_runtime.h>
 
@@ -85,6 +85,16 @@
 #endif
 #ifndef M_SQRT1_2f
 #define M_SQRT1_2f 0.707106781186547524401f
+#endif
+
+#ifndef M_1_2PIf
+#define M_1_2PIf 0.15915494309189535f
+#endif
+#ifndef M_1_4PIf
+#define M_1_4PIf 0.07957747154594767f
+#endif
+#ifndef M_2PIf
+#define M_2PIf 6.283185307179586f
 #endif
 
 #if !defined(__CUDACC__)

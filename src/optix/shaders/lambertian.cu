@@ -72,8 +72,6 @@ namespace otx
 			float3 lightNormalDirection = make_float3(0.0f, 0.0f, -1.0f);
 			float3 normalizedLightSampleDirection = normalize(lightSampleDirection);
 
-			if (dot(normalizedLightSampleDirection, lightNormalDirection) >= -0.001f) continue;
-
 			/* Initialize a shadow ray... */
 			PRD_Shadow shadowRay;
 			shadowRay.radiance = make_float3(0.0f);
@@ -99,7 +97,7 @@ namespace otx
 
 			if (shadowRay.reachedLight)
 			{
-				prd.totalRadiance += prd.radiance * shadowRay.radiance * CosineHemispherePDF(normalizedLightSampleDirection);
+				prd.totalRadiance += prd.radiance * shadowRay.radiance * CosineHemispherePDF(basis.Canonical(normalizedLightSampleDirection));
 				prd.nLightPaths++;
 			}
 		}

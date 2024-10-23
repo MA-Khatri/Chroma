@@ -6,6 +6,11 @@
 
 namespace otx
 {
+	struct float3x3
+	{
+
+	};
+
 	/* ====================== */
 	/* === Shader helpers === */
 	/* ====================== */
@@ -156,7 +161,7 @@ namespace otx
 	{
 		float z = 1.0f - 2.0f * u.x;
 		float r = sqrt(1.0f - z * z);
-		float phi = 2.0f * M_PIf * u.y;
+		float phi = M_2PIf * u.y;
 		return make_float3(r * cos(phi), r * sin(phi), z);
 	}
 
@@ -165,7 +170,7 @@ namespace otx
 	{
 		float z = u.x;
 		float r = sqrt(1.0f - z * z);
-		float phi = 2.0f * M_PIf * u.y;
+		float phi = M_2PIf * u.y;
 		return make_float3(r * cos(phi), r * sin(phi), z);
 	}
 
@@ -185,12 +190,12 @@ namespace otx
 
 	inline __host__ __device__ float UnitSpherePDF()
 	{
-		return 0.07957747154f; /* 0.07957747154 = 1 / (4 * PI) */
+		return M_1_4PIf;
 	}
 
 	inline __host__ __device__ float UnitHemispherePDF()
 	{
-		return 0.15915494309f; /* 0.15915494309 = 1 / (2 * PI) */
+		return M_1_2PIf;
 	}
 
 	inline __host__ __device__ float CosineHemispherePDF(float3 v)
@@ -229,14 +234,49 @@ namespace otx
 			u = cross(w, v);
 		}
 
-		/* Transform input vector to local space */
+		/* Transform input vector to local (model) space */
 		__host__ __device__ float3 Local(const float3& a) const
 		{
 			return a.x * u + a.y * v + a.z * w;
 		}
 
+		/* Compute the inverse transformation matrix */
+		/* based on: https://stackoverflow.com/questions/983999/simple-3x3-matrix-inverse-code-c */
+		__host__ __device__ void ComputeInverse()
+		{
+			float det = u.x * ((v.y * w.z) - (w.y * v.z)) -
+				u.y * ((v.x * w.z) - (v.z * w.z)) +
+				u.z * ((v.x * w.y) - (v.y * w.x));
+
+			float invdet = 1.0f / det;
+
+			ui.x = ((v.y * w.z) - (w.y * v.z)) * invdet;
+			ui.y = ((u.z * w.y) - (u.y * w.z)) * invdet;
+			ui.z = ((u.y * v.z) - (u.z * v.y)) * invdet;
+			vi.x = ((v.z * w.x) - (v.x * w.z)) * invdet;
+			vi.y = ((u.x * w.z) - (u.z * w.x)) * invdet;
+			vi.z = ((v.x * u.z) - (u.x * v.z)) * invdet;
+			wi.x = ((v.x * w.y) - (w.x * v.y)) * invdet;
+			wi.y = ((w.x * u.y) - (u.x * w.y)) * invdet;
+			wi.z = ((u.x * v.y) - (v.x * u.y)) * invdet;
+
+			inverseComputed = true;
+			/* I never want to do this again... */
+		}
+
+		/* Transform input vector back to canonical space */
+		__host__ __device__ float3 Canonical(const float3& a)
+		{
+			if (!inverseComputed) ComputeInverse();
+
+			return normalize(a.x * ui + a.y * vi + a.z * wi);
+		}
+
+
 	public:
-		float3 u, v, w;
+		float3 u, v, w; /* can be interpreted as rows of a 3x3 change of basis matrix */
+		float3 ui, vi, wi; /* inverse of basis vectors (inverse 3x3 matrix) */
+		bool inverseComputed = false;
 	};
 
 
@@ -343,7 +383,7 @@ namespace otx
 
 		float3 radiance; /* Primary ray path's cumulative color (bsdf sample) */
 		float3 totalRadiance; /* Total radiance for all light paths */
-		int nLightPaths; /* Cumulative number of traced ray paths */
+		int nLightPaths; /* Cumulative number of traced light paths */
 		
 		float3 normal; /* Surface normal of first intersection */
 		float3 albedo; /* Diffuse color of first intersection */

@@ -111,6 +111,7 @@ namespace otx
 				/* If the random walk has terminated (e.g. hit a light / miss), end */
 				if (prd.done)
 				{
+					//if (prd.nLightPaths > 0) prd.totalRadiance /= prd.nLightPaths;
 					prd.totalRadiance += prd.radiance; /* Add the primary ray path's radiance */
 					prd.nLightPaths++;
 					break;
