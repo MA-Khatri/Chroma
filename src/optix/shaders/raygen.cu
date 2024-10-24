@@ -41,6 +41,7 @@ namespace otx
 			prd.done = false;
 			prd.radiance = make_float3(1.0f);
 			prd.totalRadiance = make_float3(0.0f);
+			prd.bsdfPDF = 1.0f;
 			prd.nLightPaths = 0;
 			prd.origin = make_float3(0.0f);
 			prd.direction = make_float3(0.0f);
@@ -111,8 +112,7 @@ namespace otx
 				/* If the random walk has terminated (e.g. hit a light / miss), end */
 				if (prd.done)
 				{
-					//if (prd.nLightPaths > 0) prd.totalRadiance /= prd.nLightPaths;
-					prd.totalRadiance += prd.radiance; /* Add the primary ray path's radiance */
+					prd.totalRadiance += prd.radiance / prd.bsdfPDF; /* Add the primary ray path's radiance */
 					prd.nLightPaths++;
 					break;
 				}
@@ -121,11 +121,80 @@ namespace otx
 				if (prd.depth >= optixLaunchParams.maxDepth)
 				{
 					prd.radiance *= optixLaunchParams.cutoffColor;
-					prd.totalRadiance += prd.radiance;
+					prd.totalRadiance += prd.radiance / prd.bsdfPDF;
 					prd.nLightPaths++;
 					break;
 				}
+
+				/* We have not terminated yet, so we can (optionally) sample a light(s) */
+				/* This could perhaps be separated out into a different function? */
+				for (int i = 0; i < optixLaunchParams.lightSampleCount; i++)
+				{
+					/* Pick a light to sample... */
+					// TODO
+
+					/* For now we just pick a point on the surface of the 3x3 cornell box light */
+					float r1 = prd.random();
+					float r2 = prd.random();
+					float3 lightSamplePosition = make_float3(r1 * 6.0f - 3.0f, r2 * 6.0f - 3.0f, 9.98f);
+					float3 lightSampleDirection = lightSamplePosition - prd.origin;
+					float3 lightNormalDirection = make_float3(0.0f, 0.0f, -1.0f);
+					float3 normalizedLightSampleDirection = normalize(lightSampleDirection);
+
+					/* Only emit from front face of light */
+					if (dot(normalizedLightSampleDirection, lightNormalDirection) >= -RAY_EPS) continue;
+
+					/* Light does not illuminate back faces */
+					if (dot(normalizedLightSampleDirection, prd.basis.w) <= RAY_EPS) continue;
+
+					/* Initialize a shadow ray... */
+					PRD_Shadow shadowRay;
+					shadowRay.radiance = make_float3(0.0f);
+					shadowRay.reachedLight = false;
+
+					/* Launch the shadow ray towards the selected light */
+					uint32_t s0, s1;
+					packPointer(&shadowRay, s0, s1);
+					optixTrace(
+						optixLaunchParams.traversable,
+						prd.origin, /* I.e., last hit position of the primary ray path */
+						normalize(lightSampleDirection),
+						0.0f, /* prd.origin should already be offset */
+						length(lightSampleDirection) - RAY_EPS,
+						0.0f, /* ray time */
+						OptixVisibilityMask(255),
+						OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
+						RAY_TYPE_SHADOW,
+						RAY_TYPE_COUNT,
+						RAY_TYPE_SHADOW,
+						s0, s1
+					);
+
+					if (shadowRay.reachedLight)
+					{
+						float lightPDF = 0.0f;
+						if (prd.shadowRayPDFMode == PDF_UNIT_COSINE_HEMISPHERE)
+						{
+							lightPDF = CosineHemispherePDF(prd.basis.Canonical(normalizedLightSampleDirection));
+						}
+						else if (prd.shadowRayPDFMode == PDF_UNIT_HEMISPHERE)
+						{
+							lightPDF = UnitHemispherePDF();
+						}
+						else if (prd.shadowRayPDFMode == PDF_UNIT_SPHERE)
+						{
+							lightPDF = UnitSpherePDF();
+						}
+
+						float cosineWeight = max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f);
+
+						prd.totalRadiance += prd.radiance * shadowRay.radiance * cosineWeight * lightPDF;
+						prd.nLightPaths++;
+					}
+				}
 			}
+
+			//if (prd.totalRadiance.x != prd.totalRadiance.x) continue; /* Skip NaNs */
 
 			pixelColor += prd.totalRadiance / float(prd.nLightPaths);
 			pixelNormal += prd.normal;

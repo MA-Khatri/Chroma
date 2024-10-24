@@ -39,8 +39,14 @@ namespace otx
 		/* === Set ray data for next trace call === */
 		/* Determine reflected ray origin and direction */
 		OrthonormalBasis basis = OrthonormalBasis(N);
-		prd.direction = basis.Local(prd.random.RandomOnUnitCosineHemisphere());
+		float3 randDir = prd.random.RandomOnUnitCosineHemisphere();
+		prd.direction = basis.Local(randDir);
 		prd.origin = FrontHitPosition(N);
+		prd.bsdfPDF = CosineHemispherePDF(randDir);
+
+		/* Set data for shadow ray */
+		prd.basis = basis;
+		prd.shadowRayPDFMode = PDF_UNIT_COSINE_HEMISPHERE;
 
 		/* Update the primary ray path color */
 		prd.radiance *= diffuseColor;
@@ -50,56 +56,6 @@ namespace otx
 		{
 			prd.albedo = diffuseColor;
 			prd.normal = N;
-		}
-
-
-
-
-		/* === Direct Light Sampling === */
-		
-		float3 shadowRayOrg = prd.origin;
-
-		for (int i = 0; i < optixLaunchParams.lightSampleCount; i++)
-		{
-			/* Pick a light to sample... */
-			// TODO
-
-			/* For now we just pick a point on the surface of the 3x3 cornell box light */
-			float r1 = prd.random();
-			float r2 = prd.random();
-			float3 lightSamplePosition = make_float3(r1 * 6.0f - 3.0f, r2 * 6.0f - 3.0f, 9.99f);
-			float3 lightSampleDirection = lightSamplePosition - shadowRayOrg;
-			float3 lightNormalDirection = make_float3(0.0f, 0.0f, -1.0f);
-			float3 normalizedLightSampleDirection = normalize(lightSampleDirection);
-
-			/* Initialize a shadow ray... */
-			PRD_Shadow shadowRay;
-			shadowRay.radiance = make_float3(0.0f);
-			shadowRay.reachedLight = false;
-
-			/* Launch the shadow ray towards the selected light */
-			uint32_t s0, s1;
-			packPointer(&shadowRay, s0, s1);
-			optixTrace(
-				optixLaunchParams.traversable,
-				shadowRayOrg, /* I.e., last hit position of the primary ray path */
-				normalize(lightSampleDirection),
-				0.0f, /* shadowRayOrg should already be offset */
-				length(lightSampleDirection) - RAY_EPS,
-				0.0f, /* ray time */
-				OptixVisibilityMask(255),
-				OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
-				RAY_TYPE_SHADOW,
-				RAY_TYPE_COUNT,
-				RAY_TYPE_SHADOW,
-				s0, s1
-			);
-
-			if (shadowRay.reachedLight)
-			{
-				prd.totalRadiance += prd.radiance * shadowRay.radiance * CosineHemispherePDF(basis.Canonical(normalizedLightSampleDirection));
-				prd.nLightPaths++;
-			}
 		}
 	}
 

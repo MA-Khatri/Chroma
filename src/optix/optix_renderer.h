@@ -195,10 +195,10 @@ namespace otx
 		 * squared if using stratified sampling since it then represents 
 		 * the number of stratified samples along each axis of the pixel
 		 */
-		int m_SamplesPerRender = 2;
+		int m_SamplesPerRender = 1;
 
 		/* Maximum number of ray bounces before termination */
-		int m_MaxDepth = 2;
+		int m_MaxDepth = 1;
 
 		/* Whether to turn on gamma correction for the final (presented) render */
 		bool m_GammaCorrect = true;
@@ -207,13 +207,13 @@ namespace otx
 		bool m_DenoiserEnabled = false;
 
 		/* Are we using stratified sampling? If true, m_SamplesPerRender represents the number of samples along u, v axis of each pixel. */
-		bool m_StratifiedSampling = true;
+		bool m_StratifiedSampling = false;
 
 		/* Adjust horizontal offset angle of sky texture, locally expressed as degrees */
 		float m_BackgroundRotation = 0.0f;
 
 		/* Number of random light samples to generate per ray-surface interaction -- setting this to 0 effectively disables direct light sampling */
-		int m_LightSampleCount = 1;
+		int m_LightSampleCount = 0;
 
 		/* Color multiplied against rays past the depth limit. Typically should be 0.0f */
 		float3 m_CutoffColor = make_float3(0.0f);

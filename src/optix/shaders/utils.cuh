@@ -188,6 +188,12 @@ namespace otx
 	 * PDFs for different types of samplers
 	 */
 
+	enum {
+		PDF_UNIT_SPHERE,
+		PDF_UNIT_HEMISPHERE,
+		PDF_UNIT_COSINE_HEMISPHERE
+	};
+
 	inline __host__ __device__ float UnitSpherePDF()
 	{
 		return M_1_4PIf;
@@ -200,7 +206,7 @@ namespace otx
 
 	inline __host__ __device__ float CosineHemispherePDF(float3 v)
 	{
-		float cosTheta = sqrt(1 - v.x * v.x - v.y * v.y);
+		float cosTheta = sqrt(max(1.0f - v.x * v.x - v.y * v.y, 0.0f));
 		return cosTheta * M_1_PIf;
 	}
 
@@ -383,13 +389,17 @@ namespace otx
 
 		float3 radiance; /* Primary ray path's cumulative color (bsdf sample) */
 		float3 totalRadiance; /* Total radiance for all light paths */
+		float bsdfPDF; /* The PDF for the generated ray direction */
 		int nLightPaths; /* Cumulative number of traced light paths */
-		
+		int shadowRayPDFMode; /* What PDF equation should be used to determine the next shadow ray's pdf? */
+
+
 		float3 normal; /* Surface normal of first intersection */
 		float3 albedo; /* Diffuse color of first intersection */
 		
 		float3 origin; /* Store the *next* ray's origin */
 		float3 direction; /* Store the *next* ray's direction */
+		OrthonormalBasis basis; /* ONB of the last intersection */
 	};
 
 	struct PRD_Shadow
