@@ -113,9 +113,8 @@ namespace otx
 				/* If the random walk has terminated (e.g. hit a light / miss), end */
 				if (prd.done)
 				{
-					float powerHeuristic = prd.bsdfPDF * prd.bsdfPDF;
-					prd.totalRadiance += prd.radiance * powerHeuristic; /* Add the primary ray path's radiance */
-					cumulativePDF += powerHeuristic;
+					prd.totalRadiance += prd.radiance * prd.bsdfPDF; /* Add the primary ray path's radiance */
+					cumulativePDF += prd.bsdfPDF;
 					prd.nLightPaths++;
 					break;
 				}
@@ -123,10 +122,9 @@ namespace otx
 				/* Terminate the random walk if we're at/past the max depth */
 				if (prd.depth >= optixLaunchParams.maxDepth)
 				{
-					float powerHeuristic = prd.bsdfPDF * prd.bsdfPDF;
 					prd.radiance *= optixLaunchParams.cutoffColor;
-					prd.totalRadiance += prd.radiance * powerHeuristic;
-					cumulativePDF += powerHeuristic;
+					prd.totalRadiance += prd.radiance * prd.bsdfPDF;
+					cumulativePDF += prd.bsdfPDF;
 					prd.nLightPaths++;
 					break;
 				}
@@ -141,7 +139,7 @@ namespace otx
 					/* For now we just pick a point on the surface of the 3x3 cornell box light */
 					float r1 = prd.random();
 					float r2 = prd.random();
-					float3 lightSamplePosition = make_float3(r1 * 6.0f - 3.0f, r2 * 6.0f - 3.0f, 9.98f);
+					float3 lightSamplePosition = make_float3(r1 * 3.0f - 1.5f, r2 * 3.0f - 1.5f, 9.98f);
 					float3 lightSampleDirection = lightSamplePosition - prd.origin;
 					float3 lightNormalDirection = make_float3(0.0f, 0.0f, -1.0f);
 					float3 normalizedLightSampleDirection = normalize(lightSampleDirection);
@@ -192,8 +190,7 @@ namespace otx
 						}
 
 						/* weight the light PDF by light solid angle */
-						lightPDF *= max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f) / length(lightSampleDirection);
-						lightPDF *= lightPDF; /* power heuristic */
+						lightPDF *= max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f) / (length(lightSampleDirection) * 9.0f);
 						cumulativePDF += lightPDF;
 
 						prd.totalRadiance += prd.radiance * shadowRay.radiance * lightPDF;

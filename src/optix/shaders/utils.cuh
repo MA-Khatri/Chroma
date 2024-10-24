@@ -206,7 +206,7 @@ namespace otx
 
 	inline __host__ __device__ float CosineHemispherePDF(float3 v)
 	{
-		float cosTheta = sqrt(max(1.0f - v.x * v.x - v.y * v.y, 0.0f));
+		float cosTheta = sqrt(clamp(1.0f - v.x * v.x - v.y * v.y, 0.0f, 1.0f));
 		return cosTheta * M_1_PIf;
 	}
 
