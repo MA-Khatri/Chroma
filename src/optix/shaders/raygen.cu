@@ -137,15 +137,17 @@ namespace otx
 					// TODO
 
 					/* For now we just pick a point on the surface of the 3x3 cornell box light */
+					bool isDeltaLight = false;
 					float r1 = prd.random();
 					float r2 = prd.random();
 					float3 lightSamplePosition = make_float3(r1 * 3.0f - 1.5f, r2 * 3.0f - 1.5f, 9.98f);
 					float3 lightSampleDirection = lightSamplePosition - prd.origin;
 					float3 lightNormalDirection = make_float3(0.0f, 0.0f, -1.0f);
 					float3 normalizedLightSampleDirection = normalize(lightSampleDirection);
+					float lightSampleLength = length(lightSampleDirection);
 
 					/* Only emit from front face of light */
-					if (dot(normalizedLightSampleDirection, lightNormalDirection) >= -RAY_EPS) continue;
+					if (!isDeltaLight && dot(normalizedLightSampleDirection, lightNormalDirection) >= -RAY_EPS) continue;
 
 					/* Light does not illuminate back faces */
 					if (dot(normalizedLightSampleDirection, prd.basis.w) <= RAY_EPS) continue;
@@ -161,9 +163,9 @@ namespace otx
 					optixTrace(
 						optixLaunchParams.traversable,
 						prd.origin, /* I.e., last hit position of the primary ray path */
-						normalize(lightSampleDirection),
+						normalizedLightSampleDirection,
 						0.0f, /* prd.origin should already be offset */
-						length(lightSampleDirection) - RAY_EPS,
+						lightSampleLength - RAY_EPS,
 						0.0f, /* ray time */
 						OptixVisibilityMask(255),
 						OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
@@ -188,9 +190,21 @@ namespace otx
 						{
 							lightPDF = UnitSpherePDF();
 						}
+						else if (prd.shadowRayPDFMode == PDF_DELTA)
+						{
+							lightPDF = DeltaPDF(prd.direction, normalizedLightSampleDirection);
+						}
 
-						/* weight the light PDF by light solid angle */
-						lightPDF *= max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f) / (length(lightSampleDirection) * 9.0f);
+						if (isDeltaLight)
+						{
+							/* weight the light PDF by inverse square law */
+							lightPDF *= 1.0f / (lightSampleLength * lightSampleLength);
+						}
+						else 
+						{
+							/* weight the light PDF by: light area * cos(theta) / d^2 */
+							lightPDF *= 9.0f * max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f) / (lightSampleLength * lightSampleLength);
+						}
 						cumulativePDF += lightPDF;
 
 						prd.totalRadiance += prd.radiance * shadowRay.radiance * lightPDF;

@@ -15,7 +15,7 @@ namespace otx
 	/* === Shader helpers === */
 	/* ====================== */
 
-#define RAY_EPS 1e-5f
+#define RAY_EPS 1e-4f
 
 	/*
 	 * To communicate between programs, we pass a pointer to per-ray data (PRD)
@@ -191,7 +191,8 @@ namespace otx
 	enum {
 		PDF_UNIT_SPHERE,
 		PDF_UNIT_HEMISPHERE,
-		PDF_UNIT_COSINE_HEMISPHERE
+		PDF_UNIT_COSINE_HEMISPHERE,
+		PDF_DELTA,
 	};
 
 	inline __host__ __device__ float UnitSpherePDF()
@@ -208,6 +209,12 @@ namespace otx
 	{
 		float cosTheta = sqrt(clamp(1.0f - v.x * v.x - v.y * v.y, 0.0f, 1.0f));
 		return cosTheta * M_1_PIf;
+	}
+
+	inline __host__ __device__ float DeltaPDF(float3 a, float3 b)
+	{
+		if (fabs(length(normalize(a) - normalize(b))) < 0.001f) return 1.0f;
+		return 0.0f;
 	}
 
 	/* ========================= *

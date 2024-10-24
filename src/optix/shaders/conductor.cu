@@ -43,6 +43,13 @@ namespace otx
 		prd.direction = reflect(rayDir, N);
 		if (sbtData.roughness > 0.0f) prd.direction = normalize(prd.direction + prd.random.RandomOnUnitSphere() * sbtData.roughness);
 
+		OrthonormalBasis basis;
+		basis.BuildFromW(N);
+		prd.basis = basis;
+		prd.bsdfPDF = 1.0f;
+		prd.shadowRayPDFMode = PDF_DELTA;
+
+
 		/* If this is the first intersection of the ray, set the albedo and normal */
 		if (prd.depth == 0)
 		{
