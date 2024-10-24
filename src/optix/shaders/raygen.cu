@@ -86,6 +86,7 @@ namespace otx
 			}
 
 			/* Iterative (non-recursive) render loop */
+			float cumulativePDF = 0.0f;
 			while (true)
 			{
 				/* Take a random walk step */
@@ -112,7 +113,9 @@ namespace otx
 				/* If the random walk has terminated (e.g. hit a light / miss), end */
 				if (prd.done)
 				{
-					prd.totalRadiance += prd.radiance / prd.bsdfPDF; /* Add the primary ray path's radiance */
+					float powerHeuristic = prd.bsdfPDF * prd.bsdfPDF;
+					prd.totalRadiance += prd.radiance * powerHeuristic; /* Add the primary ray path's radiance */
+					cumulativePDF += powerHeuristic;
 					prd.nLightPaths++;
 					break;
 				}
@@ -120,8 +123,10 @@ namespace otx
 				/* Terminate the random walk if we're at/past the max depth */
 				if (prd.depth >= optixLaunchParams.maxDepth)
 				{
+					float powerHeuristic = prd.bsdfPDF * prd.bsdfPDF;
 					prd.radiance *= optixLaunchParams.cutoffColor;
-					prd.totalRadiance += prd.radiance / prd.bsdfPDF;
+					prd.totalRadiance += prd.radiance * powerHeuristic;
+					cumulativePDF += powerHeuristic;
 					prd.nLightPaths++;
 					break;
 				}
@@ -186,23 +191,31 @@ namespace otx
 							lightPDF = UnitSpherePDF();
 						}
 
-						float cosineWeight = max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f);
+						/* weight the light PDF by light solid angle */
+						lightPDF *= max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f) / length(lightSampleDirection);
+						lightPDF *= lightPDF; /* power heuristic */
+						cumulativePDF += lightPDF;
 
-						prd.totalRadiance += prd.radiance * shadowRay.radiance * cosineWeight * lightPDF;
+						prd.totalRadiance += prd.radiance * shadowRay.radiance * lightPDF;
 						prd.nLightPaths++;
 					}
 				}
 			}
 
-			//if (prd.totalRadiance.x != prd.totalRadiance.x) continue; /* Skip NaNs */
+			prd.totalRadiance = prd.totalRadiance / (float(prd.nLightPaths) * cumulativePDF);
 
-			pixelColor += prd.totalRadiance / float(prd.nLightPaths);
+			/* Set NaNs to 0 */
+			if (prd.totalRadiance.x != prd.totalRadiance.x) prd.totalRadiance.x = 0.0f;
+			if (prd.totalRadiance.y != prd.totalRadiance.y) prd.totalRadiance.y = 0.0f;
+			if (prd.totalRadiance.z != prd.totalRadiance.z) prd.totalRadiance.z = 0.0f;
+
+			pixelColor += prd.totalRadiance;
 			pixelNormal += prd.normal;
 			pixelAlbedo += prd.albedo;
 		}
 		
 		/* Determine average color for this call. Cap to prevent speckles (even though this breaks pbr condition) */
-		const float cap = 1000.0f;
+		const float cap = 100.0f;
 		const float cr = min(pixelColor.x / numPixelSamples, cap);
 		const float cg = min(pixelColor.y / numPixelSamples, cap);
 		const float cb = min(pixelColor.z / numPixelSamples, cap);
