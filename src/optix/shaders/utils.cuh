@@ -398,7 +398,7 @@ namespace otx
 		float3 radiance; /* Primary ray path's cumulative color (bsdf sample) */
 		float3 totalRadiance; /* Total radiance for all light paths */
 		float bsdfPDF; /* The PDF for the generated ray direction */
-		int nLightPaths; /* Cumulative number of traced light paths */
+		float nLightPaths; /* Cumulative number of traced light paths */
 		int shadowRayPDFMode; /* What PDF equation should be used to determine the next shadow ray's pdf? */
 
 

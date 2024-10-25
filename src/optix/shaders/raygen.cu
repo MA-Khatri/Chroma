@@ -115,7 +115,7 @@ namespace otx
 				{
 					prd.totalRadiance += prd.radiance * prd.bsdfPDF; /* Add the primary ray path's radiance */
 					cumulativePDF += prd.bsdfPDF;
-					prd.nLightPaths++;
+					prd.nLightPaths += 1.0f;
 					break;
 				}
 
@@ -125,7 +125,7 @@ namespace otx
 					prd.radiance *= optixLaunchParams.cutoffColor;
 					prd.totalRadiance += prd.radiance * prd.bsdfPDF;
 					cumulativePDF += prd.bsdfPDF;
-					prd.nLightPaths++;
+					prd.nLightPaths += 1.0f;
 					break;
 				}
 
@@ -138,10 +138,10 @@ namespace otx
 
 					/* For now we just pick a point on the surface of the 3x3 cornell box light */
 					bool isDeltaLight = false;
-					float lightArea = 9.0f;
+					float lightArea = 1.0f;
 					float r1 = prd.random();
 					float r2 = prd.random();
-					float3 lightSamplePosition = make_float3(r1 * 3.0f - 1.5f, r2 * 3.0f - 1.5f, 9.98f);
+					float3 lightSamplePosition = make_float3(r1 * 1.0f - 0.5f, r2 * 1.0f - 0.5f, 9.98f);
 					float3 lightSampleDirection = lightSamplePosition - prd.origin;
 					float3 lightNormalDirection = make_float3(0.0f, 0.0f, -1.0f);
 					float3 normalizedLightSampleDirection = normalize(lightSampleDirection);
@@ -209,15 +209,16 @@ namespace otx
 							/* inverse square law with light area and cosine */
 							lightPDF = lightArea * max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f) / (lightSampleLength * lightSampleLength);
 						}
-						cumulativePDF += scatteringPDF * lightPDF;
+						float cpdf = scatteringPDF * lightPDF / (optixLaunchParams.lightSampleCount * length(shadowRay.radiance));
+						cumulativePDF += cpdf;
 
-						prd.totalRadiance += prd.radiance * shadowRay.radiance * scatteringPDF * lightPDF;
-						prd.nLightPaths++;
+						prd.totalRadiance += prd.radiance * shadowRay.radiance * cpdf;
+						prd.nLightPaths += cpdf;
 					}
 				}
 			}
 
-			prd.totalRadiance = prd.totalRadiance / (float(prd.nLightPaths) * cumulativePDF);
+			prd.totalRadiance = prd.totalRadiance / (prd.nLightPaths * cumulativePDF);
 
 			/* Set NaNs to 0 */
 			if (prd.totalRadiance.x != prd.totalRadiance.x) prd.totalRadiance.x = 0.0f;

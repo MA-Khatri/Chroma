@@ -104,7 +104,7 @@ void Scene::MakeScene(int scene)
 	m_Materials.push_back(blueCheckerMat);
 
 	std::shared_ptr<Material> whiteDiffuseLightMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIFFUSE_LIGHT);
-	whiteDiffuseLightMat->m_ReflectionColor = glm::vec3(5.0f);
+	whiteDiffuseLightMat->m_ReflectionColor = glm::vec3(20.0f);
 	m_Materials.push_back(whiteDiffuseLightMat);
 
 	/* === Create Meshes === */
@@ -162,23 +162,29 @@ void Scene::MakeScene(int scene)
 		PushToBoth(sphere0);
 
 		/* === Light(s) === */
-		std::shared_ptr<Object> sphere1 = std::make_shared<Object>(sphereMesh, whiteDiffuseLightMat);
-		sphere1->Translate(5.0f, -5.0f, 8.0f);
-		sphere1->Scale(1.0f);
-		PushToBoth(sphere1);
+		//std::shared_ptr<Object> sphere1 = std::make_shared<Object>(sphereMesh, whiteDiffuseLightMat);
+		//sphere1->Translate(5.0f, -5.0f, 8.0f);
+		//sphere1->Scale(1.0f);
+		//PushToBoth(sphere1);
+
+		std::shared_ptr<Object> light = std::make_shared<Object>(planeMesh, whiteDiffuseLightMat);
+		light->Translate(0.0f, 0.0f, 10.0f - 0.001f);
+		light->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f);
+		light->Scale(1.0f);
+		PushToBoth(light);
 
 		/* === Background === */
-		m_BackgroundMode = BACKGROUND_MODE_GRADIENT;
-		m_GradientBottom = glm::vec3(0.3f);
-		m_GradientTop = glm::vec3(1.0f);
+		//m_BackgroundMode = BACKGROUND_MODE_GRADIENT;
+		//m_GradientBottom = glm::vec3(0.3f);
+		//m_GradientTop = glm::vec3(1.0f);
 
 		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);
 
-		m_BackgroundMode = BACKGROUND_MODE_TEXTURE;
-		//m_BackgroundTexture.filePath = "res/backgrounds/overcast_soil_puresky_4k.hdr";
-		//m_BackgroundTexture.filePath = "res/backgrounds/kloofendal_48d_partly_cloudy_puresky_4k.hdr";
-		m_BackgroundTexture.filePath = "res/backgrounds/christmas_photo_studio_07_4k.hdr";
+		//m_BackgroundMode = BACKGROUND_MODE_TEXTURE;
+		////m_BackgroundTexture.filePath = "res/backgrounds/overcast_soil_puresky_4k.hdr";
+		////m_BackgroundTexture.filePath = "res/backgrounds/kloofendal_48d_partly_cloudy_puresky_4k.hdr";
+		//m_BackgroundTexture.filePath = "res/backgrounds/christmas_photo_studio_07_4k.hdr";
 
 		break;
 	}
@@ -220,7 +226,7 @@ void Scene::MakeScene(int scene)
 		std::shared_ptr<Object> light = std::make_shared<Object>(planeMesh, whiteDiffuseLightMat);
 		light->Translate(0.0f, 0.0f, 10.0f - 0.001f);
 		light->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f);
-		light->Scale(3.0f);
+		light->Scale(1.0f);
 		PushToBoth(light);
 
 		/* === Scene Objects === */
