@@ -85,8 +85,8 @@ namespace otx
 				rayDir = normalize(camera.direction + ((screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical) - orgOffset);
 			}
 
-			/* Iterative (non-recursive) render loop */
-			float cumulativePDF = 0.0f;
+			/* === Iterative path tracing loop === */
+			float cbPDF = 1.0f; /* product pdf for bsdf sampling path */
 			while (true)
 			{
 				/* Take a random walk step */
@@ -105,40 +105,24 @@ namespace otx
 					u0, u1 /* packed pointer to our PRD */
 				);
 				
-				/* Set the ray orign and direction for the next segment of the random walk */
+				/* Set the ray origin and direction for the next segment of the random walk */
 				rayOrg = prd.origin;
 				rayDir = prd.direction;
 				prd.depth++;
 
-				/* If the random walk has terminated (e.g. hit a light / miss), end */
-				if (prd.done)
-				{
-					prd.totalRadiance += prd.radiance * prd.bsdfPDF; /* Add the primary ray path's radiance */
-					cumulativePDF += prd.bsdfPDF;
-					prd.nLightPaths += 1.0f;
-					break;
-				}
+				cbPDF *= prd.bsdfPDF;
 
-				/* Terminate the random walk if we're at/past the max depth */
-				if (prd.depth >= optixLaunchParams.maxDepth)
-				{
-					prd.radiance *= optixLaunchParams.cutoffColor;
-					prd.totalRadiance += prd.radiance * prd.bsdfPDF;
-					cumulativePDF += prd.bsdfPDF;
-					prd.nLightPaths += 1.0f;
-					break;
-				}
+				/* Sample a light(s) */
+				float clPDF = 0.0f;
+				float3 cLightRadiance = make_float3(0.0f);
 
-				/* We have not terminated yet, so we can (optionally) sample a light(s) */
-				/* This could perhaps be separated out into a different function? */
+				if (prd.depth < optixLaunchParams.maxDepth) /* Skip sampling light if we're past max depth */
 				for (int i = 0; i < optixLaunchParams.lightSampleCount; i++)
 				{
 					/* Pick a light to sample... */
 					// TODO
 
-					/* For now we just pick a point on the surface of the 3x3 cornell box light */
-					bool isDeltaLight = false;
-					float lightArea = 1.0f;
+					/* For now we just pick a point on the surface of a single quad light */
 					float r1 = prd.random();
 					float r2 = prd.random();
 					float3 lightSamplePosition = make_float3(r1 * 1.0f - 0.5f, r2 * 1.0f - 0.5f, 9.98f);
@@ -146,6 +130,11 @@ namespace otx
 					float3 lightNormalDirection = make_float3(0.0f, 0.0f, -1.0f);
 					float3 normalizedLightSampleDirection = normalize(lightSampleDirection);
 					float lightSampleLength = length(lightSampleDirection);
+
+					/* Get info of chosen light */
+					bool isDeltaLight = false;
+					float lightArea = 1.0f;
+					float3 lightRadiance = make_float3(20.0f);
 
 					/* Only emit from front face of light */
 					if (!isDeltaLight && dot(normalizedLightSampleDirection, lightNormalDirection) >= -RAY_EPS) continue;
@@ -201,24 +190,41 @@ namespace otx
 						float lightPDF;
 						if (isDeltaLight)
 						{
-							/* inverse square law */
-							lightPDF = 1.0f / (lightSampleLength * lightSampleLength);
+							/* inverse square law (over sphere surface area) */
+							lightPDF = 4.0f * M_PIf / (lightSampleLength * lightSampleLength);
 						}
 						else 
 						{
-							/* inverse square law with light area and cosine */
-							lightPDF = lightArea * max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f) / (lightSampleLength * lightSampleLength);
+							/* inverse square law with light area and cosine (over hemisphere surface area) */
+							lightPDF = 2.0f * M_PIf * lightArea * max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f) / (lightSampleLength * lightSampleLength);
 						}
-						float cpdf = scatteringPDF * lightPDF / (optixLaunchParams.lightSampleCount * length(shadowRay.radiance));
-						cumulativePDF += cpdf;
 
-						prd.totalRadiance += prd.radiance * shadowRay.radiance * cpdf;
-						prd.nLightPaths += cpdf;
+						float lPDF = cbPDF * scatteringPDF * lightPDF / float(optixLaunchParams.lightSampleCount);
+						clPDF += lPDF;
+						cLightRadiance += lightRadiance * lPDF;
+						prd.nLightPaths += 1.0f / float(optixLaunchParams.lightSampleCount);
 					}
+				}
+				prd.totalRadiance += prd.radiance * cLightRadiance / (cbPDF + clPDF);
+
+				/* If the random walk has terminated (e.g. hit a light / miss), end */
+				if (prd.done)
+				{
+					prd.totalRadiance += prd.radiance * cbPDF / (cbPDF + clPDF);
+					prd.nLightPaths += 1.0f;
+					break;
+				}
+
+				/* Terminate the random walk if we're at/past the max depth */
+				if (prd.depth >= optixLaunchParams.maxDepth)
+				{
+					prd.totalRadiance += optixLaunchParams.cutoffColor * prd.radiance * cbPDF / (cbPDF + clPDF);
+					prd.nLightPaths += 1.0f;
+					break;
 				}
 			}
 
-			prd.totalRadiance = prd.totalRadiance / (prd.nLightPaths * cumulativePDF);
+			prd.totalRadiance /= prd.nLightPaths;
 
 			/* Set NaNs to 0 */
 			if (prd.totalRadiance.x != prd.totalRadiance.x) prd.totalRadiance.x = 0.0f;

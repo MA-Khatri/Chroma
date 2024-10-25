@@ -104,7 +104,7 @@ void Scene::MakeScene(int scene)
 	m_Materials.push_back(blueCheckerMat);
 
 	std::shared_ptr<Material> whiteDiffuseLightMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIFFUSE_LIGHT);
-	whiteDiffuseLightMat->m_ReflectionColor = glm::vec3(20.0f);
+	whiteDiffuseLightMat->m_ReflectionColor = glm::vec3(50.0f);
 	m_Materials.push_back(whiteDiffuseLightMat);
 
 	/* === Create Meshes === */

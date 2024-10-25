@@ -14,9 +14,9 @@ namespace otx
 
 	extern "C" __global__ void __miss__shadow()
 	{
-		/* Nothing was hit so the light is visible -- return the radiance of the light */
+		/* Nothing was hit so the light is visible */
 		PRD_Shadow& prd = *(PRD_Shadow*)getPRD<PRD_Shadow>();
-		prd.radiance = make_float3(20.0f);
+		prd.radiance = make_float3(1.0f); /* Not used at the moment! */
 		prd.reachedLight = true;
 	}
 }
