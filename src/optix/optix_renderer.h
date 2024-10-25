@@ -198,7 +198,7 @@ namespace otx
 		int m_SamplesPerRender = 1;
 
 		/* Maximum number of ray bounces before termination */
-		int m_MaxDepth = 1;
+		int m_MaxDepth = 8;
 
 		/* Whether to turn on gamma correction for the final (presented) render */
 		bool m_GammaCorrect = true;
@@ -213,7 +213,7 @@ namespace otx
 		float m_BackgroundRotation = 0.0f;
 
 		/* Number of random light samples to generate per ray-surface interaction -- setting this to 0 effectively disables direct light sampling */
-		int m_LightSampleCount = 0;
+		int m_LightSampleCount = 1;
 
 		/* Color multiplied against rays past the depth limit. Typically should be 0.0f */
 		float3 m_CutoffColor = make_float3(0.0f);

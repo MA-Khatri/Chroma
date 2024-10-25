@@ -205,12 +205,13 @@ namespace otx
 		return M_1_2PIf;
 	}
 
-	inline __host__ __device__ float CosineHemispherePDF(float3 v)
+	/* Takes as input the generated ray direction vector and the surface normal */
+	inline __host__ __device__ float CosineHemispherePDF(float3 v, float3 n)
 	{
-		float cosTheta = sqrt(clamp(1.0f - v.x * v.x - v.y * v.y, 0.0f, 1.0f));
-		return cosTheta * M_1_PIf;
+		return max(dot(normalize(v), n), 0.0f) * M_1_PIf;
 	}
 
+	/* Takes as input the generated ray direction and the perfect reflection direction. Returns 1 if they are close else 0. */
 	inline __host__ __device__ float DeltaPDF(float3 a, float3 b)
 	{
 		if (fabs(length(normalize(a) - normalize(b))) < 0.001f) return 1.0f;
@@ -406,7 +407,7 @@ namespace otx
 		
 		float3 origin; /* Store the *next* ray's origin */
 		float3 direction; /* Store the *next* ray's direction */
-		OrthonormalBasis basis; /* ONB of the last intersection */
+		OrthonormalBasis basis; /* ONB of the last intersection -- can be used to get normal vector (basis.w) or do model/world transformations */
 	};
 
 	struct PRD_Shadow

@@ -138,6 +138,7 @@ namespace otx
 
 					/* For now we just pick a point on the surface of the 3x3 cornell box light */
 					bool isDeltaLight = false;
+					float lightArea = 9.0f;
 					float r1 = prd.random();
 					float r2 = prd.random();
 					float3 lightSamplePosition = make_float3(r1 * 3.0f - 1.5f, r2 * 3.0f - 1.5f, 9.98f);
@@ -177,37 +178,40 @@ namespace otx
 
 					if (shadowRay.reachedLight)
 					{
-						float lightPDF = 0.0f;
+						/* Probability of light scattering in light sample direction */
+						float scatteringPDF = 0.0f;
 						if (prd.shadowRayPDFMode == PDF_UNIT_COSINE_HEMISPHERE)
 						{
-							lightPDF = CosineHemispherePDF(prd.basis.Canonical(normalizedLightSampleDirection));
+							scatteringPDF = CosineHemispherePDF(normalizedLightSampleDirection, prd.basis.w);
 						}
 						else if (prd.shadowRayPDFMode == PDF_UNIT_HEMISPHERE)
 						{
-							lightPDF = UnitHemispherePDF();
+							scatteringPDF = UnitHemispherePDF();
 						}
 						else if (prd.shadowRayPDFMode == PDF_UNIT_SPHERE)
 						{
-							lightPDF = UnitSpherePDF();
+							scatteringPDF = UnitSpherePDF();
 						}
 						else if (prd.shadowRayPDFMode == PDF_DELTA)
 						{
-							lightPDF = DeltaPDF(prd.direction, normalizedLightSampleDirection);
+							scatteringPDF = DeltaPDF(prd.direction, normalizedLightSampleDirection);
 						}
 
+						/* Probability of sampling the light from this point */
+						float lightPDF;
 						if (isDeltaLight)
 						{
-							/* weight the light PDF by inverse square law */
-							lightPDF *= 1.0f / (lightSampleLength * lightSampleLength);
+							/* inverse square law */
+							lightPDF = 1.0f / (lightSampleLength * lightSampleLength);
 						}
 						else 
 						{
-							/* weight the light PDF by: light area * cos(theta) / d^2 */
-							lightPDF *= 9.0f * max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f) / (lightSampleLength * lightSampleLength);
+							/* inverse square law with light area and cosine */
+							lightPDF = lightArea * max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f) / (lightSampleLength * lightSampleLength);
 						}
-						cumulativePDF += lightPDF;
+						cumulativePDF += scatteringPDF * lightPDF;
 
-						prd.totalRadiance += prd.radiance * shadowRay.radiance * lightPDF;
+						prd.totalRadiance += prd.radiance * shadowRay.radiance * scatteringPDF * lightPDF;
 						prd.nLightPaths++;
 					}
 				}
