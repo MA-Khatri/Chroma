@@ -169,21 +169,20 @@ namespace otx
 					{
 						/* Probability of light scattering in light sample direction */
 						float scatteringPDF = 0.0f;
-						if (prd.shadowRayPDFMode == PDF_UNIT_COSINE_HEMISPHERE)
+						switch (prd.shadowRayPDFMode)
 						{
+						case PDF_UNIT_COSINE_HEMISPHERE:
 							scatteringPDF = CosineHemispherePDF(normalizedLightSampleDirection, prd.basis.w);
-						}
-						else if (prd.shadowRayPDFMode == PDF_UNIT_HEMISPHERE)
-						{
+							break;
+						case PDF_UNIT_HEMISPHERE:
 							scatteringPDF = UnitHemispherePDF();
-						}
-						else if (prd.shadowRayPDFMode == PDF_UNIT_SPHERE)
-						{
+							break;
+						case PDF_UNIT_SPHERE:
 							scatteringPDF = UnitSpherePDF();
-						}
-						else if (prd.shadowRayPDFMode == PDF_DELTA)
-						{
+							break;
+						case PDF_DELTA:
 							scatteringPDF = DeltaPDF(prd.direction, normalizedLightSampleDirection);
+							break;
 						}
 
 						/* Probability of sampling the light from this point */

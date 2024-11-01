@@ -32,9 +32,11 @@ void Scene::MakeScene(int scene)
 	TexturePaths vikingRoomTextures;
 	vikingRoomTextures.diffuse = "res/textures/viking_room_diff.png";
 
+	TexturePaths charles4Textures;
+	charles4Textures.diffuse = "res/textures/charles4.jpg";
+
 	TexturePaths blueCheckerTextures;
 	blueCheckerTextures.diffuse = "res/textures/checker.png";
-
 
 
 	/* === Create materials === */
@@ -44,6 +46,9 @@ void Scene::MakeScene(int scene)
 
 	std::shared_ptr<Material> vikingRoomMat = std::make_shared<Material>(vikingRoomTextures, VK_PIPELINE_FLAT, MATERIAL_TYPE_LAMBERTIAN);
 	m_Materials.push_back(vikingRoomMat);
+
+	std::shared_ptr<Material> charles4Mat = std::make_shared<Material>(charles4Textures, VK_PIPELINE_FLAT, MATERIAL_TYPE_LAMBERTIAN);
+	m_Materials.push_back(charles4Mat);
 
 	std::shared_ptr<Material> redGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIELECTRIC);
 	redGlassMat->m_ReflectionColor = glm::vec3(1.0f, 0.3f, 0.3f);
@@ -114,6 +119,7 @@ void Scene::MakeScene(int scene)
 	std::shared_ptr<Mesh> vikingRoomMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/viking_room.obj")); m_Meshes.push_back(vikingRoomMesh);
 	std::shared_ptr<Mesh> dragonMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/dragon.obj")); m_Meshes.push_back(dragonMesh);
 	std::shared_ptr<Mesh> lucyMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/lucy.obj")); m_Meshes.push_back(lucyMesh);
+	std::shared_ptr<Mesh> charles4Mesh = std::make_shared<Mesh>(LoadMesh("res/meshes/charles4.obj")); m_Meshes.push_back(charles4Mesh);
 	std::shared_ptr<Mesh> sphereMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/sphere.obj")); m_Meshes.push_back(sphereMesh);
 	std::shared_ptr<Mesh> cubeMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/cube.obj")); m_Meshes.push_back(cubeMesh);
 
@@ -156,6 +162,12 @@ void Scene::MakeScene(int scene)
 		lucy->Scale(5.0f);
 		PushToBoth(lucy);
 
+		std::shared_ptr<Object> charles = std::make_shared<Object>(charles4Mesh, charles4Mat);
+		charles->Translate(0.0f, 8.0f, 0.0f);
+		charles->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 135.0f);
+		charles->Scale(3.0f);
+		PushToBoth(charles);
+
 		std::shared_ptr<Object> sphere0 = std::make_shared<Object>(sphereMesh, transparentGlassMat);
 		sphere0->Translate(6.0f, 2.0f, 2.0f);
 		sphere0->Scale(2.0f);
@@ -178,13 +190,13 @@ void Scene::MakeScene(int scene)
 		//m_GradientBottom = glm::vec3(0.3f);
 		//m_GradientTop = glm::vec3(1.0f);
 
-		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
-		m_ClearColor = glm::vec3(0.0f);
+		//m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
+		//m_ClearColor = glm::vec3(0.0f);
 
-		//m_BackgroundMode = BACKGROUND_MODE_TEXTURE;
-		////m_BackgroundTexture.filePath = "res/backgrounds/overcast_soil_puresky_4k.hdr";
-		////m_BackgroundTexture.filePath = "res/backgrounds/kloofendal_48d_partly_cloudy_puresky_4k.hdr";
-		//m_BackgroundTexture.filePath = "res/backgrounds/christmas_photo_studio_07_4k.hdr";
+		m_BackgroundMode = BACKGROUND_MODE_TEXTURE;
+		//m_BackgroundTexture.filePath = "res/backgrounds/overcast_soil_puresky_4k.hdr";
+		//m_BackgroundTexture.filePath = "res/backgrounds/kloofendal_48d_partly_cloudy_puresky_4k.hdr";
+		m_BackgroundTexture.filePath = "res/backgrounds/christmas_photo_studio_07_4k.hdr";
 
 		break;
 	}

@@ -62,18 +62,22 @@ void RayTraceView::OnUpdate()
 	/* On hover, check for keyboard/mouse inputs */
 	if (m_ViewportHovered)
 	{
+		/* Set scroll callback for current camera */
+		glfwSetWindowUserPointer(m_WindowHandle, m_Camera);
+		glfwSetScrollCallback(m_WindowHandle, Camera::ScrollCallback);
+
 		bool updated = m_Camera->Inputs(m_WindowHandle);
 		if (updated) m_OptixRenderer->SetCamera(*m_Camera);
+	}
+	else
+	{
+		glfwSetScrollCallback(m_WindowHandle, ImGui_ImplGlfw_ScrollCallback);
 	}
 
 	/* When switching between viewports... */
 	if (m_ViewportFocused && m_AppHandle->m_FocusedWindow != Application::RayTracedViewport)
 	{
 		m_AppHandle->m_FocusedWindow = Application::RayTracedViewport;
-
-		/* Set scroll callback for current camera */
-		glfwSetWindowUserPointer(m_WindowHandle, m_Camera);
-		glfwSetScrollCallback(m_WindowHandle, Camera::ScrollCallback);
 		
 		if (m_Camera->IsCameraDifferent(m_OptixRenderer->GetLastSetCamera()))
 		{

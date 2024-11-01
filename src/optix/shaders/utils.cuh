@@ -212,6 +212,7 @@ namespace otx
 	}
 
 	/* Takes as input the generated ray direction and the perfect reflection direction. Returns 1 if they are close else 0. */
+	/* Note: In practice, this will pretty much always return 0.0f */
 	inline __host__ __device__ float DeltaPDF(float3 a, float3 b)
 	{
 		if (fabs(length(normalize(a) - normalize(b))) < 0.001f) return 1.0f;
