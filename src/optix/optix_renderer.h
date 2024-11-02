@@ -22,24 +22,20 @@ namespace otx
 		/* Resize frame buffer to given resolution */
 		void Resize(uint32_t x, uint32_t y);
 
-		/* === Set Functions === */
-		/* Set camera for Optix */
-		void SetCamera(const Camera& camera);
-
-		/* Set the number of samples per pixel per call to Render() (updates Launch params) */
-		void SetSamplesPerRender(int nSamples);
-
-		/* Set the maximum number of ray bounces */
-		void SetMaxDepth(int maxDepth);
-
+		/* === Set Methods === */
+		void SetCamera(const Camera& camera); /* Set camera for Optix */		
+		void SetSamplesPerRender(int nSamples); /* Set the number of samples per pixel per call to Render() */
+		void SetMaxDepth(int maxDepth); /* Set the maximum number of ray bounces */
 		void SetGammaCorrect(bool correct);
 		void SetDenoiserEnabled(bool enabled);
 		void SetMaxSampleCount(int nSamples);
 		void SetBackgroundRotation(float deg);
-		void SetStratifyEnabled(bool enabled);
 		void SetLightSampleCount(int nSamples);
+		void SetIntegratorType(int integrator);
+		void SetSamplerType(int sampler);
+		void SetStrataCount(int strata);
 
-		/* === Get Functions === */
+		/* === Get Methods === */
 		Camera* GetLastSetCamera();
 		int GetAccumulatedSampleCount();
 		bool GetGammaCorrect();
@@ -48,8 +44,11 @@ namespace otx
 		bool GetDenoiserEnabled();
 		int GetMaxSampleCount();
 		float GetBackgroundRotation();
-		bool GetStratifyEnabled();
 		int GetLightSampleCount();
+		int GetIntegratorType();
+		int GetSamplerType();
+		int GetStrataCount();
+
 
 		/* Render one frame */
 		void Render();
@@ -190,11 +189,12 @@ namespace otx
 
 
 		/* === Externally configurable params === */
-		/*
-		 * Samples per pixel per call to render -- the true value will be
-		 * squared if using stratified sampling since it then represents 
-		 * the number of stratified samples along each axis of the pixel
-		 */
+
+		int m_IntegratorType = INTEGRATOR_TYPE_PATH;
+		int m_SamplerType = SAMPLER_TYPE_INDEPENDENT;
+		int m_nStrata = 8;
+
+		/* Samples per pixel per call to render */
 		int m_SamplesPerRender = 1;
 
 		/* Maximum number of ray bounces before termination */
@@ -205,9 +205,6 @@ namespace otx
 
 		/* Is the denoiser on? We keep it off by default since it really only needs to run once the render is complete. */
 		bool m_DenoiserEnabled = false;
-
-		/* Are we using stratified sampling? If true, m_SamplesPerRender represents the number of samples along u, v axis of each pixel. */
-		bool m_StratifiedSampling = false;
 
 		/* Adjust horizontal offset angle of sky texture, locally expressed as degrees */
 		float m_BackgroundRotation = 0.0f;

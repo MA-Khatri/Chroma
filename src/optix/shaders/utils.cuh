@@ -6,11 +6,6 @@
 
 namespace otx
 {
-	struct float3x3
-	{
-
-	};
-
 	/* ====================== */
 	/* === Shader helpers === */
 	/* ====================== */
@@ -211,7 +206,7 @@ namespace otx
 		return max(dot(normalize(v), n), 0.0f) * M_1_PIf;
 	}
 
-	/* Takes as input the generated ray direction and the perfect reflection direction. Returns 1 if they are close else 0. */
+	/* Takes as input the generated ray direction and the perfect reflection direction. Returns 1 if they are within some epsilon, else 0. */
 	/* Note: In practice, this will pretty much always return 0.0f */
 	inline __host__ __device__ float DeltaPDF(float3 a, float3 b)
 	{
@@ -302,7 +297,12 @@ namespace otx
 	 */
 	struct PCG
 	{
-		uint32_t state;
+		uint32_t state; /* PCG state used to generate independent random samples */
+
+		int samplerType; /* Index into SampleType enum -- used to determine method for generating 1D/2D samples */
+		int nStrata; /* Used in some samplers to determine the number of strata to divide the sample domain into, along each dimension */
+		float stratumWidth; /* The width of each stratum */
+
 
 		inline __host__ __device__ PCG()
 		{
@@ -312,14 +312,17 @@ namespace otx
 			 */
 		}
 
-		inline __host__ __device__ PCG(uint32_t seed)
+		inline __host__ __device__ PCG(uint32_t seed, int type, int strata)
 		{
-			Init(seed);
+			Init(seed, type, strata);
 		}
 
-		inline __host__ __device__ void Init(uint32_t seed)
+		inline __host__ __device__ void Init(uint32_t seed, int type, int strata)
 		{
 			state = seed;
+			samplerType = type;
+			nStrata = strata;
+			stratumWidth = 1.0f / (float)nStrata;
 			NextRandom();
 		}
 
@@ -336,41 +339,99 @@ namespace otx
 			return RandomValue();
 		}
 
-		/* Return a random value in [0, 1) */
+		/* Return a(n independent) random value in [0, 1) */
 		inline __host__ __device__ float RandomValue()
 		{
 			NextRandom();
 			return state / 4294967295.0; /* 4294967295.0 = 2^32 - 1*/
 		}
 
+		/* Generate a 1D random sample in [0, 1) using chosen sampler type */
+		inline __host__ __device__ float RandomSample1D()
+		{
+			float sample = 0.0f;
+			int stratum = 0;
+			float offset = 0.0f;
+
+			switch (samplerType)
+			{
+			case SAMPLER_TYPE_INDEPENDENT:
+				sample = RandomValue();
+				break;
+
+			case SAMPLER_TYPE_STRATIFIED:
+				stratum = (int)(RandomValue() * (float)nStrata); /* Pick a random stratum */
+				offset = (float)stratum * stratumWidth;
+				sample = offset + RandomValue() * stratumWidth;
+				break;
+
+			case SAMPLER_TYPE_MULTIJITTER:
+				// TODO
+				// https://graphics.pixar.com/library/MultiJitteredSampling/
+				break;
+			}
+
+			return sample;
+		}
+
+		/* Generate a 2D random sample in [0, 1)^2 using chosen sampler type */
+		inline __host__ __device__ float2 RandomSample2D()
+		{
+			float2 sample = make_float2(0.0f);
+			int stratum = 0;
+			float offsetX = 0.0f;
+			float offsetY = 0.0f;
+
+			switch (samplerType)
+			{
+			case SAMPLER_TYPE_INDEPENDENT:
+				sample = make_float2(RandomValue(), RandomValue());
+				break;
+
+			case SAMPLER_TYPE_STRATIFIED:
+				stratum = (int)(RandomValue() * (float)(nStrata * nStrata)); /* Pick a random stratum in 2D */
+				offsetX = (float)(stratum % nStrata) * stratumWidth;
+				offsetY = (float)(stratum / nStrata) * stratumWidth;
+				sample = make_float2(offsetX + RandomValue() * stratumWidth, offsetY + RandomValue() * stratumWidth);
+				break;
+
+			case SAMPLER_TYPE_MULTIJITTER:
+				// TODO
+				// https://graphics.pixar.com/library/MultiJitteredSampling/
+				break;
+			}
+
+			return sample;
+		}
+
 		/* Return a random point *on the circumference* of a unit circle */
 		inline __host__ __device__ float2 RandomOnUnitCircle()
 		{
-			return SampleOnUnitCircle(RandomValue());
+			return SampleOnUnitCircle(RandomSample1D());
 		}
 
 		/* Return a random point *in* a unit circle (disk) */
 		inline __host__ __device__ float2 RandomInUnitDisk()
 		{
-			return SampleInUnitDiskPolar(make_float2(RandomValue(), RandomValue()));
+			return SampleInUnitDiskPolar(RandomSample2D());
 		}
 
 		/* Return a random point on the surface of a unit sphere */
 		inline __host__ __device__ float3 RandomOnUnitSphere()
 		{
-			return SampleOnUnitSphere(make_float2(RandomValue(), RandomValue()));
+			return SampleOnUnitSphere(RandomSample2D());
 		}
 
 		/* Return a random point on the surface of a unit hemisphere */
 		inline __host__ __device__ float3 RandomOnUnitHemisphere()
 		{
-			return SampleOnUnitHemisphere(make_float2(RandomValue(), RandomValue()));
+			return SampleOnUnitHemisphere(RandomSample2D());
 		}
 
 		/* Return a cosine weighted random point on the surface of a unit hemisphere */
 		inline __host__ __device__ float3 RandomOnUnitCosineHemisphere()
 		{
-			return SampleOnUnitCosineHemisphere(make_float2(RandomValue(), RandomValue()));
+			return SampleOnUnitCosineHemisphere(RandomSample2D());
 		}
 	};
 

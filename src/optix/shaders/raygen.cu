@@ -2,6 +2,39 @@
 
 namespace otx
 {
+	inline __device__ float2 GenerateScreenPosition(int ix, int iy, Random& random)
+	{
+		/* Normalized screen plane position in [0, 1]^2 with randomized sub-pixel position */
+		return (make_float2((float)ix, (float)iy) + random.RandomSample2D()) / make_float2(optixLaunchParams.frame.size.x, optixLaunchParams.frame.size.y);
+	}
+
+	inline __device__ void GenerateCameraRay(PRD_Radiance& prd, float2 screen)
+	{
+		/* Get the camera from launchParams */
+		const auto& camera = optixLaunchParams.camera;
+
+		switch (optixLaunchParams.camera.projectionMode)
+		{
+		case PROJECTION_MODE_PERSPECTIVE:
+			prd.origin = camera.position;
+			prd.direction = normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical);
+			break;
+
+		case PROJECTION_MODE_ORTHOGRAPHIC:
+			prd.origin = camera.position + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical;
+			prd.direction = camera.direction;
+			break;
+
+		case PROJECTION_MODE_THIN_LENS:
+			float2 p = prd.random.RandomInUnitDisk();
+			float3 orgOffset = (p.x * camera.defocusDiskU) + (p.y * camera.defocusDiskV);
+			prd.origin = camera.position + orgOffset;
+			prd.direction = normalize(camera.direction + ((screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical) - orgOffset);
+			break;
+		}
+	}
+
+
 	/*
 	 * The primary ray gen program where camera rays are generated and fired into the scene
 	 */
@@ -15,22 +48,17 @@ namespace otx
 		/* Get the current frame's frameID -- i.e., which render call is this? */
 		const int accumID = optixLaunchParams.frame.frameID;
 
-		/* Get the camera from launchParams */
-		const auto& camera = optixLaunchParams.camera;
-
 		/* Initialize per-ray data */
 		PRD_Radiance prd;
 
 		/* Random seed is current frame count * frame size + current (1D) pixel position such that every pixel for every accumulated frame has a unique seed. */
-		prd.random.Init(accumID * optixLaunchParams.frame.size.x * optixLaunchParams.frame.size.y + iy * optixLaunchParams.frame.size.x + ix);
+		prd.random.Init(accumID * optixLaunchParams.frame.size.x * optixLaunchParams.frame.size.y + iy * optixLaunchParams.frame.size.x + ix, optixLaunchParams.sampler, optixLaunchParams.nStrata);
 
 		/* The ints we store the PRD pointer in */
 		uint32_t u0, u1;
 		packPointer(&prd, u0, u1);
 
-		const int nps = optixLaunchParams.frame.samples;
-		const int numPixelSamples = optixLaunchParams.stratifiedSampling ? nps * nps : nps; /* N Pixel samples for this render call */
-		const float spd = 1.0f / float(nps); /* sub-pixel delta (spd) used for stratified sampling */
+		const int numPixelSamples = optixLaunchParams.frame.samples; /* N Pixel samples for this render call */
 		float3 pixelColor = make_float3(0.0f); /* Accumulated color for all pixel samples for this call */
 		float3 pixelNormal = make_float3(0.0f); /* Accumulated normals for all pixel samples for this call */
 		float3 pixelAlbedo = make_float3(0.0f); /* Accumulated albedo for all pixel samples for this call */
@@ -46,44 +74,9 @@ namespace otx
 			prd.origin = make_float3(0.0f);
 			prd.direction = make_float3(0.0f);
 
-			/* Determine the screen sampling position */
-			float2 screen;
-			if (optixLaunchParams.stratifiedSampling)
-			{
-				/* Determine the sub pixel offset (spo) for this sampleID */
-				float2 spo = make_float2(float(sampleID % nps), float(sampleID / nps));
-
-				/* Determine posn within sub pixel (spp) */
-				float2 spp = make_float2(prd.random(), prd.random());
-
-				/* Normalized screen plane position in [0, 1]^2 with stratified random sub-pixel position */
-				screen = (make_float2(ix, iy) + (spo + spp) * spd) / make_float2(optixLaunchParams.frame.size.x, optixLaunchParams.frame.size.y);
-			}
-			else
-			{
-				/* Normalized screen plane position in [0, 1]^2 with randomized sub-pixel position */
-				screen = make_float2(ix + prd.random(), iy + prd.random()) / make_float2(optixLaunchParams.frame.size.x, optixLaunchParams.frame.size.y);
-			}
-
-			/* Ray origin and direction */
-			float3 rayOrg, rayDir;
-			if (optixLaunchParams.camera.projectionMode == PROJECTION_MODE_PERSPECTIVE)
-			{
-				rayOrg = camera.position;
-				rayDir = normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical);
-			}
-			else if (optixLaunchParams.camera.projectionMode == PROJECTION_MODE_ORTHOGRAPHIC)
-			{
-				rayOrg = camera.position + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical;
-				rayDir = camera.direction;
-			}
-			else if (optixLaunchParams.camera.projectionMode == PROJECTION_MODE_THIN_LENS)
-			{
-				float2 p = prd.random.RandomInUnitDisk();
-				float3 orgOffset = (p.x * camera.defocusDiskU) + (p.y * camera.defocusDiskV);
-				rayOrg = camera.position + orgOffset;
-				rayDir = normalize(camera.direction + ((screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical) - orgOffset);
-			}
+			/* Determine the screen sampling position and generate corresponding camera ray */
+			float2 screen = GenerateScreenPosition(ix, iy, prd.random);
+			GenerateCameraRay(prd, screen);
 
 			/* === Iterative path tracing loop === */
 			float cbPDF = 1.0f; /* product pdf for bsdf sampling path */
@@ -92,8 +85,8 @@ namespace otx
 				/* Take a random walk step */
 				optixTrace(
 					optixLaunchParams.traversable,
-					rayOrg,
-					rayDir,
+					prd.origin,
+					prd.direction,
 					0.0f, /* tMin */
 					1e20f, /* tMax */
 					0.0f, /* ray time */
@@ -104,10 +97,6 @@ namespace otx
 					RAY_TYPE_RADIANCE, /* miss SBT index */
 					u0, u1 /* packed pointer to our PRD */
 				);
-				
-				/* Set the ray origin and direction for the next segment of the random walk */
-				rayOrg = prd.origin;
-				rayDir = prd.direction;
 				prd.depth++;
 
 				cbPDF *= prd.bsdfPDF;

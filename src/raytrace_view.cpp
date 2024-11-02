@@ -167,31 +167,73 @@ void RayTraceView::OnUIRender()
 				m_OptixRenderer->SetDenoiserEnabled(tempDenoise);
 			}
 
-			bool tempStratify = m_OptixRenderer->GetStratifyEnabled();
-			ImGui::Checkbox("Enable Stratified Sampling", &tempStratify);
-			if (tempStratify != m_OptixRenderer->GetStratifyEnabled())
+			/* Integrator and sampler names for drop downs. Must match the order in 'common_enums.h' */
+			std::vector<std::string> IntegratorNames = { "Path" };
+			std::vector<std::string> SamplerNames = { "Independent", "Stratified", /*"Multi-Jitter"*/ };
+
+			int tempIntegrator = m_OptixRenderer->GetIntegratorType();
+			const char* selectedIntegratorPreview = IntegratorNames[tempIntegrator].c_str();
+			if (ImGui::BeginCombo("Integrator", selectedIntegratorPreview))
 			{
-				m_OptixRenderer->SetStratifyEnabled(tempStratify);
+				for (int n = 0; n < IntegratorNames.size(); n++)
+				{
+					const bool isSelected = (tempIntegrator == n);
+					if (ImGui::Selectable(IntegratorNames[n].c_str(), isSelected))
+					{
+						tempIntegrator = n;
+					}
+					if (isSelected)
+					{
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndCombo();
+			}
+			if (tempIntegrator != m_OptixRenderer->GetIntegratorType())
+			{
+				m_OptixRenderer->SetIntegratorType(tempIntegrator);
 			}
 
-			const int maxStratifiedDimension = 8;
-			int tempSPP = m_OptixRenderer->GetSamplesPerRender();
-			if (tempStratify)
+			int tempSampler = m_OptixRenderer->GetSamplerType();
+			const char* selectedSamplerPreview = SamplerNames[tempSampler].c_str();
+			if (ImGui::BeginCombo("Sampler", selectedSamplerPreview))
 			{
-				if (tempSPP > maxStratifiedDimension) tempSPP = maxStratifiedDimension;
-				ImGui::SliderInt("Sub-Pixel Dimensions", &tempSPP, 1, maxStratifiedDimension);
+				for (int n = 0; n < SamplerNames.size(); n++)
+				{
+					const bool isSelected = (tempSampler == n);
+					if (ImGui::Selectable(SamplerNames[n].c_str(), isSelected))
+					{
+						tempSampler = n;
+					}
+					if (isSelected)
+					{
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndCombo();
 			}
-			else
+			if (tempSampler != m_OptixRenderer->GetSamplerType()) m_OptixRenderer->SetSamplerType(tempSampler);
+
+			if (tempSampler == SAMPLER_TYPE_STRATIFIED || tempSampler == SAMPLER_TYPE_MULTIJITTER)
 			{
-				ImGui::SliderInt("Samples Per Pixel", &tempSPP, 1, 16);
+				int tempStrata = m_OptixRenderer->GetStrataCount();
+				ImGui::SliderInt("Strata Per Dimension", &tempStrata, 1, 16);
+				if (tempStrata != m_OptixRenderer->GetStrataCount())
+				{
+					m_OptixRenderer->SetStrataCount(tempStrata);
+				}
 			}
-			if (tempSPP != m_OptixRenderer->GetSamplesPerRender())
+
+
+			int tempSPR = m_OptixRenderer->GetSamplesPerRender();
+			ImGui::SliderInt("Samples Per Render", &tempSPR, 1, 16);
+			if (tempSPR != m_OptixRenderer->GetSamplesPerRender())
 			{
-				m_OptixRenderer->SetSamplesPerRender(tempSPP);
+				m_OptixRenderer->SetSamplesPerRender(tempSPR);
 			}
 
 			int tempMaxSPP = m_OptixRenderer->GetMaxSampleCount();
-			ImGui::DragInt("Max Sample Count", &tempMaxSPP, 1.0f, 0);
+			ImGui::SliderInt("Max Sample Count", &tempMaxSPP, 0, 512); /* Max possible sample count = 2^9, unless set to 0, in which case it is unlimited */
 			if (tempMaxSPP != m_OptixRenderer->GetMaxSampleCount())
 			{
 				m_OptixRenderer->SetMaxSampleCount(tempMaxSPP);

@@ -967,7 +967,9 @@ namespace otx
 		m_LaunchParams.maxDepth = m_MaxDepth;
 		m_LaunchParams.cutoffColor = m_CutoffColor;
 		m_LaunchParams.gammaCorrect = m_GammaCorrect;
-		m_LaunchParams.stratifiedSampling = m_StratifiedSampling;
+		m_LaunchParams.sampler = m_SamplerType;
+		m_LaunchParams.nStrata = m_nStrata;
+		m_LaunchParams.integrator = m_IntegratorType;
 		m_LaunchParams.lightSampleCount = m_LightSampleCount;
 
 		/* Background settings */
@@ -996,7 +998,7 @@ namespace otx
 			1
 		));
 
-		m_AccumulatedSampleCount += m_StratifiedSampling ? nSamples * nSamples : nSamples;
+		m_AccumulatedSampleCount += nSamples;
 
 		/* Run the denoiser */
 		LaunchDenoiser();
@@ -1109,6 +1111,7 @@ namespace otx
 		m_LaunchParams.frame.frameID = 0;
 	}
 
+	/* === Set Methods === */
 	void Optix::SetSamplesPerRender(int nSamples)
 	{
 		m_SamplesPerRender = nSamples;
@@ -1143,18 +1146,32 @@ namespace otx
 		ResetAccumulation();
 	}
 
-	void Optix::SetStratifyEnabled(bool enabled)
-	{
-		m_StratifiedSampling = enabled;
-		ResetAccumulation(); /* Technically, we don't need to. But this will help to be consistent while testing. */
-	}
-
 	void Optix::SetLightSampleCount(int nSamples)
 	{
 		m_LightSampleCount = nSamples;
 		ResetAccumulation();
 	}
 
+	void Optix::SetIntegratorType(int integrator)
+	{
+		m_IntegratorType = integrator;
+		ResetAccumulation();
+	}
+
+	void Optix::SetSamplerType(int sampler)
+	{
+		m_SamplerType = sampler;
+		ResetAccumulation();
+	}
+
+	void Optix::SetStrataCount(int strata)
+	{
+		m_nStrata = strata;
+		ResetAccumulation();
+	}
+
+
+	/* === Get Methods === */
 	Camera* Optix::GetLastSetCamera()
 	{
 		return &m_LastSetCamera;
@@ -1195,13 +1212,23 @@ namespace otx
 		return m_BackgroundRotation;
 	}
 
-	bool Optix::GetStratifyEnabled()
-	{
-		return m_StratifiedSampling;
-	}
-
 	int Optix::GetLightSampleCount()
 	{
 		return m_LightSampleCount;
+	}
+
+	int Optix::GetIntegratorType()
+	{
+		return m_IntegratorType;
+	}
+
+	int Optix::GetSamplerType()
+	{
+		return m_SamplerType;
+	}
+
+	int Optix::GetStrataCount()
+	{
+		return m_nStrata;
 	}
 }

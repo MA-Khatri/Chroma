@@ -33,6 +33,10 @@ namespace otx
 
 	struct LaunchParams
 	{
+		int sampler; /* Index into SamplerType enum */
+		int nStrata; /* Number of strata along each sampling dimension */
+		int integrator; /* Index into IntegratorType enum */
+
 		struct {
 			float4* colorBuffer;
 			float4* normalBuffer;
@@ -69,7 +73,6 @@ namespace otx
 		float backgroundRotation;
 
 		bool gammaCorrect; /* Should gamma correction be applied to the final image? */
-		bool stratifiedSampling; /* Are we using stratified sampling? */
 	};
 
 } /* namspace otx */
