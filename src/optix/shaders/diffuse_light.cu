@@ -21,7 +21,7 @@ namespace otx
 			float4 tex = tex2D<float4>(sbtData.diffuseTexture, tc.x, tc.y);
 			lightColor *= make_float3(tex.x, tex.y, tex.z);
 		}
-		prd.radiance *= lightColor;
+		prd.throughput *= lightColor;
 
 		/* Terminate ray */
 		prd.done = true;

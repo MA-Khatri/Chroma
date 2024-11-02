@@ -16,7 +16,7 @@ namespace otx
 	{
 		/* Nothing was hit so the light is visible */
 		PRD_Shadow& prd = *(PRD_Shadow*)getPRD<PRD_Shadow>();
-		prd.radiance = make_float3(1.0f); /* Not used at the moment! */
-		prd.reachedLight = true;
+		prd.throughput = make_float3(1.0f); /* Not used at the moment! */
+		prd.reached_light = true;
 	}
 }

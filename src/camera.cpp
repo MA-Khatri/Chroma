@@ -285,8 +285,8 @@ bool Camera::IsCameraDifferent(Camera* camera)
 	if(!Close(m_OrbitPhi, c.m_OrbitPhi)) return true;
 	if(!Close(m_VFoV, c.m_VFoV)) return true;
 	if(!Close(m_OrthoScale, c.m_OrthoScale)) return true;
-	if(!Close(m_Width, c.m_Width)) return true;
-	if(!Close(m_Height, c.m_Height)) return true;
+	if(!Close(static_cast<float>(m_Width), static_cast<float>(c.m_Width))) return true;
+	if(!Close(static_cast<float>(m_Height), static_cast<float>(c.m_Height))) return true;
 
 	return false;
 }

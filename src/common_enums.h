@@ -46,5 +46,6 @@ enum SamplerType
 
 enum IntegratorType
 {
-	INTEGRATOR_TYPE_PATH = 0
+	INTEGRATOR_TYPE_BSDF_ONLY = 0,
+	INTEGRATOR_TYPE_PATH
 };

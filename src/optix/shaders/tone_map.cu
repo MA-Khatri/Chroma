@@ -5,6 +5,7 @@
 
 /* 
  * Based on: https://github.com/ingowald/optix7course/blob/29e279745161003cf905a8a4f1fb603268d48efa/example12_denoiseSeparateChannels/toneMap.cu 
+ * WARNING: All debugging has been turned off in the properties page for this file. Otherwise it seemed to be raising errors when running in debug...
  */
 
 namespace otx

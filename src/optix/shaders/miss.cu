@@ -38,7 +38,7 @@ namespace otx
 			result = make_float3(0.0f);
 		}
 
-		prd.radiance *= result;
+		prd.throughput *= result;
 		prd.done = true;
 	}
 }

@@ -168,7 +168,7 @@ void RayTraceView::OnUIRender()
 			}
 
 			/* Integrator and sampler names for drop downs. Must match the order in 'common_enums.h' */
-			std::vector<std::string> IntegratorNames = { "Path" };
+			std::vector<std::string> IntegratorNames = { "BSDF Only", /*"Path"*/ };
 			std::vector<std::string> SamplerNames = { "Independent", "Stratified", /*"Multi-Jitter"*/ };
 
 			int tempIntegrator = m_OptixRenderer->GetIntegratorType();
@@ -192,6 +192,16 @@ void RayTraceView::OnUIRender()
 			if (tempIntegrator != m_OptixRenderer->GetIntegratorType())
 			{
 				m_OptixRenderer->SetIntegratorType(tempIntegrator);
+			}
+
+			if (tempIntegrator == INTEGRATOR_TYPE_PATH)
+			{
+				int tempLightSamples = m_OptixRenderer->GetLightSampleCount();
+				ImGui::SliderInt("Light Sample Count", &tempLightSamples, 0, 4);
+				if (tempLightSamples != m_OptixRenderer->GetLightSampleCount())
+				{
+					m_OptixRenderer->SetLightSampleCount(tempLightSamples);
+				}
 			}
 
 			int tempSampler = m_OptixRenderer->GetSamplerType();
@@ -239,18 +249,12 @@ void RayTraceView::OnUIRender()
 				m_OptixRenderer->SetMaxSampleCount(tempMaxSPP);
 			}
 
+			/* Note: if max depth == 0, we use russian roulette path termination! */
 			int tempDepth = m_OptixRenderer->GetMaxDepth();
-			ImGui::SliderInt("Max Ray Depth", &tempDepth, 1, 16);
+			ImGui::SliderInt("Max Ray Depth", &tempDepth, 0, 16);
 			if (tempDepth != m_OptixRenderer->GetMaxDepth())
 			{
 				m_OptixRenderer->SetMaxDepth(tempDepth);
-			}
-
-			int tempLightSamples = m_OptixRenderer->GetLightSampleCount();
-			ImGui::SliderInt("Light Sample Count", &tempLightSamples, 0, 4);
-			if (tempLightSamples != m_OptixRenderer->GetLightSampleCount())
-			{
-				m_OptixRenderer->SetLightSampleCount(tempLightSamples);
 			}
 
 			float tempBR = m_OptixRenderer->GetBackgroundRotation();

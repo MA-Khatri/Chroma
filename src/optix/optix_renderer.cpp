@@ -166,8 +166,8 @@ namespace otx
 			{ std::string("src/optix/shaders/compiled/dielectric.optixir"), &m_DielectricModule },
 			{ std::string("src/optix/shaders/compiled/principled.optixir"), &m_PrincipledModule },
 			{ std::string("src/optix/shaders/compiled/diffuse_light.optixir"), &m_DiffuseLightModule },
+			{ std::string("src/optix/shaders/compiled/miss.optixir"), &m_MissModule },
 			{ std::string("src/optix/shaders/compiled/shadow.optixir"), &m_ShadowModule },
-			{ std::string("src/optix/shaders/compiled/miss.optixir"), &m_MissModule }
 		};
 
 		for (auto& module : modules)

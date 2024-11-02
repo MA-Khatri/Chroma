@@ -110,12 +110,14 @@
     <CudaCompile Include="src\optix\shaders\shadow.cu" />
     <CudaCompile Include="src\optix\shaders\tone_map.cu">
       <CompileOut Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)src\optix\shaders\compiled\%(Filename).cubin</CompileOut>
-      <Include Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(CUDA_PATH)\include;$(ProjectDir)external\optix_utils;</Include>
+      <Include Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(CUDA_PATH)\include;$(SolutionDir)external\optix_utils;</Include>
       <NvccCompilation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">compile</NvccCompilation>
       <CompileOut Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)src\optix\shaders\compiled\%(Filename).cubin</CompileOut>
-      <Include Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(CUDA_PATH)\include;$(ProjectDir)external\optix_utils;</Include>
+      <Include Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(CUDA_PATH)\include;$(SolutionDir)external\optix_utils;</Include>
       <NvccCompilation Condition="'$(Configuration)|$(Platform)'=='Release|x64'">compile</NvccCompilation>
-      <FileType>Document</FileType>
+      <GPUDebugInfo Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</GPUDebugInfo>
+      <HostDebugInfo Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</HostDebugInfo>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">None</DebugInformationFormat>
     </CudaCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">

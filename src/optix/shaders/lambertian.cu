@@ -10,7 +10,7 @@ namespace otx
 		const int primID = optixGetPrimitiveIndex();
 		const int3 index = sbtData.index[primID];
 		float2 uv = optixGetTriangleBarycentrics();
-		float3 rayDir = optixGetWorldRayDirection();
+		float3 outDir = -optixGetWorldRayDirection();
 
 		/* === Compute normal === */
 		/* Use shading normal if available, else use geometry normal */
@@ -23,7 +23,17 @@ namespace otx
 		N = normalize(optixTransformNormalFromObjectToWorldSpace(N));
 
 		/* Face forward normal */
-		if (dot(rayDir, N) > 0.0f) N = -N;
+		if (dot(outDir, N) < 0.0f) N = -N;
+
+		/* Update the hit position */
+		prd.origin = FrontHitPosition(N);
+
+		/* Update the basis for this intersection */
+		prd.basis = OrthonormalBasis(N);
+
+		/* Generate a new sample direction (in_direction) */
+		prd.out_direction = prd.in_direction;
+		prd.in_direction = prd.basis.Local(prd.random.RandomOnUnitCosineHemisphere());
 
 		/* Default diffuse color if no diffuse texture */
 		float3 diffuseColor = sbtData.reflectionColor;
@@ -36,26 +46,17 @@ namespace otx
 			diffuseColor = make_float3(tex.x, tex.y, tex.z);
 		}
 
-		/* === Set ray data for next trace call === */
-		/* Determine reflected ray origin and direction */
-		OrthonormalBasis basis = OrthonormalBasis(N);
-		prd.direction = basis.Local(prd.random.RandomOnUnitCosineHemisphere());
-		prd.origin = FrontHitPosition(N);
-		prd.bsdfPDF = CosineHemispherePDF(prd.direction, N);
-
-		/* Set data for shadow ray */
-		prd.basis = basis;
-		prd.shadowRayPDFMode = PDF_UNIT_COSINE_HEMISPHERE;
-
-		/* Update the primary ray path color */
-		prd.radiance *= diffuseColor;
-
 		/* If this is the first intersection of the ray, set the albedo and normal */
 		if (prd.depth == 0)
 		{
 			prd.albedo = diffuseColor;
 			prd.normal = N;
 		}
+
+		/* Update throughput */
+		float bsdf = M_1_PIf;
+		float pdf = CosineHemispherePDF(prd.in_direction, N);
+		prd.throughput *= diffuseColor * bsdf * max(dot(prd.in_direction, N), 0.0f) / pdf;
 	}
 
 
