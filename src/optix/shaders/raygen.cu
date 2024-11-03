@@ -17,21 +17,26 @@ namespace otx
 		switch (optixLaunchParams.camera.projectionMode)
 		{
 		case PROJECTION_MODE_PERSPECTIVE:
+		{
 			prd.origin = camera.position;
 			prd.in_direction = normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical);
 			break;
+		}
 
 		case PROJECTION_MODE_ORTHOGRAPHIC:
+		{
 			prd.origin = camera.position + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical;
 			prd.in_direction = camera.direction;
 			break;
-
+		}
 		case PROJECTION_MODE_THIN_LENS:
+		{
 			float2 p = prd.random.RandomInUnitDisk();
 			float3 orgOffset = (p.x * camera.defocusDiskU) + (p.y * camera.defocusDiskV);
 			prd.origin = camera.position + orgOffset;
 			prd.in_direction = normalize(camera.direction + ((screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical) - orgOffset);
 			break;
+		}
 		}
 	}
 
@@ -41,6 +46,7 @@ namespace otx
 		/* Initial prd values -- origin, in_direction already set */
 		prd.depth = 0;
 		prd.done = false;
+		prd.sbtData = nullptr;
 		prd.throughput = make_float3(1.0f);
 		prd.color = make_float3(0.0f);
 
@@ -79,7 +85,8 @@ namespace otx
 				 */
 				if (prd.depth > 3)
 				{
-					float p = max(prd.throughput.x, max(prd.throughput.y, prd.throughput.z));
+					/* Clamp russian roulette to 0.99f to prevent inf bounces for materials that do not absorb any light */
+					float p = min(max(prd.throughput.x, max(prd.throughput.y, prd.throughput.z)), 0.99f);
 					if (prd.random() > p)
 					{
 						break;

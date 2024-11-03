@@ -173,9 +173,6 @@ namespace otx
 		/* Total accumulated samples per pixel */
 		int m_AccumulatedSampleCount = 0;
 
-		/* Maximum allowed number of accumulated samples -- set to 0 for unlimited */
-		int m_MaxSampleCount = 4;
-
 		/* === Denoiser Components === */
 		CUDABuffer m_FBColor; /* The buffer we store the initial, accumulated rendered pixels to, in float4 format */
 		CUDABuffer m_FBNormal;
@@ -199,11 +196,14 @@ namespace otx
 		int m_SamplerType = SAMPLER_TYPE_STRATIFIED;
 		int m_nStrata = 8;
 
+		/* Maximum allowed number of accumulated samples -- set to 0 for unlimited */
+		int m_MaxSampleCount = 0;
+
 		/* Samples per pixel per call to render */
 		int m_SamplesPerRender = 1;
 
-		/* Maximum number of ray bounces before termination */
-		int m_MaxDepth = 8;
+		/* Maximum number of ray bounces before termination -- set to 0 for russian roulette path termination */
+		int m_MaxDepth = 0;
 
 		/* Whether to turn on gamma correction for the final (presented) render */
 		bool m_GammaCorrect = true;

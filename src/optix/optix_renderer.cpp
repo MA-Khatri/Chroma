@@ -369,11 +369,18 @@ namespace otx
 		pgDescs[CALLABLE_LAMBERTIAN_PDF] = pgDesc;
 
 		/* Conductor */
-		// TODO
+		pgDesc.callables.moduleDC = m_ConductorModule;
+		pgDesc.callables.entryFunctionNameDC = "__direct_callable__eval";
+		pgDescs[CALLABLE_CONDUCTOR_EVAL] = pgDesc;
+		pgDesc.callables.entryFunctionNameDC = "__direct_callable__pdf";
+		pgDescs[CALLABLE_CONDUCTOR_PDF] = pgDesc;
 
 		/* Dielectric */
-		// TODO
-
+		pgDesc.callables.moduleDC = m_DielectricModule;
+		pgDesc.callables.entryFunctionNameDC = "__direct_callable__eval";
+		pgDescs[CALLABLE_DIELECTRIC_EVAL] = pgDesc;
+		pgDesc.callables.entryFunctionNameDC = "__direct_callable__pdf";
+		pgDescs[CALLABLE_DIELECTRIC_PDF] = pgDesc;
 
 		/* Principled BSDF */
 		// TODO
@@ -439,6 +446,7 @@ namespace otx
 		));
 		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
 
+		/* WARNING: This is bad -- this should not be explicitly defined like this... I should change it, eventually. */
 		OPTIX_CHECK(optixPipelineSetStackSize(
 			m_Pipeline, /* [in] The pipeline to configure the stack size for */
 			2 * 1024,   /* [in] The direct stack size requirement for direct callables invoked from IS or AH */
@@ -948,7 +956,9 @@ namespace otx
 		m_LaunchParams.camera.position = ToFloat3(camera.m_Position);
 		m_LaunchParams.camera.direction = ToFloat3(glm::normalize(camera.m_Orientation));
 
-		if (camera.m_ProjectionMode == PROJECTION_MODE_PERSPECTIVE)
+		switch (camera.m_ProjectionMode)
+		{
+		case PROJECTION_MODE_PERSPECTIVE:
 		{
 			float aspect = m_LaunchParams.frame.size.x / float(m_LaunchParams.frame.size.y);
 			float focal_length = glm::length(camera.m_Orientation);
@@ -958,14 +968,16 @@ namespace otx
 			m_LaunchParams.camera.horizontal = width * normalize(cross(m_LaunchParams.camera.direction, ToFloat3(camera.m_Up)));
 			m_LaunchParams.camera.vertical = height * normalize(cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
 			m_LaunchParams.camera.projectionMode = PROJECTION_MODE_PERSPECTIVE;
+			break;
 		}
-		else if (camera.m_ProjectionMode == PROJECTION_MODE_ORTHOGRAPHIC)
+		case PROJECTION_MODE_ORTHOGRAPHIC:
 		{
 			m_LaunchParams.camera.horizontal = m_LaunchParams.frame.size.x * camera.m_OrthoScale * normalize(cross(m_LaunchParams.camera.direction, ToFloat3(camera.m_Up)));
 			m_LaunchParams.camera.vertical = m_LaunchParams.frame.size.y * camera.m_OrthoScale * normalize(cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
 			m_LaunchParams.camera.projectionMode = PROJECTION_MODE_ORTHOGRAPHIC;
+			break;
 		}
-		else if (camera.m_ProjectionMode == PROJECTION_MODE_THIN_LENS)
+		case PROJECTION_MODE_THIN_LENS:
 		{
 			float aspect = m_LaunchParams.frame.size.x / float(m_LaunchParams.frame.size.y);
 			float h = glm::tan(glm::radians(camera.m_VFoV) / 2.0f);
@@ -974,7 +986,7 @@ namespace otx
 
 			float3 u = normalize(cross(m_LaunchParams.camera.direction, ToFloat3(camera.m_Up)));
 			float3 v = normalize(cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
-			
+
 			m_LaunchParams.camera.horizontal = width * u;
 			m_LaunchParams.camera.vertical = height * v;
 			m_LaunchParams.camera.direction *= camera.m_FocusDistance;
@@ -984,6 +996,8 @@ namespace otx
 			float defocusRadius = camera.m_FocusDistance * glm::tan(glm::radians(camera.m_DefocusAngle / 2.0f));
 			m_LaunchParams.camera.defocusDiskU = defocusRadius * u;
 			m_LaunchParams.camera.defocusDiskV = defocusRadius * v;
+			break;
+		}
 		}
 
 		/* Reset accumulation */

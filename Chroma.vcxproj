@@ -100,8 +100,14 @@
     <Image Include="res\textures\viking_room_diff.png" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="src\optix\shaders\conductor.cu" />
-    <CudaCompile Include="src\optix\shaders\dielectric.cu" />
+    <CudaCompile Include="src\optix\shaders\conductor.cu">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">--relocatable-device-code=true %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">--relocatable-device-code=true %(AdditionalOptions)</AdditionalOptions>
+    </CudaCompile>
+    <CudaCompile Include="src\optix\shaders\dielectric.cu">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">--relocatable-device-code=true %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">--relocatable-device-code=true %(AdditionalOptions)</AdditionalOptions>
+    </CudaCompile>
     <CudaCompile Include="src\optix\shaders\diffuse_light.cu" />
     <CudaCompile Include="src\optix\shaders\miss.cu" />
     <CudaCompile Include="src\optix\shaders\principled.cu" />

@@ -4,7 +4,7 @@ namespace otx
 {
 	__forceinline__ __device__ float Eval(PRD_Radiance& prd, float3 indir, float3 outdir)
 	{
-		return M_1_PIf;
+		return max(dot(indir, prd.basis.w), 0.0f) * M_1_PIf;
 	}
 
 
@@ -16,8 +16,12 @@ namespace otx
 
 	extern "C" __global__ void __closesthit__radiance()
 	{
-		const SBTData& sbtData = *(const SBTData*)optixGetSbtDataPointer();
 		PRD_Radiance& prd = *getPRD<PRD_Radiance>();
+		prd.sbtData = (const SBTData*)optixGetSbtDataPointer();
+		const SBTData& sbtData = *prd.sbtData;
+		prd.eval = CALLABLE_LAMBERTIAN_EVAL;
+		prd.pdf = CALLABLE_LAMBERTIAN_PDF;
+		
 
 		const int primID = optixGetPrimitiveIndex();
 		const int3 index = sbtData.index[primID];
@@ -29,7 +33,9 @@ namespace otx
 		const float3& v0 = sbtData.position[index.x];
 		const float3& v1 = sbtData.position[index.y];
 		const float3& v2 = sbtData.position[index.z];
-		float3 N = (sbtData.normal) ? InterpolateNormals(uv, sbtData.normal[index.x], sbtData.normal[index.y], sbtData.normal[index.z]) : cross(v1 - v0, v2 - v0);
+		float3 N = (sbtData.normal) 
+			? InterpolateNormals(uv, sbtData.normal[index.x], sbtData.normal[index.y], sbtData.normal[index.z]) 
+			: cross(v1 - v0, v2 - v0);
 
 		/* Compute world-space normal and normalize */
 		N = normalize(optixTransformNormalFromObjectToWorldSpace(N));
@@ -68,7 +74,7 @@ namespace otx
 		/* Update throughput */
 		float bsdf = Eval(prd, prd.in_direction, prd.out_direction);
 		float pdf = PDF(prd, prd.in_direction);
-		prd.throughput *= diffuseColor * bsdf * max(dot(prd.in_direction, N), 0.0f) / pdf;
+		prd.throughput *= diffuseColor * bsdf / pdf;
 	}
 
 

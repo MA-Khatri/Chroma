@@ -82,7 +82,7 @@ namespace otx
 	}
 
 	/* 
-	 * Set refracted ray and return boolean indicating if the result is total internal reflection.
+	 * Set refracted ray and return boolean indicating if the ray actually refracted (else it internally reflected).
 	 * -- w_t = transmitted (or internally reflected) ray that will be set.
 	 * -- w_i = incident ray
 	 * -- n = surface normal
@@ -102,6 +102,19 @@ namespace otx
 	static __forceinline__ __device__ float3 logf3(float3 v)
 	{
 		return make_float3(logf(v.x), logf(v.y), logf(v.z));
+	}
+
+	/* Determine if 2 floats are within some small epsilon of each other */
+	static __forceinline__ __device__ bool close(float a, float b)
+	{
+		return abs(a - b) < RAY_EPS;
+	}
+
+
+	/* Determine if all components of 2 float3's are within some small epsilon of each other */
+	static __forceinline__ __device__ bool close(float3 a, float3 b)
+	{
+		return (close(a.x, b.x) && close(a.y, b.y) && close(a.z, b.z));
 	}
 
 	/* ========================== *
@@ -498,24 +511,20 @@ namespace otx
 		/* ONB of the most recent intersection -- can be used to get normal vector (basis.w) or do model/world transformations */
 		OrthonormalBasis basis;
 
-		///* Store a pointer to the sbt data for the most recent intersection */
-		//const SBTData* sbtData;
+		/* Store a pointer to the sbt data for the most recent intersection */
+		const SBTData* sbtData;
 
-		
-		///* Store pointers to each of the most-recent intersection's bsdf interface methods */
+		/* Store callable function idx for the most-recent intersection's bsdf interface methods */
 
-		///* Generate a sample by importance sampling the BSDF and update the throughput. This method updates the prd's throughput, in_direction, out_direction. */
-		//void (*sample)(PRD_Radiance& prd);
+		/* 
+		 * Evaluates the material's ability to reflect light from indir to outdir (i.e., the BSDF term). Includes cosine term.
+		 * Note: does not multiply by surface albedo! That is instead handled by closestHit or by light source sampling.
+		 * As a result, we just return a float instead of a float3.
+		 */
+		int eval;
 
-		///* 
-		// * Evaluate the material's ability to reflect light from indir to outdir (i.e., the BSDF term). 
-		// * Note: does not multiply by surface albedo! That is instead handled by sample() or by the light source sampling.
-		// * As a result, we just return a float instead of a float3.
-		// */
-		//float (*eval)(PRD_Radiance& prd, float3 indir, float3 outdir);
-
-		///* Compute the relative probability of sampling direction w */
-		//float (*pdf)(PRD_Radiance& prd, float3 w);
+		/* Computes the relative probability of sampling direction w (given the prd's current prd.out_direction) */
+		int pdf;
 	};
 
 	struct PRD_Shadow
