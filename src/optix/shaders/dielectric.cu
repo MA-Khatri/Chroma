@@ -9,37 +9,50 @@ namespace otx
 {
 	__forceinline__ __device__ float Eval(PRD_Radiance& prd, float3 indir, float3 outdir)
 	{
-		const SBTData& sbtData = *prd.sbtData;
-		float3 N = prd.basis.w;
+		/* Note: technically, we should be returning with an inf term but ignore it since the infs in this and the pdf should cancel out */
 
-		/* Determine if ray is entering/exiting */
-		float cos_theta_i = dot(indir, N);
+		if (prd.refracted)
+		{
+			const SBTData& sbtData = *prd.sbtData;
+			float3 N = prd.basis.w;
 
-		float eta1, eta2 = 1.0f;
-		if (cos_theta_i > 0.0f)
-		{ /* Ray is entering */
-			eta1 = sbtData.etaIn;
-			eta2 = sbtData.etaOut;
+			/* Determine if ray is entering/exiting */
+			float cos_theta_i = dot(indir, N);
+
+			float eta1, eta2 = 1.0f;
+			if (cos_theta_i > 0.0f)
+			{ /* Ray is entering */
+				eta1 = sbtData.etaIn;
+				eta2 = sbtData.etaOut;
+			}
+			else
+			{ /* Ray is exiting */
+				eta1 = sbtData.etaOut;
+				eta2 = sbtData.etaIn;
+				cos_theta_i = -cos_theta_i;
+				N = -N;
+			}
+
+			/* Determine refracted ray and if it was totally internally reflected */
+			float3 w_t;
+			const bool tir = !refract(w_t, -indir, N, eta1, eta2);
+			const float cos_theta_t = -dot(N, w_t);
+			const float R = tir ? 1.0f : fresnel(cos_theta_i, cos_theta_t, eta1, eta2);
+
+			/* The full version... */
+			//return abs(cos_theta_i) * ((eta2 * eta2) / (eta1 * eta1)) * (1.0f - R) / abs(cos_theta_i);
+
+			/* The Cosine terms fall out so we can set it to just this: */
+			return ((eta2 * eta2) / (eta1 * eta1)) * (1.0f - R);
 		}
 		else
-		{ /* Ray is exiting */
-			eta1 = sbtData.etaOut;
-			eta2 = sbtData.etaIn;
-			cos_theta_i = -cos_theta_i;
-			N = -N;
+		{
+			/* The full version... */
+			//return max(dot(indir, prd.basis.w), 0.0f) * close(reflect(outdir, prd.basis.w), indir) ? 1.0f / max(dot(indir, prd.basis.w), 1e-4f) : 0.0f;
+
+			/* Cosine terms cancel out so we can set it to just: */
+			return close(reflect(outdir, prd.basis.w), indir) ? 1.0f : 0.0f;
 		}
-
-		/* Determine refracted ray and if it was totally internally reflected */
-		float3 w_t;
-		const bool tir = !refract(w_t, -indir, N, eta1, eta2);
-		const float cos_theta_t = -dot(N, w_t);
-		const float R = tir ? 1.0f : fresnel(cos_theta_i, cos_theta_t, eta1, eta2);
-
-		/* The full version... */
-		//return abs(cos_theta_i) * ((eta2 * eta2) / (eta1 * eta1)) * (1.0f - R) / abs(cos_theta_i);
-
-		/* The Cosine terms fall out so we can set it to just this: */
-		return ((eta2 * eta2) / (eta1 * eta1)) * (1.0f - R);
 	}
 
 
@@ -84,14 +97,12 @@ namespace otx
 		float eta1, eta2 = 1.0f;
 		float3 transmittance = make_float3(1.0f);
 		if (cos_theta_i > 0.0f)
-		{
-			/* Ray is entering */
+		{ /* Ray is entering */
 			eta1 = sbtData.etaIn;
 			eta2 = sbtData.etaOut;
 		}
 		else
-		{
-			/* Ray is exiting, apply Beer's law */
+		{ /* Ray is exiting, apply Beer's law */
 			transmittance = expf(-sbtData.extinction * optixGetRayTmax());
 			eta1 = sbtData.etaOut;
 			eta2 = sbtData.etaIn;
@@ -108,25 +119,26 @@ namespace otx
 		/* Importance sample the Fresnel term using Russian Roulette */
 		const float z = prd.random();
 		if (z <= R)
-		{
-			/* Reflect */
+		{ /* Reflect */
 			const float3 w_in = reflect(-outDir, N);
 			const float3 fhp = FrontHitPosition(N);
 			prd.origin = fhp;
 			prd.out_direction = prd.in_direction;
 			prd.in_direction = w_in;
-			prd.throughput *= sbtData.reflectionColor * transmittance * Eval(prd, prd.in_direction, prd.out_direction) / PDF(prd, prd.in_direction);
+			prd.refracted = false;
 		}
 		else
-		{
-			/* Refract */
+		{ /* Refract */
 			const float3 w_in = w_t;
 			const float3 bhp = BackHitPosition(N);
 			prd.origin = bhp;
 			prd.out_direction = prd.in_direction;
 			prd.in_direction = w_in;
-			prd.throughput *= sbtData.refractionColor * transmittance * Eval(prd, prd.in_direction, prd.out_direction) / PDF(prd, prd.in_direction);
+			prd.refracted = true;
 		}
+
+		/* Update the throughput */
+		prd.throughput *= sbtData.refractionColor * transmittance * Eval(prd, prd.in_direction, prd.out_direction) / PDF(prd, prd.in_direction);
 
 		/* If this is the first intersection of the ray, set the albedo and normal */
 		if (prd.depth == 0)

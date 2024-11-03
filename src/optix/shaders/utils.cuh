@@ -193,43 +193,6 @@ namespace otx
 		return make_float3(d.x, d.y, z);
 	}
 
-	/* ==========================================
-	 * === Probability Distribution Functions ===
-	 * ==========================================
-	 * PDFs for different types of samplers
-	 */
-
-	enum {
-		PDF_UNIT_SPHERE,
-		PDF_UNIT_HEMISPHERE,
-		PDF_UNIT_COSINE_HEMISPHERE,
-		PDF_DELTA,
-	};
-
-	__forceinline__ __host__ __device__ float UnitSpherePDF()
-	{
-		return M_1_4PIf;
-	}
-
-	__forceinline__ __host__ __device__ float UnitHemispherePDF()
-	{
-		return M_1_2PIf;
-	}
-
-	/* Takes as input the generated ray direction vector and the surface normal */
-	__forceinline__ __host__ __device__ float CosineHemispherePDF(float3 v, float3 n)
-	{
-		return max(dot(v, n), 0.0f) * M_1_PIf;
-	}
-
-	/* Takes as input the generated ray direction and the perfect reflection direction. Returns 1 if they are within some epsilon, else 0. */
-	/* Note: In practice, this will pretty much always return 0.0f */
-	__forceinline__ __host__ __device__ float DeltaPDF(float3 a, float3 b)
-	{
-		if (fabs(length(a - b)) < 0.001f) return 1.0f;
-		return 0.0f;
-	}
-
 	/* ========================= *
 	 * === Orthonormal basis === *
 	 * ========================= *
@@ -372,25 +335,27 @@ namespace otx
 		__forceinline__ __host__ __device__ float RandomSample1D()
 		{
 			float sample = 0.0f;
-			int stratum = 0;
-			float offset = 0.0f;
 
 			switch (samplerType)
 			{
 			case SAMPLER_TYPE_INDEPENDENT:
+			{
 				sample = RandomValue();
 				break;
-
+			}
 			case SAMPLER_TYPE_STRATIFIED:
-				stratum = (int)(RandomValue() * (float)nStrata); /* Pick a random stratum */
-				offset = (float)stratum * stratumWidth;
+			{
+				int stratum = (int)(RandomValue() * (float)nStrata); /* Pick a random stratum */
+				float offset = (float)stratum * stratumWidth;
 				sample = offset + RandomValue() * stratumWidth;
 				break;
-
+			}
 			case SAMPLER_TYPE_MULTIJITTER:
+			{
 				// TODO
 				// https://graphics.pixar.com/library/MultiJitteredSampling/
 				break;
+			}
 			}
 
 			return sample;
@@ -400,27 +365,28 @@ namespace otx
 		__forceinline__ __host__ __device__ float2 RandomSample2D()
 		{
 			float2 sample = make_float2(0.0f);
-			int stratum = 0;
-			float offsetX = 0.0f;
-			float offsetY = 0.0f;
 
 			switch (samplerType)
 			{
 			case SAMPLER_TYPE_INDEPENDENT:
+			{
 				sample = make_float2(RandomValue(), RandomValue());
 				break;
-
+			}
 			case SAMPLER_TYPE_STRATIFIED:
-				stratum = (int)(RandomValue() * (float)(nStrata * nStrata)); /* Pick a random stratum in 2D */
-				offsetX = (float)(stratum % nStrata) * stratumWidth;
-				offsetY = (float)(stratum / nStrata) * stratumWidth;
+			{
+				int stratum = (int)(RandomValue() * (float)(nStrata * nStrata)); /* Pick a random stratum in 2D */
+				float offsetX = (float)(stratum % nStrata) * stratumWidth;
+				float offsetY = (float)(stratum / nStrata) * stratumWidth;
 				sample = make_float2(offsetX + RandomValue() * stratumWidth, offsetY + RandomValue() * stratumWidth);
 				break;
-
+			}
 			case SAMPLER_TYPE_MULTIJITTER:
+			{
 				// TODO
 				// https://graphics.pixar.com/library/MultiJitteredSampling/
 				break;
+			}
 			}
 
 			return sample;
@@ -514,11 +480,14 @@ namespace otx
 		/* Store a pointer to the sbt data for the most recent intersection */
 		const SBTData* sbtData;
 
+		/* Used for dielectrics to store whether the sampled ray was refracted */
+		bool refracted;
+
 		/* Store callable function idx for the most-recent intersection's bsdf interface methods */
 
 		/* 
 		 * Evaluates the material's ability to reflect light from indir to outdir (i.e., the BSDF term). Includes cosine term.
-		 * Note: does not multiply by surface albedo! That is instead handled by closestHit or by light source sampling.
+		 * Note: does not multiply by surface albedo! That is instead handled by closesthit or by light source sampling.
 		 * As a result, we just return a float instead of a float3.
 		 */
 		int eval;

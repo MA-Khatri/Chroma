@@ -10,7 +10,8 @@ namespace otx
 
 	__forceinline__ __device__ float PDF(PRD_Radiance& prd, float3 w)
 	{
-		return CosineHemispherePDF(w, prd.basis.w);
+		/* I.e., cosine hemisphere pdf */
+		return max(dot(w, prd.basis.w), 0.0f) * M_1_PIf;
 	}
 
 
