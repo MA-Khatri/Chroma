@@ -78,6 +78,9 @@ namespace otx
 		/* Setup for hitgroup program(s) we will use */
 		void CreateHitgroupPrograms();
 
+		/* Setup for callable program(s) we will use */
+		void CreateCallablePrograms();
+
 		/* Assembles pipeline of all the programs */
 		void CreatePipeline();
 
@@ -130,6 +133,8 @@ namespace otx
 		CUDABuffer m_MissRecordsBuffer;
 		std::vector<OptixProgramGroup> m_HitgroupPGs;
 		CUDABuffer m_HitgroupRecordsBuffer;
+		std::vector<OptixProgramGroup> m_CallablePGs;
+		CUDABuffer m_CallbleRecordsBuffer;
 		OptixShaderBindingTable m_SBT = {};
 
 		/* Our launch parameters on the host */

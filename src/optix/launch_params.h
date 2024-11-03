@@ -7,6 +7,14 @@
 
 namespace otx
 {
+	enum CallableIDs
+	{
+		CALLABLE_LAMBERTIAN_EVAL = 0,
+		CALLABLE_LAMBERTIAN_PDF,
+		// TODO... add the rest
+		CALLABLE_COUNT
+	};
+
 	/* Mesh and material data */
 	struct SBTData
 	{

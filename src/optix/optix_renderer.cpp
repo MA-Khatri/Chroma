@@ -48,6 +48,13 @@ namespace otx
 		SBTData data;
 	};
 
+	/* SBT record for a callable program */
+	struct __align__(OPTIX_SBT_RECORD_ALIGNMENT) CallableRecord
+	{
+		__align__(OPTIX_SBT_RECORD_ALIGNMENT) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+		void* data;
+	};
+
 
 	Optix::Optix(std::shared_ptr<Scene> scene)
 		:m_Scene(scene)
@@ -69,6 +76,9 @@ namespace otx
 
 		Debug("[Optix] Creating hitgroup programs...");
 		CreateHitgroupPrograms();
+
+		Debug("[Optix] Creating callable programs...");
+		CreateCallablePrograms();
 		
 		Debug("[Optix] Building acceleration structures...");
 		m_LaunchParams.traversable = BuildGasAndIas();
@@ -225,132 +235,88 @@ namespace otx
 
 	void Optix::CreateMissPrograms()
 	{
+		std::vector<OptixProgramGroupDesc> pgDescs;
+		pgDescs.reserve(RAY_TYPE_COUNT);
 		m_MissPGs.resize(RAY_TYPE_COUNT);
-
-		char log[2048];
-		size_t sizeof_log = sizeof(log);
 
 		OptixProgramGroupOptions pgOptions = {};
 		OptixProgramGroupDesc pgDesc = {};
 		pgDesc.kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
-		pgDesc.miss.module = m_MissModule;
 
 		/* === Radiance rays === */
+		pgDesc.miss.module = m_MissModule;
 		pgDesc.miss.entryFunctionName = "__miss__radiance";
-		OPTIX_CHECK(optixProgramGroupCreate(
-			m_OptixContext, 
-			&pgDesc, 
-			1, 
-			&pgOptions, 
-			log, 
-			&sizeof_log, 
-			&m_MissPGs[RAY_TYPE_RADIANCE]
-		));
-		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+		pgDescs.push_back(pgDesc);
 
 		/* === Shadow rays === */
 		pgDesc.miss.module = m_ShadowModule;
 		pgDesc.miss.entryFunctionName = "__miss__shadow";
-		OPTIX_CHECK(optixProgramGroupCreate(
-			m_OptixContext,
-			&pgDesc,
-			1,
-			&pgOptions,
-			log,
-			&sizeof_log,
-			&m_MissPGs[RAY_TYPE_SHADOW]
-		));
-		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+		pgDescs.push_back(pgDesc);
+
+
+		/* Create the programs */
+		char log[2048];
+		size_t sizeof_log = sizeof(log);
+		for (int i = 0; i < RAY_TYPE_COUNT; i++)
+		{
+			OPTIX_CHECK(optixProgramGroupCreate(
+				m_OptixContext,
+				&pgDescs[i],
+				1,
+				&pgOptions,
+				log,
+				&sizeof_log,
+				&m_MissPGs[i]
+			));
+			if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+		}
 	}
 
 
 	void Optix::CreateHitgroupPrograms()
 	{
-		/* 
-		 * We do -1 to remove RAY_TYPE_RADIANCE since we have no radiance-ray specific hitgroup 
+		std::vector<OptixProgramGroupDesc> pgDescs;
+
+		/*
+		 * We do -1 to remove RAY_TYPE_RADIANCE since we have no radiance-ray specific hitgroup
 		 * programs but still need to add hitgroup programs for other ray types.
 		 */
-		m_HitgroupPGs.resize(MATERIAL_TYPE_COUNT + RAY_TYPE_COUNT - 1);
+		int nPrograms = MATERIAL_TYPE_COUNT + RAY_TYPE_COUNT - 1;
 
-		char log[2048];
-		size_t sizeof_log = sizeof(log);
+		m_HitgroupPGs.resize(nPrograms);
+		pgDescs.reserve(nPrograms);
 
 		OptixProgramGroupOptions pgOptions = {};
 		OptixProgramGroupDesc pgDesc = {};
 		pgDesc.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-		pgDesc.hitgroup.moduleAH = m_LambertianModule;
-		pgDesc.hitgroup.moduleCH = m_LambertianModule;
+		pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__radiance";
+		pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__radiance";
 
 		/* === Radiance rays === */
 		/* Lambertian */
-		pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__radiance";
-		pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__radiance";
-		OPTIX_CHECK(optixProgramGroupCreate(
-			m_OptixContext, 
-			&pgDesc, 
-			1, 
-			&pgOptions, 
-			log, 
-			&sizeof_log, 
-			&m_HitgroupPGs[MATERIAL_TYPE_LAMBERTIAN]
-		));
-		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+		pgDesc.hitgroup.moduleAH = m_LambertianModule;
+		pgDesc.hitgroup.moduleCH = m_LambertianModule;
+		pgDescs.push_back(pgDesc);
 
 		/* Conductor */
 		pgDesc.hitgroup.moduleAH = m_ConductorModule;
 		pgDesc.hitgroup.moduleCH = m_ConductorModule;
-		OPTIX_CHECK(optixProgramGroupCreate(
-			m_OptixContext,
-			&pgDesc,
-			1,
-			&pgOptions,
-			log,
-			&sizeof_log,
-			&m_HitgroupPGs[MATERIAL_TYPE_CONDUCTOR]
-		));
-		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+		pgDescs.push_back(pgDesc);
 
 		/* Dielectric */
 		pgDesc.hitgroup.moduleAH = m_DielectricModule;
 		pgDesc.hitgroup.moduleCH = m_DielectricModule;
-		OPTIX_CHECK(optixProgramGroupCreate(
-			m_OptixContext,
-			&pgDesc,
-			1,
-			&pgOptions,
-			log,
-			&sizeof_log,
-			&m_HitgroupPGs[MATERIAL_TYPE_DIELECTRIC]
-		));
-		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+		pgDescs.push_back(pgDesc);
 
 		/* Principled BSDF */
 		pgDesc.hitgroup.moduleAH = m_PrincipledModule;
 		pgDesc.hitgroup.moduleCH = m_PrincipledModule;
-		OPTIX_CHECK(optixProgramGroupCreate(
-			m_OptixContext,
-			&pgDesc,
-			1,
-			&pgOptions,
-			log,
-			&sizeof_log,
-			&m_HitgroupPGs[MATERIAL_TYPE_PRINCIPLED]
-		));
-		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+		pgDescs.push_back(pgDesc);
 
 		/* Diffuse Light */
 		pgDesc.hitgroup.moduleAH = m_DiffuseLightModule;
 		pgDesc.hitgroup.moduleCH = m_DiffuseLightModule;
-		OPTIX_CHECK(optixProgramGroupCreate(
-			m_OptixContext,
-			&pgDesc,
-			1,
-			&pgOptions,
-			log,
-			&sizeof_log,
-			&m_HitgroupPGs[MATERIAL_TYPE_DIFFUSE_LIGHT]
-		));
-		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+		pgDescs.push_back(pgDesc);
 
 		// TODO, more...
 
@@ -359,16 +325,83 @@ namespace otx
 		pgDesc.hitgroup.moduleCH = m_ShadowModule;
 		pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__shadow";
 		pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__shadow";
-		OPTIX_CHECK(optixProgramGroupCreate(
-			m_OptixContext,
-			&pgDesc,
-			1,
-			&pgOptions,
-			log,
-			&sizeof_log,
-			&m_HitgroupPGs[MATERIAL_TYPE_COUNT + RAY_TYPE_SHADOW - 1]
-		));
-		if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+		pgDescs.push_back(pgDesc);
+
+
+		/* Create the programs */
+		char log[2048];
+		size_t sizeof_log = sizeof(log);
+		for (int i = 0; i < nPrograms; i++)
+		{
+			OPTIX_CHECK(optixProgramGroupCreate(
+				m_OptixContext,
+				&pgDescs[i],
+				1,
+				&pgOptions,
+				log,
+				&sizeof_log,
+				&m_HitgroupPGs[i]
+			));
+			if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+		}
+	}
+
+
+	void Optix::CreateCallablePrograms()
+	{
+		std::vector<OptixProgramGroupDesc> pgDescs;
+		int nPrograms = CALLABLE_COUNT;
+
+		m_CallablePGs.resize(nPrograms);
+		pgDescs.resize(nPrograms);
+
+		OptixProgramGroupOptions pgOptions = {};
+		OptixProgramGroupDesc pgDesc = {};
+		pgDesc.kind = OPTIX_PROGRAM_GROUP_KIND_CALLABLES;
+		pgDesc.flags = OPTIX_PROGRAM_GROUP_FLAGS_NONE;
+		
+		/* === Eval and PDF callables for each material === */
+		/* Lambertian */
+		pgDesc.callables.moduleDC = m_LambertianModule;
+		pgDesc.callables.entryFunctionNameDC = "__direct_callable__eval";
+		pgDescs[CALLABLE_LAMBERTIAN_EVAL] = pgDesc;
+		pgDesc.callables.entryFunctionNameDC = "__direct_callable__pdf";
+		pgDescs[CALLABLE_LAMBERTIAN_PDF] = pgDesc;
+
+		/* Conductor */
+		// TODO
+
+		/* Dielectric */
+		// TODO
+
+
+		/* Principled BSDF */
+		// TODO
+
+
+		/* Diffuse Light */
+		// TODO
+
+
+		// TODO, more...
+
+
+		/* Create the programs */
+		char log[2048];
+		size_t sizeof_log = sizeof(log);
+		for (int i = 0; i < nPrograms; i++)
+		{
+			OPTIX_CHECK(optixProgramGroupCreate(
+				m_OptixContext,
+				&pgDescs[i],
+				1,
+				&pgOptions,
+				log,
+				&sizeof_log,
+				&m_CallablePGs[i]
+			));
+			if (sizeof_log > 1 && debug_mode) std::cout << "Log: " << log << std::endl;
+		}
 	}
 
 
@@ -384,6 +417,10 @@ namespace otx
 			programGroups.push_back(pg);
 		}
 		for (auto pg : m_HitgroupPGs)
+		{
+			programGroups.push_back(pg);
+		}
+		for (auto pg : m_CallablePGs)
 		{
 			programGroups.push_back(pg);
 		}
@@ -834,6 +871,20 @@ namespace otx
 			m_SBT.hitgroupRecordStrideInBytes = sizeof(HitgroupRecord);
 			m_SBT.hitgroupRecordCount = static_cast<int>(hitgroupRecords.size());
 		}
+
+		/* Build callable records */
+		std::vector<CallableRecord> DCRecords;
+		for (int i = 0; i < m_CallablePGs.size(); i++)
+		{
+			CallableRecord rec;
+			OPTIX_CHECK(optixSbtRecordPackHeader(m_CallablePGs[i], &rec));
+			rec.data = nullptr; /* for now... */
+			DCRecords.push_back(rec);
+		}
+		m_CallbleRecordsBuffer.alloc_and_upload(DCRecords);
+		m_SBT.callablesRecordBase = m_CallbleRecordsBuffer.d_pointer();
+		m_SBT.callablesRecordStrideInBytes = sizeof(CallableRecord);
+		m_SBT.callablesRecordCount = static_cast<int>(DCRecords.size());
 	}
 
 

@@ -2,6 +2,18 @@
 
 namespace otx
 {
+	__forceinline__ __device__ float Eval(PRD_Radiance& prd, float3 indir, float3 outdir)
+	{
+		return M_1_PIf;
+	}
+
+
+	__forceinline__ __device__ float PDF(PRD_Radiance& prd, float3 w)
+	{
+		return CosineHemispherePDF(w, prd.basis.w);
+	}
+
+
 	extern "C" __global__ void __closesthit__radiance()
 	{
 		const SBTData& sbtData = *(const SBTData*)optixGetSbtDataPointer();
@@ -54,8 +66,8 @@ namespace otx
 		}
 
 		/* Update throughput */
-		float bsdf = M_1_PIf;
-		float pdf = CosineHemispherePDF(prd.in_direction, N);
+		float bsdf = Eval(prd, prd.in_direction, prd.out_direction);
+		float pdf = PDF(prd, prd.in_direction);
 		prd.throughput *= diffuseColor * bsdf * max(dot(prd.in_direction, N), 0.0f) / pdf;
 	}
 
@@ -63,5 +75,17 @@ namespace otx
 	extern "C" __global__ void __anyhit__radiance()
 	{
 		// TODO?
+	}
+
+
+	extern "C" __device__ float __direct_callable__eval(PRD_Radiance & prd, float3 indir, float3 outdir)
+	{
+		return Eval(prd, indir, outdir);
+	}
+
+
+	extern "C" __device__ float __direct_callable__pdf(PRD_Radiance & prd, float3 w)
+	{
+		return PDF(prd, w);
 	}
 }

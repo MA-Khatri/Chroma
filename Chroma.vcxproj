@@ -106,7 +106,10 @@
     <CudaCompile Include="src\optix\shaders\miss.cu" />
     <CudaCompile Include="src\optix\shaders\principled.cu" />
     <CudaCompile Include="src\optix\shaders\raygen.cu" />
-    <CudaCompile Include="src\optix\shaders\lambertian.cu" />
+    <CudaCompile Include="src\optix\shaders\lambertian.cu">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">--relocatable-device-code=true %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">--relocatable-device-code=true %(AdditionalOptions)</AdditionalOptions>
+    </CudaCompile>
     <CudaCompile Include="src\optix\shaders\shadow.cu" />
     <CudaCompile Include="src\optix\shaders\tone_map.cu">
       <CompileOut Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)src\optix\shaders\compiled\%(Filename).cubin</CompileOut>
@@ -181,6 +184,7 @@
       <UseHostInclude>false</UseHostInclude>
       <FastMath>true</FastMath>
       <KeepDir>$(IntDir)</KeepDir>
+      <AdditionalCompilerOptions>--relocatable-device-code=true</AdditionalCompilerOptions>
     </CudaCompile>
     <CudaLink>
       <PerformDeviceLink>false</PerformDeviceLink>
@@ -222,6 +226,8 @@
       <UseHostInclude>false</UseHostInclude>
       <FastMath>true</FastMath>
       <KeepDir>$(IntDir)</KeepDir>
+      <AdditionalCompilerOptions>
+      </AdditionalCompilerOptions>
     </CudaCompile>
     <CudaLink>
       <PerformDeviceLink>false</PerformDeviceLink>

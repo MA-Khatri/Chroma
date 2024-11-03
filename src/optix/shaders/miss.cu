@@ -8,34 +8,40 @@ namespace otx
 	{
 		PRD_Radiance& prd = *getPRD<PRD_Radiance>();
 
-		float3 result;
+		/* Output variable */
+		float3 result = make_float3(0.0f);
 
-		if (optixLaunchParams.backgroundMode == BACKGROUND_MODE_SOLID_COLOR)
+		/* Initialize variables used in switch cases */
+		float3 rayDir = make_float3(0.0f);
+		float t = 0.0f;
+		float u = 0.0f;
+		float v = 0.0f;
+		float4 tex = make_float4(0.0f);
+
+		switch (optixLaunchParams.backgroundMode)
 		{
+		case BACKGROUND_MODE_SOLID_COLOR:
 			result = optixLaunchParams.clearColor;
-		}
-		else if (optixLaunchParams.backgroundMode == BACKGROUND_MODE_GRADIENT)
-		{
-			float3 rayDir = optixGetWorldRayDirection();
+			break;
+
+		case BACKGROUND_MODE_GRADIENT:
+			rayDir = optixGetWorldRayDirection();
 
 			/* Dot rayDir with the up vector and use the result to interpolate between the bottom and top gradient colors */
-			const float t = max(dot(normalize(rayDir), make_float3(0.0f, 0.0f, 1.0f)), 0.0f);
+			t = max(dot(normalize(rayDir), make_float3(0.0f, 0.0f, 1.0f)), 0.0f);
 			result = lerp(optixLaunchParams.gradientBottom, optixLaunchParams.gradientTop, t);
-		}
-		else if (optixLaunchParams.backgroundMode == BACKGROUND_MODE_TEXTURE)
-		{
-			float3 rayDir = optixGetWorldRayDirection();
+			break;
+
+		case BACKGROUND_MODE_TEXTURE:
+			rayDir = optixGetWorldRayDirection();
 
 			/* Convert the input ray direction to UV coordinates to access the background texture */
-			float u = 0.5f * (1.0f + atan2(rayDir.x, rayDir.y) * M_1_PIf) + optixLaunchParams.backgroundRotation;
-			float v = atan2(length(make_float2(rayDir.x, rayDir.y)), rayDir.z) * M_1_PIf;
+			u = 0.5f * (1.0f + atan2(rayDir.x, rayDir.y) * M_1_PIf) + optixLaunchParams.backgroundRotation;
+			v = atan2(length(make_float2(rayDir.x, rayDir.y)), rayDir.z) * M_1_PIf;
 
-			float4 tex = tex2D<float4>(optixLaunchParams.backgroundTexture, u, v);
+			tex = tex2D<float4>(optixLaunchParams.backgroundTexture, u, v);
 			result = make_float3(tex.x, tex.y, tex.z);
-		}
-		else
-		{
-			result = make_float3(0.0f);
+			break;
 		}
 
 		prd.throughput *= result;
