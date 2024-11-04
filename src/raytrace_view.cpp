@@ -168,7 +168,7 @@ void RayTraceView::OnUIRender()
 			}
 
 			/* Integrator and sampler names for drop downs. Must match the order in 'common_enums.h' */
-			std::vector<std::string> IntegratorNames = { "BSDF Only", /*"Path"*/ };
+			std::vector<std::string> IntegratorNames = { "BSDF Only", "Path" };
 			std::vector<std::string> SamplerNames = { "Independent", "Stratified", /*"Multi-Jitter"*/ };
 
 			int tempIntegrator = m_OptixRenderer->GetIntegratorType();

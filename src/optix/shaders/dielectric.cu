@@ -68,8 +68,8 @@ namespace otx
 		PRD_Radiance& prd = *getPRD<PRD_Radiance>();
 		prd.sbtData = (const SBTData*)optixGetSbtDataPointer();
 		const SBTData& sbtData = *prd.sbtData;
-		prd.eval = CALLABLE_DIELECTRIC_EVAL;
-		prd.pdf = CALLABLE_DIELECTRIC_PDF;
+		prd.Eval = CALLABLE_DIELECTRIC_EVAL;
+		prd.PDF = CALLABLE_DIELECTRIC_PDF;
 
 		const int primID = optixGetPrimitiveIndex();
 		const int3 index = sbtData.index[primID];
@@ -138,7 +138,8 @@ namespace otx
 		}
 
 		/* Update the throughput */
-		prd.throughput *= sbtData.refractionColor * transmittance * Eval(prd, prd.in_direction, prd.out_direction) / PDF(prd, prd.in_direction);
+		prd.throughput *= sbtData.refractionColor * transmittance * Eval(prd, prd.in_direction, prd.out_direction);
+		prd.pdf = PDF(prd, prd.in_direction);
 
 		/* If this is the first intersection of the ray, set the albedo and normal */
 		if (prd.depth == 0)

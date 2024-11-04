@@ -451,8 +451,11 @@ namespace otx
 		/* boolean allowing for early termination, e.g. if ray gets fully absorbed/misses */
 		bool done;
 
-		/* Primary ray path's cumulative weight (i.e., product of (bsdf * cosine / pdf) from all bounces) */
+		/* Primary ray path's cumulative weight of bsdf and geometry terms (i.e., product of (bsdf * cosine) from all bounces) */
 		float3 throughput;
+
+		/* Product of all pdfs along the ray path */
+		float pdf;
 
 		/* Stores resulting color for this sample */
 		float3 color; 
@@ -490,15 +493,16 @@ namespace otx
 		 * Note: does not multiply by surface albedo! That is instead handled by closesthit or by light source sampling.
 		 * As a result, we just return a float instead of a float3.
 		 */
-		int eval;
+		int Eval;
 
 		/* Computes the relative probability of sampling direction w (given the prd's current prd.out_direction) */
-		int pdf;
+		int PDF;
 	};
 
 	struct PRD_Shadow
 	{
 		float3 throughput;
+		float pdf;
 		bool reached_light; /* Did the shadow ray reach the light? */
 	};
 }

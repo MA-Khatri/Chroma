@@ -20,8 +20,8 @@ namespace otx
 		PRD_Radiance& prd = *getPRD<PRD_Radiance>();
 		prd.sbtData = (const SBTData*)optixGetSbtDataPointer();
 		const SBTData& sbtData = *prd.sbtData;
-		prd.eval = CALLABLE_LAMBERTIAN_EVAL;
-		prd.pdf = CALLABLE_LAMBERTIAN_PDF;
+		prd.Eval = CALLABLE_LAMBERTIAN_EVAL;
+		prd.PDF = CALLABLE_LAMBERTIAN_PDF;
 		
 
 		const int primID = optixGetPrimitiveIndex();
@@ -75,7 +75,8 @@ namespace otx
 		/* Update throughput */
 		float bsdf = Eval(prd, prd.in_direction, prd.out_direction);
 		float pdf = PDF(prd, prd.in_direction);
-		prd.throughput *= diffuseColor * bsdf / pdf;
+		prd.throughput *= diffuseColor * bsdf;
+		prd.pdf *= pdf;
 	}
 
 

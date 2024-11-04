@@ -192,7 +192,7 @@ namespace otx
 
 		/* === Externally configurable params === */
 
-		int m_IntegratorType = INTEGRATOR_TYPE_BSDF_ONLY;
+		int m_IntegratorType = INTEGRATOR_TYPE_PATH;
 		int m_SamplerType = SAMPLER_TYPE_STRATIFIED;
 		int m_nStrata = 8;
 

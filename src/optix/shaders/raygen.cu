@@ -2,14 +2,14 @@
 
 namespace otx
 {
-	inline __device__ float2 GenerateScreenPosition(int ix, int iy, Random& random)
+	__forceinline__ __device__ float2 GenerateScreenPosition(int ix, int iy, Random& random)
 	{
 		/* Normalized screen plane position in [0, 1]^2 with randomized sub-pixel position */
 		return (make_float2((float)ix, (float)iy) + random.RandomSample2D()) / make_float2(optixLaunchParams.frame.size.x, optixLaunchParams.frame.size.y);
 	}
 
 
-	inline __device__ void GenerateCameraRay(PRD_Radiance& prd, float2 screen)
+	__forceinline__ __device__ void GenerateCameraRay(PRD_Radiance& prd, float2 screen)
 	{
 		/* Get the camera from launchParams */
 		const auto& camera = optixLaunchParams.camera;
@@ -22,7 +22,6 @@ namespace otx
 			prd.in_direction = normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical);
 			break;
 		}
-
 		case PROJECTION_MODE_ORTHOGRAPHIC:
 		{
 			prd.origin = camera.position + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical;
@@ -41,13 +40,13 @@ namespace otx
 	}
 
 
-	__device__ void BSDFIntegrator(PRD_Radiance& prd, uint32_t u0, uint32_t u1)
+	__forceinline__ __device__ void BSDFIntegrator(PRD_Radiance& prd, uint32_t u0, uint32_t u1)
 	{
 		/* Initial prd values -- origin, in_direction already set */
 		prd.depth = 0;
 		prd.done = false;
-		prd.sbtData = nullptr;
 		prd.throughput = make_float3(1.0f);
+		prd.pdf = 1.0f;
 		prd.color = make_float3(0.0f);
 
 		/* === Iterative path tracing loop === */
@@ -72,16 +71,16 @@ namespace otx
 			/* If the ray has terminated (e.g. hit a light / miss), end */
 			if (prd.done)
 			{
-				prd.color += prd.throughput;
+				prd.color += prd.throughput / prd.pdf;
 				break;
 			}
 
 			/* If max depth == 0, we use russian roulette to determine path termination */
 			if (optixLaunchParams.maxDepth == 0)
 			{
-				/* 
-				 * We do not start russian roulette path termination until after first 
-				 * 3 bounces to make sure we can get at least some lighting... 
+				/*
+				 * We do not start russian roulette path termination until after first
+				 * 3 bounces to make sure we can get at least some lighting...
 				 */
 				if (prd.depth > 3)
 				{
@@ -97,172 +96,182 @@ namespace otx
 			/* Terminate the random walk if we're at/past the max depth */
 			else if (prd.depth >= optixLaunchParams.maxDepth)
 			{
-				prd.color += optixLaunchParams.cutoffColor * prd.throughput;
+				prd.color += optixLaunchParams.cutoffColor * prd.throughput / prd.pdf;
 				break;
 			}
 		}
 	}
 
 
-	//__device__ void PathIntegrator(PRD_Radiance& prd, uint32_t u0, uint32_t u1)
-	//{
-	//	/* Initial prd values -- origin and direction are already set */
-	//	prd.depth = 0;
-	//	prd.done = false;
-	//	prd.radiance = make_float3(1.0f);
-	//	prd.totalRadiance = make_float3(0.0f);
-	//	prd.bsdfPDF = 1.0f;
-	//	prd.nLightPaths = 0;
+	__forceinline__ __device__ void PathIntegrator(PRD_Radiance& prd, uint32_t u0, uint32_t u1)
+	{
+		/* Power heuristic beta term */
+		float beta = 2.0f;
 
-	//	/* === Iterative path tracing loop === */
-	//	float cbPDF = 1.0f; /* product pdf for bsdf sampling path */
-	//	while (true)
-	//	{
-	//		/* Take a random walk step */
-	//		optixTrace(
-	//			optixLaunchParams.traversable,
-	//			prd.origin,
-	//			prd.direction,
-	//			0.0f, /* tMin */
-	//			1e20f, /* tMax */
-	//			0.0f, /* ray time */
-	//			OptixVisibilityMask(255),
-	//			OPTIX_RAY_FLAG_DISABLE_ANYHIT,
-	//			RAY_TYPE_RADIANCE, /* SBT offset */
-	//			RAY_TYPE_COUNT, /* SBT stride */
-	//			RAY_TYPE_RADIANCE, /* miss SBT index */
-	//			u0, u1 /* packed pointer to our PRD */
-	//		);
-	//		prd.depth++;
+		/* Initial prd values -- origin, in_direction already set */
+		prd.depth = 0;
+		prd.done = false;
+		prd.throughput = make_float3(1.0f);
+		prd.pdf = 1.0f; 
+		prd.color = make_float3(0.0f);
 
-	//		cbPDF *= prd.bsdfPDF;
+		int nLightPaths = 0;
 
-	//		/* Sample a light(s) */
-	//		float clPDF = 0.0f;
-	//		float3 cLightRadiance = make_float3(0.0f);
-
-	//		if (prd.depth < optixLaunchParams.maxDepth) /* Skip sampling light if we're past max depth */
-	//			for (int i = 0; i < optixLaunchParams.lightSampleCount; i++)
-	//			{
-	//				/* Pick a light to sample... */
-	//				// TODO
-
-	//				/* For now we just pick a point on the surface of a single quad light */
-	//				float r1 = prd.random();
-	//				float r2 = prd.random();
-	//				float3 lightSamplePosition = make_float3(r1 * 1.0f - 0.5f, r2 * 1.0f - 0.5f, 9.98f);
-	//				float3 lightSampleDirection = lightSamplePosition - prd.origin;
-	//				float3 lightNormalDirection = make_float3(0.0f, 0.0f, -1.0f);
-	//				float3 normalizedLightSampleDirection = normalize(lightSampleDirection);
-	//				float lightSampleLength = length(lightSampleDirection);
-
-	//				/* Get info of chosen light */
-	//				bool isDeltaLight = false;
-	//				float lightArea = 1.0f;
-	//				float3 lightRadiance = make_float3(50.0f);
-
-	//				/* Only emit from front face of light */
-	//				if (!isDeltaLight && dot(normalizedLightSampleDirection, lightNormalDirection) >= -RAY_EPS) continue;
-
-	//				/* Light does not illuminate back faces */
-	//				if (dot(normalizedLightSampleDirection, prd.basis.w) <= RAY_EPS) continue;
-
-	//				/* Initialize a shadow ray... */
-	//				PRD_Shadow shadowRay;
-	//				shadowRay.radiance = make_float3(0.0f);
-	//				shadowRay.reachedLight = false;
-
-	//				/* Launch the shadow ray towards the selected light */
-	//				uint32_t s0, s1;
-	//				packPointer(&shadowRay, s0, s1);
-	//				optixTrace(
-	//					optixLaunchParams.traversable,
-	//					prd.origin, /* I.e., last hit position of the primary ray path */
-	//					normalizedLightSampleDirection,
-	//					0.0f, /* prd.origin should already be offset */
-	//					lightSampleLength - RAY_EPS,
-	//					0.0f, /* ray time */
-	//					OptixVisibilityMask(255),
-	//					OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
-	//					RAY_TYPE_SHADOW,
-	//					RAY_TYPE_COUNT,
-	//					RAY_TYPE_SHADOW,
-	//					s0, s1
-	//				);
-
-	//				if (shadowRay.reachedLight)
-	//				{
-	//					/* Probability of light scattering in light sample direction */
-	//					float scatteringPDF = 0.0f;
-	//					switch (prd.shadowRayPDFMode)
-	//					{
-	//					case PDF_UNIT_COSINE_HEMISPHERE:
-	//						scatteringPDF = CosineHemispherePDF(normalizedLightSampleDirection, prd.basis.w);
-	//						break;
-	//					case PDF_UNIT_HEMISPHERE:
-	//						scatteringPDF = UnitHemispherePDF();
-	//						break;
-	//					case PDF_UNIT_SPHERE:
-	//						scatteringPDF = UnitSpherePDF();
-	//						break;
-	//					case PDF_DELTA:
-	//						scatteringPDF = DeltaPDF(prd.direction, normalizedLightSampleDirection);
-	//						break;
-	//					}
-
-	//					/* Probability of sampling the light from this point */
-	//					float lightPDF;
-	//					if (isDeltaLight)
-	//					{
-	//						/* inverse square law (over sphere surface area) */
-	//						lightPDF = 4.0f * M_PIf / (lightSampleLength * lightSampleLength);
-	//					}
-	//					else
-	//					{
-	//						/* inverse square law with light area and cosine (over hemisphere surface area) */
-	//						lightPDF = 2.0f * M_PIf * lightArea * max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f) / (lightSampleLength * lightSampleLength);
-	//					}
-
-	//					float lPDF = cbPDF * scatteringPDF * lightPDF / float(optixLaunchParams.lightSampleCount);
-	//					clPDF += lPDF;
-	//					cLightRadiance += lightRadiance * lPDF;
-	//					prd.nLightPaths += 1.0f / float(optixLaunchParams.lightSampleCount);
-	//				}
-	//			}
-	//		prd.totalRadiance += prd.radiance * cLightRadiance / (cbPDF + clPDF);
-
-	//		/* If the random walk has terminated (e.g. hit a light / miss), end */
-	//		if (prd.done)
-	//		{
-	//			prd.totalRadiance += prd.radiance * cbPDF / (cbPDF + clPDF);
-	//			prd.nLightPaths += 1.0f;
-	//			break;
-	//		}
-
-	//		/* Terminate the random walk if we're at/past the max depth */
-	//		if (prd.depth >= optixLaunchParams.maxDepth)
-	//		{
-	//			prd.totalRadiance += optixLaunchParams.cutoffColor * prd.radiance * cbPDF / (cbPDF + clPDF);
-	//			prd.nLightPaths += 1.0f;
-	//			break;
-	//		}
-	//	}
-
-	//	prd.totalRadiance /= prd.nLightPaths;
-	//}
+		/* === Iterative path tracing loop === */
+		while (true)
+		{
+			optixTrace(
+				optixLaunchParams.traversable,
+				prd.origin,
+				prd.in_direction,
+				0.0f, /* tMin */
+				1e20f, /* tMax */
+				0.0f, /* ray time */
+				OptixVisibilityMask(255),
+				OPTIX_RAY_FLAG_DISABLE_ANYHIT,
+				RAY_TYPE_RADIANCE, /* SBT offset */
+				RAY_TYPE_COUNT, /* SBT stride */
+				RAY_TYPE_RADIANCE, /* miss SBT index */
+				u0, u1 /* packed pointer to our PRD */
+			);
+			prd.depth++;
 
 
-	inline __device__ void Integrate(PRD_Radiance& prd, uint32_t u0, uint32_t u1)
+			/* Initialize a shadow ray... */
+			PRD_Shadow shadowRay;
+			shadowRay.throughput = make_float3(0.0f);
+			shadowRay.pdf = 0.0f;
+			shadowRay.reached_light = false;
+
+			/* 
+			 * If using Russian Roulette, only sample a light if the path has not terminated.
+			 * Otherwise, only sample a light if we're not past the max depth and not terminated.
+			 */
+			if ((optixLaunchParams.maxDepth == 0 && !prd.done) || (prd.depth < optixLaunchParams.maxDepth) && !prd.done)
+			{
+				/* Pick a light to sample... */
+				// TODO
+
+				/* For now we just pick a point on the surface of a single quad light */
+				float2 rand = prd.random.RandomSample2D();
+				float3 lightSamplePosition = make_float3(rand.x * 1.0f - 0.5f, rand.y * 1.0f - 0.5f, 9.98f);
+				float3 lightSampleDirection = lightSamplePosition - prd.origin;
+				float3 lightNormalDirection = make_float3(0.0f, 0.0f, -1.0f);
+				float3 normalizedLightSampleDirection = normalize(lightSampleDirection);
+				float lightSampleLength = length(lightSampleDirection);
+
+				/* Get info about chosen light */
+				bool isDeltaLight = false;
+				float lightArea = 1.0f;
+				float3 lightRadiance = make_float3(50.0f);
+
+				/* Only emit from front face of light */
+				bool emitFromFrontFace = !isDeltaLight && dot(normalizedLightSampleDirection, lightNormalDirection) >= -RAY_EPS;
+
+				/* Light does not illuminate back faces */
+				bool illuminateBackFace = dot(normalizedLightSampleDirection, prd.basis.w) <= RAY_EPS;
+
+				if (!emitFromFrontFace && !illuminateBackFace)
+				{
+					/* Launch the shadow ray towards the selected light */
+					uint32_t s0, s1;
+					packPointer(&shadowRay, s0, s1);
+					optixTrace(
+						optixLaunchParams.traversable,
+						prd.origin, /* I.e., last hit position of the primary ray path */
+						normalizedLightSampleDirection,
+						0.0f, /* prd.origin should already be offset */
+						lightSampleLength - RAY_EPS,
+						0.0f, /* ray time */
+						OptixVisibilityMask(255),
+						OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
+						RAY_TYPE_SHADOW,
+						RAY_TYPE_COUNT,
+						RAY_TYPE_SHADOW,
+						s0, s1
+					);
+
+					if (shadowRay.reached_light)
+					{
+						/* Probability of sampling the light from this point */
+						if (isDeltaLight)
+						{
+							shadowRay.pdf = 1.0f;
+						}
+						else
+						{
+							float cosTheta = max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f);
+							shadowRay.pdf = cosTheta > 0.0f ? (lightSampleLength * lightSampleLength) / (lightArea * cosTheta) : 0.0f;
+						}
+
+						/* Probability of light scattering in light sample direction */
+						float scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, normalizedLightSampleDirection);
+						if (scatteringPDF > 0.0f) shadowRay.pdf /= scatteringPDF;
+						else shadowRay.pdf = 0.0f;
+
+						if (shadowRay.pdf > 0.0f)
+						{
+							shadowRay.throughput = lightRadiance;
+							prd.color += prd.throughput * (shadowRay.throughput / shadowRay.pdf) * pow(shadowRay.pdf, beta) / (pow(prd.pdf, beta) + pow(shadowRay.pdf, beta));
+							nLightPaths++;
+						}
+					}
+				}
+			}
+
+
+			/* If the ray has terminated (e.g. hit a light / miss), end */
+			if (prd.done)
+			{
+				prd.color += (prd.throughput / prd.pdf) * pow(prd.pdf, beta) / (pow(prd.pdf, beta) + pow(shadowRay.pdf, beta));
+				nLightPaths++;
+				break;
+			}
+
+			/* If max depth == 0, we use russian roulette to determine path termination */
+			if (optixLaunchParams.maxDepth == 0)
+			{
+				/*
+				 * We do not start russian roulette path termination until after first
+				 * 3 bounces to make sure we can get at least some lighting...
+				 */
+				if (prd.depth > 3)
+				{
+					/* Clamp russian roulette to 0.99f to prevent inf bounces for materials that do not absorb any light */
+					float p = min(max(prd.throughput.x, max(prd.throughput.y, prd.throughput.z)), 0.99f);
+					if (prd.random() > p)
+					{
+						break;
+					}
+					prd.throughput /= p;
+				}
+			}
+			/* Terminate the random walk if we're at/past the max depth */
+			else if (prd.depth >= optixLaunchParams.maxDepth)
+			{
+				prd.color += optixLaunchParams.cutoffColor * (prd.throughput / prd.pdf) * pow(prd.pdf, beta) / (pow(prd.pdf , beta)+ pow(shadowRay.pdf, beta));
+				nLightPaths++;
+				break;
+			}
+		}
+		prd.color /= (float)nLightPaths;
+	}
+
+
+	__forceinline__ __device__ void Integrate(PRD_Radiance& prd, uint32_t u0, uint32_t u1)
 	{
 		switch (optixLaunchParams.integrator)
 		{
 		case INTEGRATOR_TYPE_BSDF_ONLY:
+		{
 			BSDFIntegrator(prd, u0, u1);
 			break;
-
-		//case INTEGRATOR_TYPE_PATH:
-		//	PathIntegrator(prd, u0, u1);
-		//	break;
+		}
+		case INTEGRATOR_TYPE_PATH:
+		{
+			PathIntegrator(prd, u0, u1);
+			break;
+		}
 		}
 	}
 
