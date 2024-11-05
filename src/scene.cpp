@@ -185,13 +185,13 @@ void Scene::MakeScene(int scene)
 		light->Scale(1.0f);
 		PushToBoth(light);
 
-		///* === Background === */
-		////m_BackgroundMode = BACKGROUND_MODE_GRADIENT;
-		////m_GradientBottom = glm::vec3(0.3f);
-		////m_GradientTop = glm::vec3(1.0f);
+		/* === Background === */
+		//m_BackgroundMode = BACKGROUND_MODE_GRADIENT;
+		//m_GradientBottom = glm::vec3(0.3f);
+		//m_GradientTop = glm::vec3(1.0f);
 
-		////m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
-		////m_ClearColor = glm::vec3(0.0f);
+		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
+		m_ClearColor = glm::vec3(0.0f);
 
 		m_BackgroundMode = BACKGROUND_MODE_TEXTURE;
 		//m_BackgroundTexture.filePath = "res/backgrounds/overcast_soil_puresky_4k.hdr";

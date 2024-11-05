@@ -138,8 +138,9 @@ namespace otx
 		}
 
 		/* Update the throughput */
-		prd.throughput *= sbtData.refractionColor * transmittance * Eval(prd, prd.in_direction, prd.out_direction);
-		prd.pdf = PDF(prd, prd.in_direction);
+		float pdf = PDF(prd, prd.in_direction);
+		prd.pdf *= pdf;
+		prd.throughput *= sbtData.refractionColor * transmittance * Eval(prd, prd.in_direction, prd.out_direction) / pdf;
 
 		/* If this is the first intersection of the ray, set the albedo and normal */
 		if (prd.depth == 0)

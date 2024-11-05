@@ -4,11 +4,8 @@
 
 namespace otx
 {
-	extern "C" __global__ void __miss__radiance()
+	__forceinline__ __device__ float3 SampleBackground(float3 rayDir)
 	{
-		PRD_Radiance& prd = *getPRD<PRD_Radiance>();
-
-		/* Output variable */
 		float3 result = make_float3(0.0f);
 
 		switch (optixLaunchParams.backgroundMode)
@@ -20,8 +17,6 @@ namespace otx
 		}
 		case BACKGROUND_MODE_GRADIENT:
 		{
-			float3 rayDir = optixGetWorldRayDirection();
-
 			/* Dot rayDir with the up vector and use the result to interpolate between the bottom and top gradient colors */
 			float t = max(dot(normalize(rayDir), make_float3(0.0f, 0.0f, 1.0f)), 0.0f);
 			result = lerp(optixLaunchParams.gradientBottom, optixLaunchParams.gradientTop, t);
@@ -29,8 +24,6 @@ namespace otx
 		}
 		case BACKGROUND_MODE_TEXTURE:
 		{
-			float3 rayDir = optixGetWorldRayDirection();
-
 			/* Convert the input ray direction to UV coordinates to access the background texture */
 			float u = 0.5f * (1.0f + atan2(rayDir.x, rayDir.y) * M_1_PIf) + optixLaunchParams.backgroundRotation;
 			float v = atan2(length(make_float2(rayDir.x, rayDir.y)), rayDir.z) * M_1_PIf;
@@ -41,7 +34,23 @@ namespace otx
 		}
 		}
 
+		return result;
+	}
+
+
+	extern "C" __global__ void __miss__radiance()
+	{
+		PRD_Radiance& prd = *getPRD<PRD_Radiance>();
+
+		float3 result = SampleBackground(prd.in_direction);
+
 		prd.throughput *= result;
 		prd.done = true;
+	}
+
+
+	extern "C" __device__ float3 __direct_callable__sample_background(float3 rayDir)
+	{
+		return SampleBackground(rayDir);
 	}
 }

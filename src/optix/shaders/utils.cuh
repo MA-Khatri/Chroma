@@ -117,6 +117,13 @@ namespace otx
 		return (close(a.x, b.x) && close(a.y, b.y) && close(a.z, b.z));
 	}
 
+
+	/* Determine the weight using the power heuristic with beta = 2 */
+	static __forceinline__ __device__ float powerHeuristic(float a, float b)
+	{
+		return a * a / (a * a + b * b);
+	}
+
 	/* ========================== *
 	 * === Sampling functions === *
 	 * ========================== *
@@ -451,7 +458,7 @@ namespace otx
 		/* boolean allowing for early termination, e.g. if ray gets fully absorbed/misses */
 		bool done;
 
-		/* Primary ray path's cumulative weight of bsdf and geometry terms (i.e., product of (bsdf * cosine) from all bounces) */
+		/* Primary ray path's cumulative weight (i.e., product of (bsdf * cosine / pdf) from all bounces) */
 		float3 throughput;
 
 		/* Product of all pdfs along the ray path */

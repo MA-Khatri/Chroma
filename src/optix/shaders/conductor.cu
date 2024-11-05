@@ -80,8 +80,8 @@ namespace otx
 		/* Update throughput */
 		float bsdf = Eval(prd, prd.in_direction, prd.out_direction);
 		float pdf = PDF(prd, prd.in_direction);
-		prd.throughput *= diffuseColor * bsdf;
-		prd.pdf = pdf;
+		prd.throughput *= diffuseColor * bsdf / pdf;
+		prd.pdf *= pdf;
 	}
 
 

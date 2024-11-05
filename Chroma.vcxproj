@@ -109,7 +109,10 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">--relocatable-device-code=true %(AdditionalOptions)</AdditionalOptions>
     </CudaCompile>
     <CudaCompile Include="src\optix\shaders\diffuse_light.cu" />
-    <CudaCompile Include="src\optix\shaders\miss.cu" />
+    <CudaCompile Include="src\optix\shaders\miss.cu">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">--relocatable-device-code=true %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">--relocatable-device-code=true %(AdditionalOptions)</AdditionalOptions>
+    </CudaCompile>
     <CudaCompile Include="src\optix\shaders\principled.cu" />
     <CudaCompile Include="src\optix\shaders\raygen.cu" />
     <CudaCompile Include="src\optix\shaders\lambertian.cu">

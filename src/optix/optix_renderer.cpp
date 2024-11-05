@@ -390,6 +390,12 @@ namespace otx
 		// TODO
 
 
+		/* Sample background */
+		pgDesc.callables.moduleDC = m_MissModule;
+		pgDesc.callables.entryFunctionNameDC = "__direct_callable__sample_background";
+		pgDescs[CALLABLE_SAMPLE_BACKGROUND] = pgDesc;
+
+
 		// TODO, more...
 
 
@@ -1035,7 +1041,6 @@ namespace otx
 		m_LaunchParams.sampler = m_SamplerType;
 		m_LaunchParams.nStrata = m_nStrata;
 		m_LaunchParams.integrator = m_IntegratorType;
-		m_LaunchParams.lightSampleCount = m_LightSampleCount;
 
 		/* Background settings */
 		m_LaunchParams.backgroundMode = m_Scene->m_BackgroundMode;
@@ -1211,12 +1216,6 @@ namespace otx
 		ResetAccumulation();
 	}
 
-	void Optix::SetLightSampleCount(int nSamples)
-	{
-		m_LightSampleCount = nSamples;
-		ResetAccumulation();
-	}
-
 	void Optix::SetIntegratorType(int integrator)
 	{
 		m_IntegratorType = integrator;
@@ -1275,11 +1274,6 @@ namespace otx
 	float Optix::GetBackgroundRotation()
 	{
 		return m_BackgroundRotation;
-	}
-
-	int Optix::GetLightSampleCount()
-	{
-		return m_LightSampleCount;
 	}
 
 	int Optix::GetIntegratorType()

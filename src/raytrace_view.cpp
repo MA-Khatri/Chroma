@@ -194,16 +194,6 @@ void RayTraceView::OnUIRender()
 				m_OptixRenderer->SetIntegratorType(tempIntegrator);
 			}
 
-			if (tempIntegrator == INTEGRATOR_TYPE_PATH)
-			{
-				int tempLightSamples = m_OptixRenderer->GetLightSampleCount();
-				ImGui::SliderInt("Light Sample Count", &tempLightSamples, 0, 4);
-				if (tempLightSamples != m_OptixRenderer->GetLightSampleCount())
-				{
-					m_OptixRenderer->SetLightSampleCount(tempLightSamples);
-				}
-			}
-
 			int tempSampler = m_OptixRenderer->GetSamplerType();
 			const char* selectedSamplerPreview = SamplerNames[tempSampler].c_str();
 			if (ImGui::BeginCombo("Sampler", selectedSamplerPreview))

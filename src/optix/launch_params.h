@@ -15,7 +15,10 @@ namespace otx
 		CALLABLE_CONDUCTOR_PDF,
 		CALLABLE_DIELECTRIC_EVAL,
 		CALLABLE_DIELECTRIC_PDF,
+
+		CALLABLE_SAMPLE_BACKGROUND,
 		// TODO... add the rest
+
 		CALLABLE_COUNT
 	};
 
@@ -72,7 +75,6 @@ namespace otx
 
 		float3 cutoffColor; /* radiance color for rays that reach depth limit */
 		int maxDepth; /* Max number of ray bounces */
-		int lightSampleCount; /* Number of direct light samples per surface intersection */
 
 		OptixTraversableHandle traversable; /* Optix traversable handle for top-level scene AS */
 

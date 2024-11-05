@@ -71,7 +71,7 @@ namespace otx
 			/* If the ray has terminated (e.g. hit a light / miss), end */
 			if (prd.done)
 			{
-				prd.color += prd.throughput / prd.pdf;
+				prd.color += prd.throughput;
 				break;
 			}
 
@@ -85,18 +85,18 @@ namespace otx
 				if (prd.depth > 3)
 				{
 					/* Clamp russian roulette to 0.99f to prevent inf bounces for materials that do not absorb any light */
-					float p = min(max(prd.throughput.x, max(prd.throughput.y, prd.throughput.z)), 0.99f);
+					float p = min(prd.pdf, 0.99f);
 					if (prd.random() > p)
 					{
 						break;
 					}
-					prd.throughput /= p;
+					prd.pdf /= p;
 				}
 			}
 			/* Terminate the random walk if we're at/past the max depth */
 			else if (prd.depth >= optixLaunchParams.maxDepth)
 			{
-				prd.color += optixLaunchParams.cutoffColor * prd.throughput / prd.pdf;
+				prd.color += optixLaunchParams.cutoffColor * prd.throughput;
 				break;
 			}
 		}
@@ -105,9 +105,6 @@ namespace otx
 
 	__forceinline__ __device__ void PathIntegrator(PRD_Radiance& prd, uint32_t u0, uint32_t u1)
 	{
-		/* Power heuristic beta term */
-		float beta = 2.0f;
-
 		/* Initial prd values -- origin, in_direction already set */
 		prd.depth = 0;
 		prd.done = false;
@@ -115,7 +112,7 @@ namespace otx
 		prd.pdf = 1.0f; 
 		prd.color = make_float3(0.0f);
 
-		int nLightPaths = 0;
+		float nLightPaths = 0.0f;
 
 		/* === Iterative path tracing loop === */
 		while (true)
@@ -149,82 +146,129 @@ namespace otx
 			 */
 			if ((optixLaunchParams.maxDepth == 0 && !prd.done) || (prd.depth < optixLaunchParams.maxDepth) && !prd.done)
 			{
-				/* Pick a light to sample... */
-				// TODO
+				int nLights = 2; /* REPLACE THIS LATER WITH A LAUNCH PARAM -- Currently, 1 light + 1 for background */
 
-				/* For now we just pick a point on the surface of a single quad light */
-				float2 rand = prd.random.RandomSample2D();
-				float3 lightSamplePosition = make_float3(rand.x * 1.0f - 0.5f, rand.y * 1.0f - 0.5f, 9.98f);
-				float3 lightSampleDirection = lightSamplePosition - prd.origin;
-				float3 lightNormalDirection = make_float3(0.0f, 0.0f, -1.0f);
-				float3 normalizedLightSampleDirection = normalize(lightSampleDirection);
-				float lightSampleLength = length(lightSampleDirection);
+				float rr = prd.random();
 
-				/* Get info about chosen light */
-				bool isDeltaLight = false;
-				float lightArea = 1.0f;
-				float3 lightRadiance = make_float3(50.0f);
+				if (rr < 1.0f / (float)nLights)
+				{ /* Importance sample the background */
+					float3 lightSampleDirection = prd.random.RandomOnUnitSphere();
 
-				/* Only emit from front face of light */
-				bool emitFromFrontFace = !isDeltaLight && dot(normalizedLightSampleDirection, lightNormalDirection) >= -RAY_EPS;
+					/* Probability of sampling the light from this point -- background covers whole hemisphere */
+					shadowRay.pdf = 1.0f;
 
-				/* Light does not illuminate back faces */
-				bool illuminateBackFace = dot(normalizedLightSampleDirection, prd.basis.w) <= RAY_EPS;
+					/* Account for the probability of choosing this light */
+					shadowRay.pdf *= (float)nLights;
 
-				if (!emitFromFrontFace && !illuminateBackFace)
-				{
-					/* Launch the shadow ray towards the selected light */
-					uint32_t s0, s1;
-					packPointer(&shadowRay, s0, s1);
-					optixTrace(
-						optixLaunchParams.traversable,
-						prd.origin, /* I.e., last hit position of the primary ray path */
-						normalizedLightSampleDirection,
-						0.0f, /* prd.origin should already be offset */
-						lightSampleLength - RAY_EPS,
-						0.0f, /* ray time */
-						OptixVisibilityMask(255),
-						OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
-						RAY_TYPE_SHADOW,
-						RAY_TYPE_COUNT,
-						RAY_TYPE_SHADOW,
-						s0, s1
-					);
+					/* Probability of light scattering in light sample direction */
+					float scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, lightSampleDirection);
+					if (scatteringPDF > 0.0f) shadowRay.pdf /= scatteringPDF;
+					else shadowRay.pdf = 0.0f;
 
-					if (shadowRay.reached_light)
+					/* Only trace the actual ray if the pdf is greater than 0.0f */
+					if (shadowRay.pdf > 0.0f)
 					{
-						/* Probability of sampling the light from this point */
-						if (isDeltaLight)
-						{
-							shadowRay.pdf = 1.0f;
-						}
-						else
-						{
-							float cosTheta = max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f);
-							shadowRay.pdf = cosTheta > 0.0f ? (lightSampleLength * lightSampleLength) / (lightArea * cosTheta) : 0.0f;
-						}
+						/* Launch the shadow ray towards the selected light */
+						uint32_t s0, s1;
+						packPointer(&shadowRay, s0, s1);
+						optixTrace(
+							optixLaunchParams.traversable,
+							prd.origin, /* I.e., last hit position of the primary ray path */
+							lightSampleDirection,
+							0.0f, /* prd.origin should already be offset */
+							1e-20f,
+							0.0f, /* ray time */
+							OptixVisibilityMask(255),
+							OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
+							RAY_TYPE_SHADOW,
+							RAY_TYPE_COUNT,
+							RAY_TYPE_SHADOW,
+							s0, s1
+						);
 
-						/* Probability of light scattering in light sample direction */
-						float scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, normalizedLightSampleDirection);
-						if (scatteringPDF > 0.0f) shadowRay.pdf /= scatteringPDF;
-						else shadowRay.pdf = 0.0f;
+						float3 lightRadiance = optixDirectCall<float3, float3>(CALLABLE_SAMPLE_BACKGROUND, lightSampleDirection);
 
-						if (shadowRay.pdf > 0.0f)
+						if (shadowRay.reached_light)
 						{
-							shadowRay.throughput = lightRadiance;
-							prd.color += prd.throughput * (shadowRay.throughput / shadowRay.pdf) * pow(shadowRay.pdf, beta) / (pow(prd.pdf, beta) + pow(shadowRay.pdf, beta));
-							nLightPaths++;
+							shadowRay.throughput = lightRadiance / shadowRay.pdf;
+							prd.color += powerHeuristic(shadowRay.pdf, prd.pdf) * prd.throughput * shadowRay.throughput;
+							nLightPaths += 1.0f;
 						}
 					}
 				}
-			}
+				else
+				{/* Pick a light to sample... */
+					// TODO
 
+					/* For now we just pick a point on the surface of a single quad light */
+					float2 rand2d = prd.random.RandomSample2D();
+					float3 lightSamplePosition = make_float3(rand2d.x * 1.0f - 0.5f, rand2d.y * 1.0f - 0.5f, 9.98f);
+					float3 lightSampleDirection = lightSamplePosition - prd.origin;
+					float3 lightNormalDirection = make_float3(0.0f, 0.0f, -1.0f);
+					float3 normalizedLightSampleDirection = normalize(lightSampleDirection);
+					float lightSampleLength = length(lightSampleDirection);
+
+					/* Get info about chosen light */
+					bool isDeltaLight = false;
+					float lightArea = 1.0f;
+					float3 lightRadiance = make_float3(50.0f);
+
+
+					/* Probability of sampling the light from this point */
+					if (isDeltaLight)
+					{
+						shadowRay.pdf = 1.0f; // TODO
+					}
+					else
+					{
+						float cosTheta = max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f);
+						shadowRay.pdf = cosTheta > 0.0f ? (lightSampleLength * lightSampleLength) / (lightArea * cosTheta) : 0.0f;
+					}
+
+					/* Account for the probability of choosing this light */
+					shadowRay.pdf *= (float)nLights;
+
+					/* Probability of light scattering in light sample direction */
+					float scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, normalizedLightSampleDirection);
+					if (scatteringPDF > 0.0f) shadowRay.pdf /= scatteringPDF;
+					else shadowRay.pdf = 0.0f;
+
+					/* Only trace the actual ray if the pdf is greater than 0.0f */
+					if (shadowRay.pdf > 0.0f)
+					{
+						/* Launch the shadow ray towards the selected light */
+						uint32_t s0, s1;
+						packPointer(&shadowRay, s0, s1);
+						optixTrace(
+							optixLaunchParams.traversable,
+							prd.origin, /* I.e., last hit position of the primary ray path */
+							normalizedLightSampleDirection,
+							0.0f, /* prd.origin should already be offset */
+							lightSampleLength - RAY_EPS,
+							0.0f, /* ray time */
+							OptixVisibilityMask(255),
+							OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
+							RAY_TYPE_SHADOW,
+							RAY_TYPE_COUNT,
+							RAY_TYPE_SHADOW,
+							s0, s1
+						);
+
+						if (shadowRay.reached_light)
+						{
+							shadowRay.throughput = lightRadiance / shadowRay.pdf;
+							prd.color += powerHeuristic(shadowRay.pdf, prd.pdf) * prd.throughput * shadowRay.throughput;
+							nLightPaths += 1.0f;
+						}
+					}
+				}			
+			}
 
 			/* If the ray has terminated (e.g. hit a light / miss), end */
 			if (prd.done)
 			{
-				prd.color += (prd.throughput / prd.pdf) * pow(prd.pdf, beta) / (pow(prd.pdf, beta) + pow(shadowRay.pdf, beta));
-				nLightPaths++;
+				prd.color += powerHeuristic(prd.pdf, shadowRay.pdf) * prd.throughput;
+				nLightPaths += 1.0f;
 				break;
 			}
 
@@ -238,23 +282,23 @@ namespace otx
 				if (prd.depth > 3)
 				{
 					/* Clamp russian roulette to 0.99f to prevent inf bounces for materials that do not absorb any light */
-					float p = min(max(prd.throughput.x, max(prd.throughput.y, prd.throughput.z)), 0.99f);
+					float p = min(prd.pdf, 0.99f);
 					if (prd.random() > p)
 					{
 						break;
 					}
-					prd.throughput /= p;
+					prd.pdf /= p;
 				}
 			}
 			/* Terminate the random walk if we're at/past the max depth */
 			else if (prd.depth >= optixLaunchParams.maxDepth)
 			{
-				prd.color += optixLaunchParams.cutoffColor * (prd.throughput / prd.pdf) * pow(prd.pdf, beta) / (pow(prd.pdf , beta)+ pow(shadowRay.pdf, beta));
-				nLightPaths++;
+				prd.color += optixLaunchParams.cutoffColor * powerHeuristic(prd.pdf, shadowRay.pdf) * prd.throughput;
+				nLightPaths += 1.0f;
 				break;
 			}
 		}
-		prd.color /= (float)nLightPaths;
+		prd.color /= nLightPaths;
 	}
 
 

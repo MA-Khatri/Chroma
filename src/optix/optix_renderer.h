@@ -30,7 +30,6 @@ namespace otx
 		void SetDenoiserEnabled(bool enabled);
 		void SetMaxSampleCount(int nSamples);
 		void SetBackgroundRotation(float deg);
-		void SetLightSampleCount(int nSamples);
 		void SetIntegratorType(int integrator);
 		void SetSamplerType(int sampler);
 		void SetStrataCount(int strata);
@@ -44,7 +43,6 @@ namespace otx
 		bool GetDenoiserEnabled();
 		int GetMaxSampleCount();
 		float GetBackgroundRotation();
-		int GetLightSampleCount();
 		int GetIntegratorType();
 		int GetSamplerType();
 		int GetStrataCount();
@@ -213,9 +211,6 @@ namespace otx
 
 		/* Adjust horizontal offset angle of sky texture, locally expressed as degrees */
 		float m_BackgroundRotation = 0.0f;
-
-		/* Number of random light samples to generate per ray-surface interaction -- setting this to 0 effectively disables direct light sampling */
-		int m_LightSampleCount = 1;
 
 		/* Color multiplied against rays past the depth limit. Typically should be 0.0f */
 		float3 m_CutoffColor = make_float3(0.0f);
