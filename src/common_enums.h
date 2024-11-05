@@ -49,3 +49,11 @@ enum IntegratorType
 	INTEGRATOR_TYPE_BSDF_ONLY = 0,
 	INTEGRATOR_TYPE_PATH
 };
+
+enum LightType
+{
+	LIGHT_TYPE_BACKGROUND = 0,
+	LIGHT_TYPE_AREA,
+	// more, e.g., LIGHT_TYPE_POINT,
+	LIGHT_TYPE_COUNT
+};

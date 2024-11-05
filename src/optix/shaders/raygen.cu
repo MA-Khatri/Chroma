@@ -138,7 +138,7 @@ namespace otx
 				prd.depth++;
 
 				/* Account for choosing to sample the bsdf instead of a light */
-				prd.pdf /= prd.depth == 0 ? 1.0f : 2.0f;
+				prd.pdf /= prd.depth == 1 ? 1.0f : 2.0f;
 
 				/* If the ray has terminated (e.g. hit a light / miss), end */
 				if (prd.done)
@@ -225,13 +225,12 @@ namespace otx
 						{
 							shadowRay.throughput = lightRadiance / shadowRay.pdf;
 							prd.color += powerHeuristic(shadowRay.pdf, prd.pdf) * prd.throughput * shadowRay.throughput;
-							break;
 						}
 					}
 				}
 				else
 				{/* Pick a light to sample... */
-					// TODO
+					// TODO -- also, combine background sampling within this (e.g., have a list of lights to sample from with lights described by a Light struct)
 
 					/* For now we just pick a point on the surface of a single quad light */
 					float2 rand2d = prd.random.RandomSample2D();
@@ -242,21 +241,15 @@ namespace otx
 					float lightSampleLength = length(lightSampleDirection);
 
 					/* Get info about chosen light */
-					bool isDeltaLight = false;
+					int lightType = LIGHT_TYPE_AREA;
 					float lightArea = 1.0f;
 					float3 lightRadiance = make_float3(50.0f);
 
 
 					/* Probability of sampling the light from this point */
-					if (isDeltaLight)
-					{
-						shadowRay.pdf = 1.0f; // TODO
-					}
-					else
-					{
-						float cosTheta = max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f);
-						shadowRay.pdf = cosTheta > 0.0f ? (lightSampleLength * lightSampleLength) / (lightArea * cosTheta) : 0.0f;
-					}
+					/* Replace this with a function call to determine the sampling pdf. That function should have a switch case for all types of lights. */
+					float cosTheta = max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f);
+					shadowRay.pdf = cosTheta > 0.0f ? (lightSampleLength * lightSampleLength) / (lightArea * cosTheta) : 0.0f;
 
 					/* Account for the probability of choosing this light and for choosing to sample a light instead of the bsdf */
 					shadowRay.pdf /= (float)nLights * 2.0f;
@@ -291,7 +284,6 @@ namespace otx
 						{
 							shadowRay.throughput = lightRadiance / shadowRay.pdf;
 							prd.color += powerHeuristic(shadowRay.pdf, prd.pdf) * prd.throughput * shadowRay.throughput;
-							break;
 						}
 					}
 				}
