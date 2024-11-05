@@ -101,6 +101,8 @@ namespace otx
 
 	__forceinline__ __device__ void PathIntegrator(PRD_Radiance& prd, uint32_t u0, uint32_t u1)
 	{
+		float lightSampleRate = 0.5f; /* This can be a launch param? */
+
 		/* Initial prd values -- origin, in_direction already set */
 		prd.depth = 0;
 		prd.done = false;
@@ -117,7 +119,7 @@ namespace otx
 			 * so we always start with a bsdf sample.
 			 */
 			float rr = prd.random();
-			if (rr < 0.5f || prd.depth == 0)
+			if (rr < 1.0f - lightSampleRate || prd.depth == 0)
 			{ /* === Sample the BSDF === */
 
 				/* Shoot a ray according to the (previously set) bsdf sample origin and direction */
@@ -138,7 +140,7 @@ namespace otx
 				prd.depth++;
 
 				/* Account for choosing to sample the bsdf instead of a light */
-				prd.pdf /= prd.depth == 1 ? 1.0f : 2.0f;
+				prd.pdf *= prd.depth == 1 ? 1.0f : 1.0f - lightSampleRate;
 
 				/* If the ray has terminated (e.g. hit a light / miss), end */
 				if (prd.done)
@@ -191,7 +193,7 @@ namespace otx
 					shadowRay.pdf = 1.0f;
 
 					/* Account for the probability of choosing this light and for choosing to sample a light instead of the bsdf */
-					shadowRay.pdf /= (float)nLights * 2.0f;
+					shadowRay.pdf *= (float)nLights * lightSampleRate;
 
 					/* Probability of light scattering in light sample direction */
 					float scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, lightSampleDirection);
@@ -252,7 +254,7 @@ namespace otx
 					shadowRay.pdf = cosTheta > 0.0f ? (lightSampleLength * lightSampleLength) / (lightArea * cosTheta) : 0.0f;
 
 					/* Account for the probability of choosing this light and for choosing to sample a light instead of the bsdf */
-					shadowRay.pdf /= (float)nLights * 2.0f;
+					shadowRay.pdf *= (float)nLights * lightSampleRate;
 
 					/* Probability of light scattering in light sample direction */
 					float scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, normalizedLightSampleDirection);
