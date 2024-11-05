@@ -211,9 +211,6 @@ namespace otx
 
 		/* Adjust horizontal offset angle of sky texture, locally expressed as degrees */
 		float m_BackgroundRotation = 0.0f;
-
-		/* Color multiplied against rays past the depth limit. Typically should be 0.0f */
-		float3 m_CutoffColor = make_float3(0.0f);
 	};
 
 

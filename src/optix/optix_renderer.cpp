@@ -1036,7 +1036,6 @@ namespace otx
 		/* === Update launch Params here === */
 		m_LaunchParams.frame.samples = nSamples;
 		m_LaunchParams.maxDepth = m_MaxDepth;
-		m_LaunchParams.cutoffColor = m_CutoffColor;
 		m_LaunchParams.gammaCorrect = m_GammaCorrect;
 		m_LaunchParams.sampler = m_SamplerType;
 		m_LaunchParams.nStrata = m_nStrata;

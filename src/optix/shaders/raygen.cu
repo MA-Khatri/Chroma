@@ -94,11 +94,7 @@ namespace otx
 				}
 			}
 			/* Terminate the random walk if we're at/past the max depth */
-			else if (prd.depth >= optixLaunchParams.maxDepth)
-			{
-				prd.color += optixLaunchParams.cutoffColor * prd.throughput;
-				break;
-			}
+			else if (prd.depth >= optixLaunchParams.maxDepth) break;
 		}
 	}
 
@@ -109,46 +105,83 @@ namespace otx
 		prd.depth = 0;
 		prd.done = false;
 		prd.throughput = make_float3(1.0f);
-		prd.pdf = 1.0f; 
+		prd.pdf = 1.0f;
 		prd.color = make_float3(0.0f);
-
-		float nLightPaths = 0.0f;
 
 		/* === Iterative path tracing loop === */
 		while (true)
 		{
-			optixTrace(
-				optixLaunchParams.traversable,
-				prd.origin,
-				prd.in_direction,
-				0.0f, /* tMin */
-				1e20f, /* tMax */
-				0.0f, /* ray time */
-				OptixVisibilityMask(255),
-				OPTIX_RAY_FLAG_DISABLE_ANYHIT,
-				RAY_TYPE_RADIANCE, /* SBT offset */
-				RAY_TYPE_COUNT, /* SBT stride */
-				RAY_TYPE_RADIANCE, /* miss SBT index */
-				u0, u1 /* packed pointer to our PRD */
-			);
-			prd.depth++;
-
-
-			/* Initialize a shadow ray... */
-			PRD_Shadow shadowRay;
-			shadowRay.throughput = make_float3(0.0f);
-			shadowRay.pdf = 0.0f;
-			shadowRay.reached_light = false;
-
 			/* 
-			 * If using Russian Roulette, only sample a light if the path has not terminated.
-			 * Otherwise, only sample a light if we're not past the max depth and not terminated.
+			 * Use RR to decide if we sample a light or sample the BSDF.
+			 * Note: We must hit at least one surface before we start sampling the lights, 
+			 * so we always start with a bsdf sample.
 			 */
-			if ((optixLaunchParams.maxDepth == 0 && !prd.done) || (prd.depth < optixLaunchParams.maxDepth) && !prd.done)
-			{
-				int nLights = 2; /* REPLACE THIS LATER WITH A LAUNCH PARAM -- Currently, 1 light + 1 for background */
+			float rr = prd.random();
+			if (rr < 0.5f || prd.depth == 0)
+			{ /* === Sample the BSDF === */
 
-				float rr = prd.random();
+				/* Shoot a ray according to the (previously set) bsdf sample origin and direction */
+				optixTrace(
+					optixLaunchParams.traversable,
+					prd.origin,
+					prd.in_direction,
+					0.0f, /* tMin */
+					1e20f, /* tMax */
+					0.0f, /* ray time */
+					OptixVisibilityMask(255),
+					OPTIX_RAY_FLAG_DISABLE_ANYHIT,
+					RAY_TYPE_RADIANCE, /* SBT offset */
+					RAY_TYPE_COUNT, /* SBT stride */
+					RAY_TYPE_RADIANCE, /* miss SBT index */
+					u0, u1 /* packed pointer to our PRD */
+				);
+				prd.depth++;
+
+				/* Account for choosing to sample the bsdf instead of a light */
+				prd.pdf /= prd.depth == 0 ? 1.0f : 2.0f;
+
+				/* If the ray has terminated (e.g. hit a light / miss), end */
+				if (prd.done)
+				{
+					/* Note: We do not need to use the power heuristic here since the shadowRay.pdf will always be 0.0f! */
+					prd.color += prd.throughput;
+					break;
+				}
+
+				/* If max depth == 0, we use russian roulette to determine path termination */
+				if (optixLaunchParams.maxDepth == 0)
+				{
+					/*
+					 * We do not start russian roulette path termination until after first
+					 * 3 bounces to make sure we can get at least some indirect lighting...
+					 */
+					if (prd.depth > 3)
+					{
+						/* Clamp russian roulette to 0.99f to prevent inf bounces for materials that do not absorb any light */
+						float p = min(prd.pdf, 0.99f);
+						if (prd.random() > p)
+						{
+							break;
+						}
+						prd.pdf /= p;
+					}
+				}
+				/* Not using RR, terminate the random walk if we're at/past the max depth */
+				else if (prd.depth >= optixLaunchParams.maxDepth) break;
+			}
+			else
+			{ /* === Sample a light === */
+
+				/* Initialize a shadow ray... */
+				PRD_Shadow shadowRay;
+				shadowRay.throughput = make_float3(0.0f);
+				shadowRay.pdf = 0.0f;
+				shadowRay.reached_light = false;
+
+
+				int nLights = 2; /* REPLACE THIS LATER WITH A LAUNCH PARAM -- Currently, 1 light + background */
+
+				rr = prd.random();
 
 				if (rr < 1.0f / (float)nLights)
 				{ /* Importance sample the background */
@@ -157,8 +190,8 @@ namespace otx
 					/* Probability of sampling the light from this point -- background covers whole hemisphere */
 					shadowRay.pdf = 1.0f;
 
-					/* Account for the probability of choosing this light */
-					shadowRay.pdf *= (float)nLights;
+					/* Account for the probability of choosing this light and for choosing to sample a light instead of the bsdf */
+					shadowRay.pdf /= (float)nLights * 2.0f;
 
 					/* Probability of light scattering in light sample direction */
 					float scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, lightSampleDirection);
@@ -192,7 +225,7 @@ namespace otx
 						{
 							shadowRay.throughput = lightRadiance / shadowRay.pdf;
 							prd.color += powerHeuristic(shadowRay.pdf, prd.pdf) * prd.throughput * shadowRay.throughput;
-							nLightPaths += 1.0f;
+							break;
 						}
 					}
 				}
@@ -225,8 +258,8 @@ namespace otx
 						shadowRay.pdf = cosTheta > 0.0f ? (lightSampleLength * lightSampleLength) / (lightArea * cosTheta) : 0.0f;
 					}
 
-					/* Account for the probability of choosing this light */
-					shadowRay.pdf *= (float)nLights;
+					/* Account for the probability of choosing this light and for choosing to sample a light instead of the bsdf */
+					shadowRay.pdf /= (float)nLights * 2.0f;
 
 					/* Probability of light scattering in light sample direction */
 					float scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, normalizedLightSampleDirection);
@@ -258,47 +291,12 @@ namespace otx
 						{
 							shadowRay.throughput = lightRadiance / shadowRay.pdf;
 							prd.color += powerHeuristic(shadowRay.pdf, prd.pdf) * prd.throughput * shadowRay.throughput;
-							nLightPaths += 1.0f;
+							break;
 						}
 					}
-				}			
-			}
-
-			/* If the ray has terminated (e.g. hit a light / miss), end */
-			if (prd.done)
-			{
-				prd.color += powerHeuristic(prd.pdf, shadowRay.pdf) * prd.throughput;
-				nLightPaths += 1.0f;
-				break;
-			}
-
-			/* If max depth == 0, we use russian roulette to determine path termination */
-			if (optixLaunchParams.maxDepth == 0)
-			{
-				/*
-				 * We do not start russian roulette path termination until after first
-				 * 3 bounces to make sure we can get at least some lighting...
-				 */
-				if (prd.depth > 3)
-				{
-					/* Clamp russian roulette to 0.99f to prevent inf bounces for materials that do not absorb any light */
-					float p = min(prd.pdf, 0.99f);
-					if (prd.random() > p)
-					{
-						break;
-					}
-					prd.pdf /= p;
 				}
 			}
-			/* Terminate the random walk if we're at/past the max depth */
-			else if (prd.depth >= optixLaunchParams.maxDepth)
-			{
-				prd.color += optixLaunchParams.cutoffColor * powerHeuristic(prd.pdf, shadowRay.pdf) * prd.throughput;
-				nLightPaths += 1.0f;
-				break;
-			}
 		}
-		prd.color /= nLightPaths;
 	}
 
 
@@ -365,7 +363,7 @@ namespace otx
 			pixelNormal += prd.normal;
 			pixelAlbedo += prd.albedo;
 		}
-		
+
 		/* Determine average color for this call. Cap to prevent speckles (even though this breaks pbr condition) */
 		const float cap = 100.0f;
 		const float cr = min(pixelColor.x / numPixelSamples, cap);

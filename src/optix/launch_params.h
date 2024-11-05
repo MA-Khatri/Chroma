@@ -73,8 +73,7 @@ namespace otx
 			float3 defocusDiskV;
 		} camera;
 
-		float3 cutoffColor; /* radiance color for rays that reach depth limit */
-		int maxDepth; /* Max number of ray bounces */
+		int maxDepth; /* Max number of ray bounces. If set to 0, use russian roulette path termination. */
 
 		OptixTraversableHandle traversable; /* Optix traversable handle for top-level scene AS */
 
