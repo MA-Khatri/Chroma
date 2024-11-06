@@ -90,7 +90,7 @@ namespace otx
 					{
 						break;
 					}
-					prd.pdf /= p;
+					prd.pdf *= p;
 				}
 			}
 			/* Terminate the random walk if we're at/past the max depth */
@@ -101,8 +101,6 @@ namespace otx
 
 	__forceinline__ __device__ void PathIntegrator(PRD_Radiance& prd, uint32_t u0, uint32_t u1)
 	{
-		float lightSampleRate = 0.5f; /* This can be a launch param? */
-
 		/* Initial prd values -- origin, in_direction already set */
 		prd.depth = 0;
 		prd.done = false;
@@ -113,87 +111,35 @@ namespace otx
 		/* === Iterative path tracing loop === */
 		while (true)
 		{
-			/* 
-			 * Use RR to decide if we sample a light or sample the BSDF.
-			 * Note: We must hit at least one surface before we start sampling the lights, 
-			 * so we always start with a bsdf sample.
-			 */
-			float rr = prd.random();
-			if (rr < 1.0f - lightSampleRate || prd.depth == 0)
-			{ /* === Sample the BSDF === */
+			/* ====================== */
+			/* === Sample a light === */
+			/* ====================== */
 
-				/* Shoot a ray according to the (previously set) bsdf sample origin and direction */
-				optixTrace(
-					optixLaunchParams.traversable,
-					prd.origin,
-					prd.in_direction,
-					0.0f, /* tMin */
-					1e20f, /* tMax */
-					0.0f, /* ray time */
-					OptixVisibilityMask(255),
-					OPTIX_RAY_FLAG_DISABLE_ANYHIT,
-					RAY_TYPE_RADIANCE, /* SBT offset */
-					RAY_TYPE_COUNT, /* SBT stride */
-					RAY_TYPE_RADIANCE, /* miss SBT index */
-					u0, u1 /* packed pointer to our PRD */
-				);
-				prd.depth++;
+			/* Initialize a shadow ray... */
+			PRD_Shadow shadowRay;
+			shadowRay.throughput = make_float3(0.0f);
+			shadowRay.pdf = 0.0f;
+			shadowRay.reached_light = false;
 
-				/* Account for choosing to sample the bsdf instead of a light */
-				prd.pdf *= prd.depth == 1 ? 1.0f : 1.0f - lightSampleRate;
+			/* We do not sample a light until after the first bounce */
+			if (prd.depth > 0)
+			{
+				/* REPLACE THIS LATER WITH A LAUNCH PARAM -- Currently, 1 light + background */
+				int nLights = 2;
 
-				/* If the ray has terminated (e.g. hit a light / miss), end */
-				if (prd.done)
-				{
-					/* Note: We do not need to use the power heuristic here since the shadowRay.pdf will always be 0.0f! */
-					prd.color += prd.throughput;
-					break;
-				}
+				/* Choose a light to sample */
+				int light = (int)(nLights * prd.random());
 
-				/* If max depth == 0, we use russian roulette to determine path termination */
-				if (optixLaunchParams.maxDepth == 0)
-				{
-					/*
-					 * We do not start russian roulette path termination until after first
-					 * 3 bounces to make sure we can get at least some indirect lighting...
-					 */
-					if (prd.depth > 3)
-					{
-						/* Clamp russian roulette to 0.99f to prevent inf bounces for materials that do not absorb any light */
-						float p = min(prd.pdf, 0.99f);
-						if (prd.random() > p)
-						{
-							break;
-						}
-						prd.pdf /= p;
-					}
-				}
-				/* Not using RR, terminate the random walk if we're at/past the max depth */
-				else if (prd.depth >= optixLaunchParams.maxDepth) break;
-			}
-			else
-			{ /* === Sample a light === */
-
-				/* Initialize a shadow ray... */
-				PRD_Shadow shadowRay;
-				shadowRay.throughput = make_float3(0.0f);
-				shadowRay.pdf = 0.0f;
-				shadowRay.reached_light = false;
-
-
-				int nLights = 2; /* REPLACE THIS LATER WITH A LAUNCH PARAM -- Currently, 1 light + background */
-
-				rr = prd.random();
-
-				if (rr < 1.0f / (float)nLights)
+				if (light == 0)
 				{ /* Importance sample the background */
 					float3 lightSampleDirection = prd.random.RandomOnUnitSphere();
 
-					/* Probability of sampling the light from this point -- background covers whole hemisphere */
-					shadowRay.pdf = 1.0f;
+					/* Probability of sampling the light from this point */
+					float cosTheta = max(dot(lightSampleDirection, make_float3(0.0f, 0.0f, 1.0f)), 0.0f);
+					shadowRay.pdf = cosTheta > 0.0f ? 1.0f / cosTheta : 0.0f;
 
-					/* Account for the probability of choosing this light and for choosing to sample a light instead of the bsdf */
-					shadowRay.pdf *= (float)nLights * lightSampleRate;
+					/* Account for the probability of choosing this light */
+					shadowRay.pdf /= (float)nLights;
 
 					/* Probability of light scattering in light sample direction */
 					float scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, lightSampleDirection);
@@ -231,8 +177,8 @@ namespace otx
 					}
 				}
 				else
-				{/* Pick a light to sample... */
-					// TODO -- also, combine background sampling within this (e.g., have a list of lights to sample from with lights described by a Light struct)
+				{
+					// TODO -- combine background sampling within this (e.g., have a list of lights to sample from with lights described by a Light struct)
 
 					/* For now we just pick a point on the surface of a single quad light */
 					float2 rand2d = prd.random.RandomSample2D();
@@ -240,21 +186,21 @@ namespace otx
 					float3 lightSampleDirection = lightSamplePosition - prd.origin;
 					float3 lightNormalDirection = make_float3(0.0f, 0.0f, -1.0f);
 					float3 normalizedLightSampleDirection = normalize(lightSampleDirection);
-					float lightSampleLength = length(lightSampleDirection);
+					float lightSampleLength2 = dot(lightSampleDirection, lightSampleDirection);
 
 					/* Get info about chosen light */
 					int lightType = LIGHT_TYPE_AREA;
 					float lightArea = 1.0f;
-					float3 lightRadiance = make_float3(50.0f);
+					float3 lightRadiance = make_float3(sqrtf(50.0f)); /* IMPORTANT! We take the sqrt of the radiance (for some reason...) */
 
 
 					/* Probability of sampling the light from this point */
 					/* Replace this with a function call to determine the sampling pdf. That function should have a switch case for all types of lights. */
 					float cosTheta = max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f);
-					shadowRay.pdf = cosTheta > 0.0f ? (lightSampleLength * lightSampleLength) / (lightArea * cosTheta) : 0.0f;
+					shadowRay.pdf = cosTheta > 0.0f ? lightSampleLength2 / (lightArea * cosTheta) : 0.0f;
 
-					/* Account for the probability of choosing this light and for choosing to sample a light instead of the bsdf */
-					shadowRay.pdf *= (float)nLights * lightSampleRate;
+					/* Account for the probability of choosing this light */
+					shadowRay.pdf /= (float)nLights;
 
 					/* Probability of light scattering in light sample direction */
 					float scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, normalizedLightSampleDirection);
@@ -272,7 +218,7 @@ namespace otx
 							prd.origin, /* I.e., last hit position of the primary ray path */
 							normalizedLightSampleDirection,
 							0.0f, /* prd.origin should already be offset */
-							lightSampleLength - RAY_EPS,
+							sqrtf(lightSampleLength2) - RAY_EPS,
 							0.0f, /* ray time */
 							OptixVisibilityMask(255),
 							OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
@@ -290,6 +236,55 @@ namespace otx
 					}
 				}
 			}
+
+			/* ======================= */
+			/* === Sample the BSDF === */
+			/* ======================= */
+
+			/* Trace the primary ray */
+			optixTrace(
+				optixLaunchParams.traversable,
+				prd.origin,
+				prd.in_direction,
+				0.0f, /* tMin */
+				1e20f, /* tMax */
+				0.0f, /* ray time */
+				OptixVisibilityMask(255),
+				OPTIX_RAY_FLAG_DISABLE_ANYHIT,
+				RAY_TYPE_RADIANCE, /* SBT offset */
+				RAY_TYPE_COUNT, /* SBT stride */
+				RAY_TYPE_RADIANCE, /* miss SBT index */
+				u0, u1 /* packed pointer to our PRD */
+			);
+			prd.depth++;
+
+			/* If the ray has terminated (e.g. hit a light / miss), end */
+			if (prd.done)
+			{
+				prd.color += prd.throughput;
+				break;
+			}
+
+			/* If max depth == 0, we use russian roulette to determine path termination */
+			if (optixLaunchParams.maxDepth == 0)
+			{
+				/*
+					* We do not start russian roulette path termination until after first
+					* 3 bounces to make sure we can get at least some indirect lighting...
+					*/
+				if (prd.depth > 3)
+				{
+					/* Clamp russian roulette to 0.99f to prevent inf bounces for materials that do not absorb any light */
+					float p = min(prd.pdf, 0.99f);
+					if (prd.random() > p)
+					{
+						break;
+					}
+					prd.pdf *= p;
+				}
+			}
+			/* Not using RR, terminate the random walk if we're at/past the max depth */
+			else if (prd.depth >= optixLaunchParams.maxDepth) break;
 		}
 	}
 
