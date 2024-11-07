@@ -93,117 +93,116 @@ namespace otx
 	}
 
 
+	__forceinline__ __device__ float3 CalculateLightSamplePDF(PRD_Radiance& prd, PRD_Shadow& shadowRay, int l, float3& lightSampleDirection, float& distance)
+	{
+		/* Get the corresponding light */
+		MISLight light;
+		if (l == 0) light.type = LIGHT_TYPE_BACKGROUND;
+		else light = *(optixLaunchParams.lights + (l - 1) * sizeof(MISLight));
+
+		float3 lightRadiance = make_float3(0.0f);
+
+		switch (light.type)
+		{
+		case LIGHT_TYPE_BACKGROUND:
+		{
+			/* Background sample can be anywhere on the unit sphere */
+			lightSampleDirection = prd.random.RandomOnUnitSphere();
+			distance = 1e20f;
+
+			/* Probability of sampling this direction of the background */
+			float cosTheta = max(dot(lightSampleDirection, make_float3(0.0f, 0.0f, 1.0f)), 0.0f);
+			shadowRay.pdf = cosTheta > 0.0f ? 1.0f / cosTheta : 0.0f;
+
+			lightRadiance = optixDirectCall<float3, float3>(CALLABLE_SAMPLE_BACKGROUND, lightSampleDirection);
+
+			break;
+		}
+		case LIGHT_TYPE_AREA:
+		{
+			/* Sample a point on the triangle */
+			float3 a = light.p1 - light.p0;
+			float3 b = light.p2 - light.p0;
+
+			float2 uv = prd.random.RandomSample2D();
+			if (uv.x + uv.y > 1.0f) uv = make_float2(1.0f - uv.x, 1.0f - uv.y);
+
+			float3 lightSamplePosition = light.p0 + a * uv.x + b * uv.y;
+			float3 lsd = lightSamplePosition - prd.origin;
+			float distance2 = dot(lsd, lsd);
+			distance = sqrtf(distance2);
+			lightSampleDirection = lsd / distance;
+
+			/* Probability of sampling this point on the triangle */
+			float3 lightNormal = InterpolateNormals(uv, light.n0, light.n1, light.n2);
+			float cosTheta = max(dot(lightSampleDirection, -lightNormal), 0.0f);
+			shadowRay.pdf = cosTheta > 0.0f ? distance2 / (light.area * cosTheta) : 0.0f;
+
+			/* We take the square root of the emission color to account for the light being 2D (?) */
+			lightRadiance = make_float3(sqrtf(light.emissionColor.x), sqrtf(light.emissionColor.y), sqrtf(light.emissionColor.z));
+
+			break;
+		}
+		case LIGHT_TYPE_DELTA:
+		{
+			//TODO
+			break;
+		}
+		}
+
+		/* Probability of light scattering in the chosen light sample direction */
+		float scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, lightSampleDirection);
+		if (scatteringPDF > 0.0f) shadowRay.pdf /= scatteringPDF;
+		else shadowRay.pdf = 0.0f;
+
+		/* Subtract a small eps to prevent counting the intersection with the light surface itself */
+		distance -= RAY_EPS;
+
+		return lightRadiance;
+	}
+
+
 	__forceinline__ __device__ void ImportanceSampleLight(PRD_Radiance& prd, PRD_Shadow& shadowRay)
 	{
 		/* We add 1 light for the back ground */
 		int nLights = optixLaunchParams.nLights + 1;
 
-		/* Choose a light to sample */
-		int light = (int)(nLights * prd.random());
+		/* Choose a light to sample -- we can later use more advanced methods such as choosing based on light power */
+		int l = (int)((float)nLights * prd.random());
 
-		if (light == 0)
-		{ /* Importance sample the background */
-			float3 lightSampleDirection = prd.random.RandomOnUnitSphere();
+		/* Calculate the PDF of sampling the chosen light */
+		float3 lightSampleDirection;
+		float distance;
+		float3 lightRadiance = CalculateLightSamplePDF(prd, shadowRay, l, lightSampleDirection, distance);
 
-			/* Probability of sampling the light from this point */
-			float cosTheta = max(dot(lightSampleDirection, make_float3(0.0f, 0.0f, 1.0f)), 0.0f);
-			shadowRay.pdf = cosTheta > 0.0f ? 1.0f / cosTheta : 0.0f;
+		/* Compensate for choosing that light */
+		shadowRay.pdf /= (float)nLights;
 
-			/* Account for the probability of choosing this light */
-			shadowRay.pdf /= (float)nLights;
-
-			/* Probability of light scattering in light sample direction */
-			float scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, lightSampleDirection);
-			if (scatteringPDF > 0.0f) shadowRay.pdf /= scatteringPDF;
-			else shadowRay.pdf = 0.0f;
-
-			/* Only trace the actual ray if the pdf is greater than 0.0f */
-			if (shadowRay.pdf > 0.0f)
-			{
-				/* Launch the shadow ray towards the selected light */
-				uint32_t s0, s1;
-				packPointer(&shadowRay, s0, s1);
-				optixTrace(
-					optixLaunchParams.traversable,
-					prd.origin, /* I.e., last hit position of the primary ray path */
-					lightSampleDirection,
-					0.0f, /* prd.origin should already be offset */
-					1e-20f,
-					0.0f, /* ray time */
-					OptixVisibilityMask(255),
-					OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
-					RAY_TYPE_SHADOW,
-					RAY_TYPE_COUNT,
-					RAY_TYPE_SHADOW,
-					s0, s1
-				);
-
-				float3 lightRadiance = optixDirectCall<float3, float3>(CALLABLE_SAMPLE_BACKGROUND, lightSampleDirection);
-
-				if (shadowRay.reached_light)
-				{
-					shadowRay.throughput = lightRadiance / shadowRay.pdf;
-					prd.color += powerHeuristic(shadowRay.pdf, prd.pdf) * prd.throughput * shadowRay.throughput;
-				}
-			}
-		}
-		else
+		/* Only trace the actual shadow ray if the PDF is greater than 0.0f */
+		if (shadowRay.pdf > 0.0f)
 		{
-			// TODO -- combine background sampling within this (e.g., have a list of lights to sample from with lights described by a Light struct)
+			/* Launch the shadow ray towards the selected light */
+			uint32_t s0, s1;
+			packPointer(&shadowRay, s0, s1);
+			optixTrace(
+				optixLaunchParams.traversable,
+				prd.origin, /* I.e., last hit position of the primary ray path */
+				lightSampleDirection,
+				0.0f, /* prd.origin should already be offset */
+				distance,
+				0.0f, /* ray time */
+				OptixVisibilityMask(255),
+				OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
+				RAY_TYPE_SHADOW,
+				RAY_TYPE_COUNT,
+				RAY_TYPE_SHADOW,
+				s0, s1
+			);
 
-			/* For now we just pick a point on the surface of a single quad light */
-			float2 rand2d = prd.random.RandomSample2D();
-			float3 lightSamplePosition = make_float3(rand2d.x * 1.0f - 0.5f, rand2d.y * 1.0f - 0.5f, 9.98f);
-			float3 lightSampleDirection = lightSamplePosition - prd.origin;
-			float3 lightNormalDirection = make_float3(0.0f, 0.0f, -1.0f);
-			float3 normalizedLightSampleDirection = normalize(lightSampleDirection);
-			float lightSampleLength2 = dot(lightSampleDirection, lightSampleDirection);
-
-			/* Get info about chosen light */
-			int lightType = LIGHT_TYPE_AREA;
-			float lightArea = 1.0f;
-			float3 lightRadiance = make_float3(sqrtf(50.0f)); /* IMPORTANT! We take the sqrt of the radiance (for some reason...) */
-
-
-			/* Probability of sampling the light from this point */
-			/* Replace this with a function call to determine the sampling pdf. That function should have a switch case for all types of lights. */
-			float cosTheta = max(dot(normalizedLightSampleDirection, -lightNormalDirection), 0.0f);
-			shadowRay.pdf = cosTheta > 0.0f ? lightSampleLength2 / (lightArea * cosTheta) : 0.0f;
-
-			/* Account for the probability of choosing this light */
-			shadowRay.pdf /= (float)nLights;
-
-			/* Probability of light scattering in light sample direction */
-			float scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, normalizedLightSampleDirection);
-			if (scatteringPDF > 0.0f) shadowRay.pdf /= scatteringPDF;
-			else shadowRay.pdf = 0.0f;
-
-			/* Only trace the actual ray if the pdf is greater than 0.0f */
-			if (shadowRay.pdf > 0.0f)
+			if (shadowRay.reached_light)
 			{
-				/* Launch the shadow ray towards the selected light */
-				uint32_t s0, s1;
-				packPointer(&shadowRay, s0, s1);
-				optixTrace(
-					optixLaunchParams.traversable,
-					prd.origin, /* I.e., last hit position of the primary ray path */
-					normalizedLightSampleDirection,
-					0.0f, /* prd.origin should already be offset */
-					sqrtf(lightSampleLength2) - RAY_EPS,
-					0.0f, /* ray time */
-					OptixVisibilityMask(255),
-					OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
-					RAY_TYPE_SHADOW,
-					RAY_TYPE_COUNT,
-					RAY_TYPE_SHADOW,
-					s0, s1
-				);
-
-				if (shadowRay.reached_light)
-				{
-					shadowRay.throughput = lightRadiance / shadowRay.pdf;
-					prd.color += powerHeuristic(shadowRay.pdf, prd.pdf) * prd.throughput * shadowRay.throughput;
-				}
+				shadowRay.throughput = lightRadiance / shadowRay.pdf;
+				prd.color += powerHeuristic(shadowRay.pdf, prd.pdf) * prd.throughput * shadowRay.throughput;
 			}
 		}
 	}
