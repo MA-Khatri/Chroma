@@ -19,14 +19,10 @@ bool debug_mode = false;
  */
 
 #include "shaders/tone_map.cuh"
+#include "../math_helpers.h"
 
 namespace otx
 {
-	float3 ToFloat3(const glm::vec3& v)
-	{
-		return { v.x, v.y, v.z };
-	}
-
 	/* SBT record for a raygen program */
 	struct __align__(OPTIX_SBT_RECORD_ALIGNMENT) RaygenRecord
 	{
@@ -857,6 +853,7 @@ namespace otx
 					rec.data.etaOut = mat->m_EtaOut;
 					rec.data.reflectionColor = ToFloat3(mat->m_ReflectionColor);
 					rec.data.refractionColor = ToFloat3(mat->m_RefractionColor);
+					rec.data.emissionColor = ToFloat3(mat->m_EmissionColor);
 					rec.data.extinction = ToFloat3(mat->m_Extinction);
 				}
 				/* Shadow rays only */

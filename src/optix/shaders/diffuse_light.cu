@@ -12,7 +12,7 @@ namespace otx
 		float2 uv = optixGetTriangleBarycentrics();
 
 		/* Use the stored color in the sbtData as the brightness of the light */
-		float3 lightColor = sbtData.reflectionColor;
+		float3 lightColor = sbtData.emissionColor;
 
 		/* If this light has a diffuse texture, scale the lightColor by that texture (creating a textured light) */
 		float2 tc = TexCoord(uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);

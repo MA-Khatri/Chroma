@@ -42,6 +42,7 @@ namespace otx
 		float roughness;
 		float3 reflectionColor;
 		float3 refractionColor;
+		float3 emissionColor;
 		float3 extinction;
 	};
 	

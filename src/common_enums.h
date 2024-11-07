@@ -1,12 +1,5 @@
 #pragma once
 
-enum BackgroundMode
-{
-	BACKGROUND_MODE_SOLID_COLOR,
-	BACKGROUND_MODE_GRADIENT,
-	BACKGROUND_MODE_TEXTURE
-};
-
 enum ControlMode
 {
 	CONTROL_MODE_FREE_FLY,
@@ -52,8 +45,23 @@ enum IntegratorType
 
 enum LightType
 {
-	LIGHT_TYPE_BACKGROUND = 0,
-	LIGHT_TYPE_AREA,
-	// more, e.g., LIGHT_TYPE_POINT,
+	LIGHT_TYPE_BACKGROUND = 0, /* I.e., the environment map */
+	LIGHT_TYPE_AREA, /* I.e., mesh lights, maybe later quad lights/sphere lights? */
+	LIGHT_TYPE_DELTA, /* Point and spot lights */
+	//LIGHT_TYPE_DIRECTIONAL, /* Directional, infinite area lights (TODO) */
+	//LIGHT_TYPE_PORTAL, /* E.g., for sampling backgrounds through windows, etc. (TODO) */
 	LIGHT_TYPE_COUNT
+};
+
+enum BackgroundMode
+{
+	BACKGROUND_MODE_SOLID_COLOR,
+	BACKGROUND_MODE_GRADIENT,
+	BACKGROUND_MODE_TEXTURE
+};
+
+enum BlendMode
+{
+	BLEND_MODE_LINEAR,
+	// TODO, more...
 };

@@ -97,6 +97,7 @@ public:
 	glm::vec3 m_ReflectionColor = glm::vec3(1.0f);
 	glm::vec3 m_RefractionColor = glm::vec3(1.0f);
 	glm::vec3 m_Extinction = glm::vec3(0.0f);
+	glm::vec3 m_EmissionColor = glm::vec3(0.0f); /* I.e., radiant exitance -- emitted flux per unit area */
 
 	/* The vulkan graphics pipeline to be used to draw this material */
 	int m_VKPipelineType = -1; /* Used to access the Scene::PipelineType enum */

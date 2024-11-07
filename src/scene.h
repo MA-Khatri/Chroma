@@ -8,6 +8,7 @@
 #include "camera.h"
 #include "application.h"
 #include "common_enums.h"
+#include "light.h"
 
 /* Forward declarations */
 class Object;
@@ -69,9 +70,12 @@ public:
 	std::vector<std::shared_ptr<Mesh>> m_Meshes;
 	std::vector<std::shared_ptr<Object>> m_RasterObjects; /* Objects to be drawn in RasterView */
 	std::vector<std::shared_ptr<Object>> m_RayTraceObjects; /* Objects to be drawn in RayTraceView */
+	std::vector<std::shared_ptr<Light>> m_Lights; /* Importance sampled lights in the ray-traced view */
 
 private:
 	void PushToBoth(std::shared_ptr<Object> obj);
+	void PushObjectLight(std::shared_ptr<Object> obj);
+	// TODO... more pushes for other light types
 
 private:
 	std::map<int, PipelineInfo> m_Pipelines; /* Vulkan Pipelines with diff. shaders/draw modes */

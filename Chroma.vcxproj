@@ -24,6 +24,7 @@
     <ClCompile Include="external\stb_image\stb_image_write.cpp" />
     <ClCompile Include="src\application.cpp" />
     <ClCompile Include="src\camera.cpp" />
+    <ClCompile Include="src\light.cpp" />
     <ClCompile Include="src\material.cpp" />
     <ClCompile Include="src\vulkan\image.cpp" />
     <ClCompile Include="src\layer.cpp" />
@@ -68,6 +69,7 @@
     <ClInclude Include="src\application.h" />
     <ClInclude Include="src\common_enums.h" />
     <ClInclude Include="src\camera.h" />
+    <ClInclude Include="src\light.h" />
     <ClInclude Include="src\material.h" />
     <ClInclude Include="src\math_helpers.h" />
     <ClInclude Include="src\optix\cuda_buffer.h" />
