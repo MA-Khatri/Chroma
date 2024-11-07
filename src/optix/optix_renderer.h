@@ -96,6 +96,9 @@ namespace otx
 		/* Sets up and launches the denoiser (if m_DenoiserEnabled) */
 		void LaunchDenoiser();
 
+		/* Populate the MISLights cuda buffer that will be passed in as a launch param */
+		void CreateLights();
+
 	protected:
 		/* 
 		 * CUDA device context and stream that Optix popeline will run on,
@@ -151,6 +154,7 @@ namespace otx
 		std::vector<CUDABuffer> m_IndexBuffers;
 		std::vector<CUDABuffer> m_NormalBuffers;
 		std::vector<CUDABuffer> m_TexCoordBuffers;
+		CUDABuffer m_MISLights; /* The lights to importance sample in the scene */
 
 		/* Buffers that keep the geometry acceleration structures (per scene object) */
 		std::vector<CUDABuffer> m_GASBuffers;

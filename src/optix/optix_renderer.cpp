@@ -88,6 +88,9 @@ namespace otx
 		Debug("[Optix] Building SBT...");
 		BuildSBT();
 
+		Debug("[Optix] Setting up importance sampled lights...");
+		CreateLights();
+
 		Debug("\033[1;32m[Optix] Optix fully set up!\033[0m");
 
 		m_LaunchParamsBuffer.alloc(sizeof(m_LaunchParams));
@@ -901,12 +904,13 @@ namespace otx
 
 	void Optix::Resize(uint32_t x, uint32_t y)
 	{
+		/* Destroy the existing denoiser */
 		if (m_Denoiser)
 		{
 			OPTIX_CHECK(optixDenoiserDestroy(m_Denoiser));
 		}
 
-		/* === Create the denoiser === */
+		/* === (Re)Create the denoiser === */
 		OptixDenoiserOptions denoiserOptions = {};
 		OPTIX_CHECK(optixDenoiserCreate(m_OptixContext, OPTIX_DENOISER_MODEL_KIND_LDR, &denoiserOptions, &m_Denoiser));
 
@@ -949,6 +953,21 @@ namespace otx
 
 		/* Reset the camera because our aspect ratio may have changed */
 		SetCamera(m_LastSetCamera);
+	}
+
+
+	void Optix::CreateLights()
+	{
+		std::vector<MISLight> MISLights;
+
+		for (auto& light : m_Scene->m_Lights)
+		{
+			MISLights.push_back(light->m_MISLight);
+		}
+
+		m_MISLights.alloc_and_upload(MISLights);
+		m_LaunchParams.lights = (MISLight*)m_MISLights.d_pointer();
+		m_LaunchParams.nLights = MISLights.size();
 	}
 
 

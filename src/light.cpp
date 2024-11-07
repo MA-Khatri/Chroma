@@ -2,27 +2,33 @@
 
 AreaLight::AreaLight(Vertex v0, Vertex v1, Vertex v2, glm::vec3 radiantExitance, glm::mat4 transform /* = glm::mat4(1.0f)*/, glm::mat4 nTransform /* = glm::mat4(1.0f)*/)
 {
-	/* === Apply transformations === */
-	glm::vec3 p0 = transform * glm::vec4(v0.posn, 1.0f);
-	glm::vec3 p1 = transform * glm::vec4(v1.posn, 1.0f);
-	glm::vec3 p2 = transform * glm::vec4(v2.posn, 1.0f);
+	m_MISLight.type = LIGHT_TYPE_AREA;
 
-	glm::vec3 n0 = nTransform * glm::vec4(v0.normal, 0.0f);
-	glm::vec3 n1 = nTransform * glm::vec4(v1.normal, 0.0f);
-	glm::vec3 n2 = nTransform * glm::vec4(v2.normal, 0.0f);
+	/* === Pre-apply transformations === */
+	m_MISLight.p0 = ToFloat3(glm::vec3(transform * glm::vec4(v0.posn, 1.0f)));
+	m_MISLight.p1 = ToFloat3(glm::vec3(transform * glm::vec4(v1.posn, 1.0f)));
+	m_MISLight.p2 = ToFloat3(glm::vec3(transform * glm::vec4(v2.posn, 1.0f)));
 
 
-	m_V0 = { ToFloat3(p0), ToFloat3(n0), ToFloat2(v0.texCoord) };
-	m_V1 = { ToFloat3(p1), ToFloat3(n1), ToFloat2(v1.texCoord) };
-	m_V2 = { ToFloat3(p2), ToFloat3(n2), ToFloat2(v2.texCoord) };
+	m_MISLight.n0 = ToFloat3(glm::vec3(nTransform * glm::vec4(v0.normal, 0.0f)));
+	m_MISLight.n1 = ToFloat3(glm::vec3(nTransform * glm::vec4(v1.normal, 0.0f)));
+	m_MISLight.n2 = ToFloat3(glm::vec3(nTransform * glm::vec4(v2.normal, 0.0f)));
 
+	m_MISLight.t0 = ToFloat2(v0.texCoord);
+	m_MISLight.t1 = ToFloat2(v1.texCoord);
+	m_MISLight.t2 = ToFloat2(v2.texCoord);
 
-	glm::vec3 ab = p1 - p0;
-	glm::vec3 ac = p2 - p0;
-	m_Area = 0.5f * glm::length(glm::cross(ab, ac));
+	m_MISLight.emissionColor = ToFloat3(radiantExitance);
 
-	m_Power = m_Area * glm::length(radiantExitance);
-	m_LightType = LIGHT_TYPE_AREA;
+	/* TODO: LIGHT TEXTURE SAMPLING */
+	m_MISLight.hasTexture = false;
+	//m_MISLight.emissionTexture = ...;
+
+	float3 ab = m_MISLight.p1 - m_MISLight.p0;
+	float3 ac = m_MISLight.p2 - m_MISLight.p0;
+	m_MISLight.area = 0.5f * length(cross(ab, ac));
+
+	m_MISLight.power = m_MISLight.area * glm::length(radiantExitance);
 }
 
 

@@ -7,19 +7,16 @@
 #include "object.h"
 #include "material.h"
 
+#include "optix/launch_params.h"
+
 /* ======================= */
 /* === Light Interface === */
 /* ======================= */
 class Light
 {
-	// TODO
-
-protected:
-	/* Index into the LightType enum */
-	int m_LightType;
-
-	/* The total radiant flux (i.e., power) of the light */
-	float m_Power;
+public:
+	/* The OptiX representation of the light that will be used in multiple importance sampling */
+	otx::MISLight m_MISLight;
 };
 
 
@@ -53,23 +50,6 @@ class AreaLight : public Light
 
 public:
 	AreaLight(Vertex v0, Vertex v1, Vertex v2, glm::vec3 radiantExitance, glm::mat4 transform = glm::mat4(1.0f), glm::mat4 nTransform = glm::mat4(1.0f));
-
-	struct LightVertex
-	{
-		float3 posn;
-		float3 normal;
-		float2 texCoord;
-	};
-
-private:
-	/* The surface area of the light */
-	float m_Area = 0.0f;
-
-	/* Store info about each light vertex */
-	LightVertex m_V0;
-	LightVertex m_V1;
-	LightVertex m_V2;
-
 };
 
 /* Creates a vector of area lights from the triangle mesh of a given scene object and its corresponding material. */

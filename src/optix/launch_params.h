@@ -47,6 +47,46 @@ namespace otx
 	};
 	
 
+	/* MIS Light definition */
+	struct MISLight
+	{
+		/* Index into LightType enum (in common_enums.h) */
+		int type;
+
+		/* Emission color */
+		float3 emissionColor;
+
+		/* Optional emission texture (mainly just area lights) */
+		bool hasTexture;
+		cudaTextureObject_t emissionTexture;
+
+		/* Total power of light (i.e., length(emissionColor) * area) */
+		float power;
+
+		/* Position of vertex 0 for area lights; origin of light for delta lights */
+		float3 p0;
+
+		/* Position of vertex 1 for area lights; direction of light for delta lights */
+		float3 p1;
+
+		/* Position of vertex 2 for area lights; x = inner angle, y = outer angle, z = blend mode for delta lights */
+		float3 p2;
+
+		/* Light normals for area lights */
+		float3 n0;
+		float3 n1;
+		float3 n2;
+
+		/* Texture coordinates for area lights */
+		float2 t0;
+		float2 t1;
+		float2 t2;
+
+		/* Only used for area lights */
+		float area;
+	};
+
+
 	struct LaunchParams
 	{
 		int sampler; /* Index into SamplerType enum */
@@ -76,7 +116,8 @@ namespace otx
 
 		int maxDepth; /* Max number of ray bounces. If set to 0, use russian roulette path termination. */
 
-		OptixTraversableHandle traversable; /* Optix traversable handle for top-level scene AS */
+		/* unsigned long long == OptixTraversableHandle -- just not included here since this file is included in non-optix sections */
+		unsigned long long traversable; /* Optix traversable handle for top-level scene AS */
 
 
 		int backgroundMode;
@@ -87,6 +128,12 @@ namespace otx
 		float backgroundRotation;
 
 		bool gammaCorrect; /* Should gamma correction be applied to the final image? */
+
+		/* An array of lights to importance sample */
+		MISLight* lights;
+
+		/* The number of importance sampled lights in the scene */
+		int nLights; 
 	};
 
 } /* namspace otx */
