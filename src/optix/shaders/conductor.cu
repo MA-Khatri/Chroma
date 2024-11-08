@@ -2,6 +2,12 @@
 
 namespace otx
 {
+	__forceinline__ __device__ float3 Sample(PRD_Radiance& prd)
+	{
+		return reflect(-prd.out_direction, prd.basis.w);
+	}
+
+
 	__forceinline__ __device__ float Eval(PRD_Radiance& prd, float3 indir, float3 outdir)
 	{
 		/* Note: technically, we should be returning inf / cos(theta) but we do 1 / cos(theta) since the infs in this and the pdf should cancel out */
@@ -26,6 +32,7 @@ namespace otx
 		PRD_Radiance& prd = *getPRD<PRD_Radiance>();
 		prd.sbtData = (const SBTData*)optixGetSbtDataPointer();
 		const SBTData& sbtData = *prd.sbtData;
+		prd.Sample = CALLABLE_CONDUCTOR_SAMPLE;
 		prd.Eval = CALLABLE_CONDUCTOR_EVAL;
 		prd.PDF = CALLABLE_CONDUCTOR_PDF;
 
@@ -88,6 +95,12 @@ namespace otx
 	extern "C" __global__ void __anyhit__radiance()
 	{
 		// TODO?
+	}
+
+
+	extern "C" __device__ float3 __direct_callable__sample(PRD_Radiance & prd)
+	{
+		return Sample(prd);
 	}
 
 

@@ -2,6 +2,11 @@
 
 namespace otx
 {
+	__forceinline__ __device__ float3 Sample(PRD_Radiance& prd)
+	{
+		return prd.basis.Local(prd.random.RandomOnUnitCosineHemisphere());
+	}
+
 	__forceinline__ __device__ float Eval(PRD_Radiance& prd, float3 indir, float3 outdir)
 	{
 		return max(dot(indir, prd.basis.w), 0.0f) * M_1_PIf;
@@ -52,7 +57,7 @@ namespace otx
 
 		/* Generate a new sample direction (in_direction) */
 		prd.out_direction = prd.in_direction;
-		prd.in_direction = prd.basis.Local(prd.random.RandomOnUnitCosineHemisphere());
+		prd.in_direction = Sample(prd);
 
 		/* Default diffuse color if no diffuse texture */
 		float3 diffuseColor = sbtData.reflectionColor;
@@ -86,13 +91,19 @@ namespace otx
 	}
 
 
-	extern "C" __device__ float __direct_callable__eval(PRD_Radiance & prd, float3 indir, float3 outdir)
+	extern "C" __device__ float3 __direct_callable__sample(PRD_Radiance & prd)
+	{
+		return Sample(prd);
+	}
+
+
+	extern "C" __device__ float __direct_callable__eval(PRD_Radiance& prd, float3 indir, float3 outdir)
 	{
 		return Eval(prd, indir, outdir);
 	}
 
 
-	extern "C" __device__ float __direct_callable__pdf(PRD_Radiance & prd, float3 w)
+	extern "C" __device__ float __direct_callable__pdf(PRD_Radiance& prd, float3 w)
 	{
 		return PDF(prd, w);
 	}

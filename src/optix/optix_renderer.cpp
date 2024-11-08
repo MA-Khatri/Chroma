@@ -362,6 +362,8 @@ namespace otx
 		/* === Eval and PDF callables for each material === */
 		/* Lambertian */
 		pgDesc.callables.moduleDC = m_LambertianModule;
+		pgDesc.callables.entryFunctionNameDC = "__direct_callable__sample";
+		pgDescs[CALLABLE_LAMBERTIAN_SAMPLE] = pgDesc;
 		pgDesc.callables.entryFunctionNameDC = "__direct_callable__eval";
 		pgDescs[CALLABLE_LAMBERTIAN_EVAL] = pgDesc;
 		pgDesc.callables.entryFunctionNameDC = "__direct_callable__pdf";
@@ -369,6 +371,8 @@ namespace otx
 
 		/* Conductor */
 		pgDesc.callables.moduleDC = m_ConductorModule;
+		pgDesc.callables.entryFunctionNameDC = "__direct_callable__sample";
+		pgDescs[CALLABLE_CONDUCTOR_SAMPLE] = pgDesc;
 		pgDesc.callables.entryFunctionNameDC = "__direct_callable__eval";
 		pgDescs[CALLABLE_CONDUCTOR_EVAL] = pgDesc;
 		pgDesc.callables.entryFunctionNameDC = "__direct_callable__pdf";
@@ -376,6 +380,8 @@ namespace otx
 
 		/* Dielectric */
 		pgDesc.callables.moduleDC = m_DielectricModule;
+		pgDesc.callables.entryFunctionNameDC = "__direct_callable__sample";
+		pgDescs[CALLABLE_DIELECTRIC_SAMPLE] = pgDesc;
 		pgDesc.callables.entryFunctionNameDC = "__direct_callable__eval";
 		pgDescs[CALLABLE_DIELECTRIC_EVAL] = pgDesc;
 		pgDesc.callables.entryFunctionNameDC = "__direct_callable__pdf";
@@ -386,10 +392,15 @@ namespace otx
 
 
 		/* Diffuse Light */
-		// TODO
+		pgDesc.callables.moduleDC = m_DiffuseLightModule;
+		pgDesc.callables.entryFunctionNameDC = "__direct_callable__sample";
+		pgDescs[CALLABLE_DIFFUSE_LIGHT_SAMPLE] = pgDesc;
+		pgDesc.callables.entryFunctionNameDC = "__direct_callable__eval";
+		pgDescs[CALLABLE_DIFFUSE_LIGHT_EVAL] = pgDesc;
+		pgDesc.callables.entryFunctionNameDC = "__direct_callable__pdf";
+		pgDescs[CALLABLE_DIFFUSE_LIGHT_PDF] = pgDesc;
 
-
-		/* Sample background */
+		/* === Sample background === */
 		pgDesc.callables.moduleDC = m_MissModule;
 		pgDesc.callables.entryFunctionNameDC = "__direct_callable__sample_background";
 		pgDescs[CALLABLE_SAMPLE_BACKGROUND] = pgDesc;

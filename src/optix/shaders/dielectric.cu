@@ -7,6 +7,47 @@
 
 namespace otx
 {
+	__forceinline__ __device__ float3 Sample(PRD_Radiance& prd)
+	{
+		const SBTData& sbtData = *prd.sbtData;
+		float3 N = prd.basis.w;
+
+		/* Determine if ray is entering/exiting */
+		float cos_theta_i = dot(prd.out_direction, N);
+
+		float eta1, eta2 = 1.0f;
+		float3 transmittance = make_float3(1.0f);
+		if (cos_theta_i > 0.0f)
+		{ /* Ray is entering */
+			eta1 = sbtData.etaIn;
+			eta2 = sbtData.etaOut;
+		}
+		else
+		{ /* Ray is exiting */
+			eta1 = sbtData.etaOut;
+			eta2 = sbtData.etaIn;
+			cos_theta_i = -cos_theta_i;
+			N = -N;
+		}
+
+		/* Determine refracted ray and if it was totally internally reflected */
+		float3 w_t;
+		const bool tir = !refract(w_t, -prd.out_direction, N, eta1, eta2);
+		const float cos_theta_t = -dot(N, w_t);
+		const float R = tir ? 1.0f : fresnel(cos_theta_i, cos_theta_t, eta1, eta2);
+
+		/* Importance sample the Fresnel term using Russian Roulette */
+		const float z = prd.random();
+		if (z <= R)
+		{ /* Reflect */
+			return reflect(-prd.out_direction, N);
+		}
+		else
+		{ /* Refract */
+			return w_t;
+		}
+	}
+
 	__forceinline__ __device__ float Eval(PRD_Radiance& prd, float3 indir, float3 outdir)
 	{
 		/* Note: technically, we should be returning with an inf term but ignore it since the infs in this and the pdf should cancel out */
@@ -68,6 +109,7 @@ namespace otx
 		PRD_Radiance& prd = *getPRD<PRD_Radiance>();
 		prd.sbtData = (const SBTData*)optixGetSbtDataPointer();
 		const SBTData& sbtData = *prd.sbtData;
+		prd.Sample = CALLABLE_DIELECTRIC_SAMPLE;
 		prd.Eval = CALLABLE_DIELECTRIC_EVAL;
 		prd.PDF = CALLABLE_DIELECTRIC_PDF;
 
@@ -154,6 +196,12 @@ namespace otx
 	extern "C" __global__ void __anyhit__radiance()
 	{
 		// TODO?
+	}
+
+
+	extern "C" __device__ float3 __direct_callable__sample(PRD_Radiance & prd)
+	{
+		return Sample(prd);
 	}
 
 

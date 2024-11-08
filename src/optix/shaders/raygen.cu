@@ -157,13 +157,19 @@ namespace otx
 	}
 
 
-	__forceinline__ __device__ void ImportanceSampleLight(PRD_Radiance& prd, PRD_Shadow& shadowRay)
+	__forceinline__ __device__ void ImportanceSampleLight(PRD_Radiance& prd)
 	{
 		/* We add 1 light for the back ground */
 		int nLights = optixLaunchParams.nLights + 1;
 
 		/* Choose a light to sample -- we can later use more advanced methods such as choosing based on light power */
 		int l = (int)((float)nLights * prd.random());
+
+		/* Initialize a shadow ray... */
+		PRD_Shadow shadowRay;
+		shadowRay.throughput = make_float3(0.0f);
+		shadowRay.pdf = 0.0f;
+		shadowRay.reached_light = false;
 
 		/* Calculate the PDF of sampling the chosen light */
 		float3 lightSampleDirection;
@@ -203,6 +209,20 @@ namespace otx
 				prd.color += powerHeuristic(shadowRay.pdf, scatteringPDF) * prd.throughput * shadowRay.throughput;
 			}
 		}
+
+
+
+		//float3 inDirection = optixDirectCall<float3, PRD_Radiance&>(prd.Sample, prd);
+		//float bsdf = optixDirectCall<float, PRD_Radiance&, float3, float3>(prd.Eval, prd, inDirection, prd.out_direction);
+		//scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, inDirection);
+		//if (scatteringPDF > 0.0f && bsdf > 0.0f)
+		//{
+		//	lightRadiance = CalculateLightSamplePDF(prd, shadowRay, l, inDirection, distance);
+
+		//	if (shadowRay.pdf <= 0.0f) return;
+
+		//	prd.color += powerHeuristic(scatteringPDF, shadowRay.pdf) * bsdf * lightRadiance * prd.throughput / scatteringPDF;
+		//}
 	}
 
 
@@ -241,13 +261,7 @@ namespace otx
 			/* ====================== */
 			/* === Sample a light === */
 			/* ====================== */
-
-			/* Initialize a shadow ray... */
-			PRD_Shadow shadowRay;
-			shadowRay.throughput = make_float3(0.0f);
-			shadowRay.pdf = 0.0f;
-			shadowRay.reached_light = false;
-			ImportanceSampleLight(prd, shadowRay);
+			ImportanceSampleLight(prd);
 		}
 	}
 
@@ -313,7 +327,7 @@ namespace otx
 		}
 
 		/* Determine average color for this call. Cap to prevent speckles (even though this breaks pbr condition) */
-		const float cap = 1e8f;
+		const float cap = 1e16f;
 		const float cr = min(pixelColor.x / numPixelSamples, cap);
 		const float cg = min(pixelColor.y / numPixelSamples, cap);
 		const float cb = min(pixelColor.z / numPixelSamples, cap);

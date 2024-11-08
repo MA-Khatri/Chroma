@@ -109,7 +109,7 @@ void Scene::MakeScene(int scene)
 	m_Materials.push_back(blueCheckerMat);
 
 	std::shared_ptr<Material> whiteDiffuseLightMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIFFUSE_LIGHT);
-	whiteDiffuseLightMat->m_EmissionColor = glm::vec3(10000.0f);
+	whiteDiffuseLightMat->m_EmissionColor = glm::vec3(1e4f);
 	m_Materials.push_back(whiteDiffuseLightMat);
 
 	/* === Create Meshes === */
@@ -249,13 +249,15 @@ void Scene::MakeScene(int scene)
 		//dragon->Scale(7.0f);
 		//PushToBoth(dragon);
 
-		std::shared_ptr<Object> cube = std::make_shared<Object>(cubeMesh, mirrorMat);
+		//std::shared_ptr<Object> cube = std::make_shared<Object>(cubeMesh, mirrorMat);
+		std::shared_ptr<Object> cube = std::make_shared<Object>(cubeMesh, diffuseWhiteMat);
 		cube->Translate(-2.0f, -2.0f, 3.0f);
 		cube->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 20.0f);
 		cube->Scale(2.5f, 2.5f, 6.0f);
 		PushToBoth(cube);
 
-		std::shared_ptr<Object> sphere = std::make_shared<Object>(sphereMesh, transparentGlassMat);
+		//std::shared_ptr<Object> sphere = std::make_shared<Object>(sphereMesh, transparentGlassMat);
+		std::shared_ptr<Object> sphere = std::make_shared<Object>(sphereMesh, diffuseWhiteMat);
 		sphere->Translate(1.5f, 1.5f, 2.0f);
 		sphere->Scale(2.0f);
 		PushToBoth(sphere);

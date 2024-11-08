@@ -11,7 +11,7 @@ int main()
 
 	/* Make scenes */
 	std::vector<std::shared_ptr<Scene>> scenes;
-	//scenes.push_back(std::make_shared<Scene>(Scene::DEFAULT));
+	scenes.push_back(std::make_shared<Scene>(Scene::DEFAULT));
 	scenes.push_back(std::make_shared<Scene>(Scene::CORNELL_BOX));
 	app->SetScenes(scenes);
 

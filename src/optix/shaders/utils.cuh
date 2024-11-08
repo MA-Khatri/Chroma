@@ -493,7 +493,11 @@ namespace otx
 		/* Used for dielectrics to store whether the sampled ray was refracted */
 		bool refracted;
 
-		/* Store callable function idx for the most-recent intersection's bsdf interface methods */
+
+		/* === Store callable function idxs for the most-recent intersection's bsdf interface methods === */
+
+		/* Generates a new sample direction from the bsdf based on the current prd.out_direction */
+		int Sample;
 
 		/* 
 		 * Evaluates the material's ability to reflect light from indir to outdir (i.e., the BSDF term). Includes cosine term.
