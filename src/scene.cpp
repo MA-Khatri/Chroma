@@ -109,7 +109,7 @@ void Scene::MakeScene(int scene)
 	m_Materials.push_back(blueCheckerMat);
 
 	std::shared_ptr<Material> whiteDiffuseLightMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIFFUSE_LIGHT);
-	whiteDiffuseLightMat->m_EmissionColor = glm::vec3(50.0f);
+	whiteDiffuseLightMat->m_EmissionColor = glm::vec3(10000.0f);
 	m_Materials.push_back(whiteDiffuseLightMat);
 
 	/* === Create Meshes === */
@@ -182,8 +182,9 @@ void Scene::MakeScene(int scene)
 		std::shared_ptr<Object> light = std::make_shared<Object>(planeMesh, whiteDiffuseLightMat);
 		light->Translate(0.0f, 0.0f, 10.0f - 0.001f);
 		light->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f);
-		light->Scale(1.0f);
-		PushToBoth(light);
+		light->Scale(0.1f);
+		//PushToBoth(light);
+		PushObjectLight(light);
 
 		/* === Background === */
 		//m_BackgroundMode = BACKGROUND_MODE_GRADIENT;
@@ -238,7 +239,7 @@ void Scene::MakeScene(int scene)
 		std::shared_ptr<Object> light = std::make_shared<Object>(planeMesh, whiteDiffuseLightMat);
 		light->Translate(0.0f, 0.0f, 10.0f - 0.001f);
 		light->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f);
-		light->Scale(1.0f);
+		light->Scale(0.1f);
 		//PushToBoth(light);
 		PushObjectLight(light);
 

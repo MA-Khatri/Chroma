@@ -83,7 +83,7 @@ namespace otx
 				{
 					return false;
 				}
-				prd.pdf *= p;
+				prd.pdf /= p;
 			}
 		}
 		/* Not using RR, terminate the random walk if we're at/past the max depth */
@@ -150,11 +150,6 @@ namespace otx
 		}
 		}
 
-		/* Probability of light scattering in the chosen light sample direction */
-		float scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, lightSampleDirection);
-		if (scatteringPDF > 0.0f) shadowRay.pdf /= scatteringPDF;
-		else shadowRay.pdf = 0.0f;
-
 		/* Subtract a small eps to prevent counting the intersection with the light surface itself */
 		distance -= RAY_EPS;
 
@@ -176,10 +171,13 @@ namespace otx
 		float3 lightRadiance = CalculateLightSamplePDF(prd, shadowRay, l, lightSampleDirection, distance);
 
 		/* Compensate for choosing that light */
-		shadowRay.pdf /= (float)nLights;
+		shadowRay.pdf *= (float)nLights;
 
-		/* Only trace the actual shadow ray if the PDF is greater than 0.0f */
-		if (shadowRay.pdf > 0.0f)
+		/* Probability of light scattering in the chosen light sample direction */
+		float scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, lightSampleDirection);
+
+		/* Only trace the actual shadow ray if the PDFs are greater than 0.0f */
+		if (shadowRay.pdf > 0.0f && scatteringPDF > 0.0f)
 		{
 			/* Launch the shadow ray towards the selected light */
 			uint32_t s0, s1;
@@ -202,7 +200,7 @@ namespace otx
 			if (shadowRay.reached_light)
 			{
 				shadowRay.throughput = lightRadiance / shadowRay.pdf;
-				prd.color += powerHeuristic(shadowRay.pdf, prd.pdf) * prd.throughput * shadowRay.throughput;
+				prd.color += powerHeuristic(shadowRay.pdf, scatteringPDF) * prd.throughput * shadowRay.throughput;
 			}
 		}
 	}
@@ -234,6 +232,12 @@ namespace otx
 		/* === Iterative path tracing loop === */
 		while (true)
 		{
+			/* ======================= */
+			/* === Sample the BSDF === */
+			/* ======================= */
+			if (!BSDFSample(prd)) break;
+
+
 			/* ====================== */
 			/* === Sample a light === */
 			/* ====================== */
@@ -243,17 +247,7 @@ namespace otx
 			shadowRay.throughput = make_float3(0.0f);
 			shadowRay.pdf = 0.0f;
 			shadowRay.reached_light = false;
-
-			/* We do not sample a light until after the first bounce */
-			if (prd.depth > 0)
-			{
-				ImportanceSampleLight(prd, shadowRay);
-			}
-
-			/* ======================= */
-			/* === Sample the BSDF === */
-			/* ======================= */
-			if (!BSDFSample(prd)) break;
+			ImportanceSampleLight(prd, shadowRay);
 		}
 	}
 
@@ -319,7 +313,7 @@ namespace otx
 		}
 
 		/* Determine average color for this call. Cap to prevent speckles (even though this breaks pbr condition) */
-		const float cap = 100.0f;
+		const float cap = 1e8f;
 		const float cr = min(pixelColor.x / numPixelSamples, cap);
 		const float cg = min(pixelColor.y / numPixelSamples, cap);
 		const float cb = min(pixelColor.z / numPixelSamples, cap);
