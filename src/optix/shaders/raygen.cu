@@ -158,8 +158,6 @@ namespace otx
 			float cosTheta = max(dot(lightSampleDirection, -lightNormal), 0.0f);
 			shadowRay.pdf = cosTheta > 0.0f ? distance2 / (light.area * cosTheta) : 0.0f;
 
-			/* We take the square root of the emission color to account for the light being 2D (?) */
-			//lightRadiance = make_float3(sqrtf(light.emissionColor.x), sqrtf(light.emissionColor.y), sqrtf(light.emissionColor.z));
 			lightRadiance = light.emissionColor;
 
 			break;
@@ -195,8 +193,8 @@ namespace otx
 
 			/* Probability of sampling this direction of the background */
 			float cosTheta = max(dot(lightSampleDirection, make_float3(0.0f, 0.0f, 1.0f)), 0.0f);
-			//shadowRay.pdf = cosTheta > 0.0f ? 1.0f / cosTheta : 0.0f;
-			shadowRay.pdf = cosTheta;
+			shadowRay.pdf = cosTheta > 0.0f ? 1.0f / cosTheta : 0.0f;
+			//shadowRay.pdf = cosTheta;
 
 			lightRadiance = optixDirectCall<float3, float3>(CALLABLE_SAMPLE_BACKGROUND, lightSampleDirection);
 
@@ -245,8 +243,8 @@ namespace otx
 			/* Probability of sampling this point on the triangle */
 			float3 lightNormal = InterpolateNormals(make_float2(u, v), light.n0, light.n1, light.n2);
 			float cosTheta = max(dot(lightSampleDirection, -lightNormal), 0.0f);
-			//shadowRay.pdf = cosTheta > 0.0f ? distance * distance / (light.area * cosTheta) : 0.0f;
-			shadowRay.pdf = (light.area * cosTheta) / (distance * distance);
+			shadowRay.pdf = cosTheta > 0.0f ? distance * distance / (light.area * cosTheta) : 0.0f;
+			//shadowRay.pdf = (light.area * cosTheta) / (distance * distance);
 
 			/* We take the square root of the emission color to account for the light being 2D (?) */
 			//lightRadiance = make_float3(sqrtf(light.emissionColor.x), sqrtf(light.emissionColor.y), sqrtf(light.emissionColor.z));
@@ -309,7 +307,7 @@ namespace otx
 			if (shadowRay.pdf > 0.0f)
 			{
 				/* Evaluate the BSDF for the chosen light sample direction */
-				bsdf = optixDirectCall<float3, PRD_Radiance&, float3, float3>(prd.PDF, prd, lightSampleDirection, prd.out_direction);
+				bsdf = optixDirectCall<float3, PRD_Radiance&, float3, float3>(prd.Eval, prd, lightSampleDirection, prd.out_direction);
 
 				/* Probability of light scattering in the chosen light sample direction */
 				scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, lightSampleDirection);

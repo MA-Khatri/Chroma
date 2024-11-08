@@ -88,7 +88,7 @@ public:
 	Texture<uint8_t> m_SpecularTexture;
 	Texture<uint8_t> m_NormalTexture;
 
-	int m_RTMaterialType = 0; /* Ray tracing material type -- i.e., otx::MaterialType enum */
+	int m_RTMaterialType = 0; /* Ray tracing material type -- i.e., MaterialType enum */
 
 	/* Material properties */
 	float m_Roughness = 0.0f;

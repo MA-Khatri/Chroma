@@ -15,13 +15,13 @@ namespace otx
 		/* Default emission color if no diffuse texture */
 		float3 emissionColor = sbtData.emissionColor;
 
-		/* The texture sampling causes an invalid memory access error... */
 		/* === Sample diffuse texture === */
 		float2 tc = TexCoord(prd.uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);
 		if (sbtData.hasDiffuseTexture)
 		{
-			float4 tex = tex2D<float4>(sbtData.diffuseTexture, tc.x, tc.y);
-			emissionColor *= make_float3(tex.x, tex.y, tex.z);
+			/* The texture sampling causes an invalid memory access error... */
+			//float4 tex = tex2D<float4>(sbtData.diffuseTexture, tc.x, tc.y);
+			//emissionColor *= make_float3(tex.x, tex.y, tex.z);
 		}
 
 		/* If this is the first intersection of the ray, set the albedo and normal */
