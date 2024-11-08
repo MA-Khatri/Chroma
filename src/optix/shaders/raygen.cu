@@ -159,7 +159,8 @@ namespace otx
 			shadowRay.pdf = cosTheta > 0.0f ? distance2 / (light.area * cosTheta) : 0.0f;
 
 			/* We take the square root of the emission color to account for the light being 2D (?) */
-			lightRadiance = make_float3(sqrtf(light.emissionColor.x), sqrtf(light.emissionColor.y), sqrtf(light.emissionColor.z));
+			//lightRadiance = make_float3(sqrtf(light.emissionColor.x), sqrtf(light.emissionColor.y), sqrtf(light.emissionColor.z));
+			lightRadiance = light.emissionColor;
 
 			break;
 		}
@@ -194,7 +195,8 @@ namespace otx
 
 			/* Probability of sampling this direction of the background */
 			float cosTheta = max(dot(lightSampleDirection, make_float3(0.0f, 0.0f, 1.0f)), 0.0f);
-			shadowRay.pdf = cosTheta > 0.0f ? 1.0f / cosTheta : 0.0f;
+			//shadowRay.pdf = cosTheta > 0.0f ? 1.0f / cosTheta : 0.0f;
+			shadowRay.pdf = cosTheta;
 
 			lightRadiance = optixDirectCall<float3, float3>(CALLABLE_SAMPLE_BACKGROUND, lightSampleDirection);
 
@@ -243,10 +245,12 @@ namespace otx
 			/* Probability of sampling this point on the triangle */
 			float3 lightNormal = InterpolateNormals(make_float2(u, v), light.n0, light.n1, light.n2);
 			float cosTheta = max(dot(lightSampleDirection, -lightNormal), 0.0f);
-			shadowRay.pdf = cosTheta > 0.0f ? distance * distance / (light.area * cosTheta) : 0.0f;
+			//shadowRay.pdf = cosTheta > 0.0f ? distance * distance / (light.area * cosTheta) : 0.0f;
+			shadowRay.pdf = (light.area * cosTheta) / (distance * distance);
 
 			/* We take the square root of the emission color to account for the light being 2D (?) */
-			lightRadiance = make_float3(sqrtf(light.emissionColor.x), sqrtf(light.emissionColor.y), sqrtf(light.emissionColor.z));
+			//lightRadiance = make_float3(sqrtf(light.emissionColor.x), sqrtf(light.emissionColor.y), sqrtf(light.emissionColor.z));
+			lightRadiance = light.emissionColor;
 
 			break;
 		}
@@ -359,7 +363,28 @@ namespace otx
 			/* No bsdf sample if pdf is leq 0 */
 			if (shadowRay.pdf <= 0.0f) return (float)nLights * directLighting;
 
-			directLighting += powerHeuristic(scatteringPDF, shadowRay.pdf) * bsdf * lightRadiance / scatteringPDF;
+			/* Launch the shadow ray towards the selected light */
+			uint32_t s0, s1;
+			packPointer(&shadowRay, s0, s1);
+			optixTrace(
+				optixLaunchParams.traversable,
+				prd.origin, /* I.e., last hit position of the primary ray path */
+				lightSampleDirection,
+				0.0f, /* prd.origin should already be offset */
+				distance,
+				0.0f, /* ray time */
+				OptixVisibilityMask(255),
+				OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
+				RAY_TYPE_SHADOW,
+				RAY_TYPE_COUNT,
+				RAY_TYPE_SHADOW,
+				s0, s1
+			);
+
+			if (shadowRay.reached_light)
+			{
+				directLighting += powerHeuristic(scatteringPDF, shadowRay.pdf) * bsdf * lightRadiance / scatteringPDF;
+			}
 		}
 
 		/* We multiply by nLights to compensate for choosing this light */
@@ -412,8 +437,10 @@ namespace otx
 
 
 			/* If this is the first bounce and we hit a light or if we just had a specular hit, we add light emission */
-			//if ((prd.depth == 1 || previousHitSpecular) && prd.Sample == )
-			// TODO
+			if ((prd.depth == 1 || previousHitSpecular) && prd.Sample == CALLABLE_DIFFUSE_LIGHT_SAMPLE)
+			{
+				prd.color += prd.throughput;
+			}
 
 			/* Now we can update with the current hit's specular bool */
 			previousHitSpecular = prd.specular;

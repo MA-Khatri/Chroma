@@ -12,25 +12,26 @@ namespace otx
 		const SBTData& sbtData = *prd.sbtData;
 		const int3 index = sbtData.index[prd.primID];
 
-		/* Default diffuse color if no diffuse texture */
-		float3 diffuseColor = sbtData.reflectionColor;
+		/* Default emission color if no diffuse texture */
+		float3 emissionColor = sbtData.emissionColor;
 
+		/* The texture sampling causes an invalid memory access error... */
 		/* === Sample diffuse texture === */
 		float2 tc = TexCoord(prd.uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);
 		if (sbtData.hasDiffuseTexture)
 		{
 			float4 tex = tex2D<float4>(sbtData.diffuseTexture, tc.x, tc.y);
-			diffuseColor = make_float3(tex.x, tex.y, tex.z);
+			emissionColor *= make_float3(tex.x, tex.y, tex.z);
 		}
 
 		/* If this is the first intersection of the ray, set the albedo and normal */
 		if (prd.depth == 0)
 		{
-			prd.albedo = diffuseColor;
+			prd.albedo = emissionColor;
 			prd.normal = prd.basis.w;
 		}
 
-		return diffuseColor * max(dot(indir, prd.basis.w), 0.0f) * M_1_PIf;
+		return emissionColor * max(dot(indir, prd.basis.w), 0.0f) * M_1_PIf;
 	}
 
 
