@@ -109,7 +109,7 @@ void Scene::MakeScene(int scene)
 	m_Materials.push_back(blueCheckerMat);
 
 	std::shared_ptr<Material> whiteDiffuseLightMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIFFUSE_LIGHT);
-	whiteDiffuseLightMat->m_EmissionColor = glm::vec3(1e2f);
+	whiteDiffuseLightMat->m_EmissionColor = glm::vec3(100.0f);
 	m_Materials.push_back(whiteDiffuseLightMat);
 
 	/* === Create Meshes === */
@@ -177,14 +177,13 @@ void Scene::MakeScene(int scene)
 		//std::shared_ptr<Object> sphere1 = std::make_shared<Object>(sphereMesh, whiteDiffuseLightMat);
 		//sphere1->Translate(5.0f, -5.0f, 8.0f);
 		//sphere1->Scale(1.0f);
-		//PushToBoth(sphere1);
+		//PushObjectLight(sphere1);
 
-		std::shared_ptr<Object> light = std::make_shared<Object>(planeMesh, whiteDiffuseLightMat);
-		light->Translate(0.0f, 0.0f, 10.0f - 0.001f);
-		light->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f);
-		light->Scale(1.0f);
-		//PushToBoth(light);
-		PushObjectLight(light);
+		//std::shared_ptr<Object> light = std::make_shared<Object>(planeMesh, whiteDiffuseLightMat);
+		//light->Translate(0.0f, 0.0f, 10.0f - 0.001f);
+		//light->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f);
+		//light->Scale(1.0f);
+		//PushObjectLight(light);
 
 		/* === Background === */
 		//m_BackgroundMode = BACKGROUND_MODE_GRADIENT;
@@ -194,7 +193,7 @@ void Scene::MakeScene(int scene)
 		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);
 
-		//m_BackgroundMode = BACKGROUND_MODE_TEXTURE;
+		m_BackgroundMode = BACKGROUND_MODE_TEXTURE;
 		//m_BackgroundTexture.filePath = "res/backgrounds/overcast_soil_puresky_4k.hdr";
 		//m_BackgroundTexture.filePath = "res/backgrounds/kloofendal_48d_partly_cloudy_puresky_4k.hdr";
 		m_BackgroundTexture.filePath = "res/backgrounds/christmas_photo_studio_07_4k.hdr";
@@ -244,23 +243,23 @@ void Scene::MakeScene(int scene)
 		PushObjectLight(light);
 
 		/* === Scene Objects === */
-		//std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, diffuseWhiteMat);
-		//dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), -60.0f);
-		//dragon->Scale(7.0f);
-		//PushToBoth(dragon);
+		std::shared_ptr<Object> dragon = std::make_shared<Object>(dragonMesh, transparentGlassMat);
+		dragon->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), -60.0f);
+		dragon->Scale(7.0f);
+		PushToBoth(dragon);
 
-		std::shared_ptr<Object> cube = std::make_shared<Object>(cubeMesh, mirrorMat);
-		//std::shared_ptr<Object> cube = std::make_shared<Object>(cubeMesh, diffuseWhiteMat);
-		cube->Translate(-2.0f, -2.0f, 3.0f);
-		cube->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 20.0f);
-		cube->Scale(2.5f, 2.5f, 6.0f);
-		PushToBoth(cube);
+		//std::shared_ptr<Object> cube = std::make_shared<Object>(cubeMesh, mirrorMat);
+		////std::shared_ptr<Object> cube = std::make_shared<Object>(cubeMesh, diffuseWhiteMat);
+		//cube->Translate(-2.0f, -2.0f, 3.0f);
+		//cube->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 20.0f);
+		//cube->Scale(2.5f, 2.5f, 6.0f);
+		//PushToBoth(cube);
 
-		std::shared_ptr<Object> sphere = std::make_shared<Object>(sphereMesh, transparentGlassMat);
-		//std::shared_ptr<Object> sphere = std::make_shared<Object>(sphereMesh, diffuseWhiteMat);
-		sphere->Translate(1.5f, 1.5f, 2.0f);
-		sphere->Scale(2.0f);
-		PushToBoth(sphere);
+		//std::shared_ptr<Object> sphere = std::make_shared<Object>(sphereMesh, transparentGlassMat);
+		////std::shared_ptr<Object> sphere = std::make_shared<Object>(sphereMesh, diffuseWhiteMat);
+		//sphere->Translate(1.5f, 1.5f, 2.0f);
+		//sphere->Scale(2.0f);
+		//PushToBoth(sphere);
 
 		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);

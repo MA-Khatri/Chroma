@@ -45,8 +45,7 @@ enum IntegratorType
 
 enum LightType
 {
-	LIGHT_TYPE_BACKGROUND = 0, /* I.e., the environment map */
-	LIGHT_TYPE_AREA, /* I.e., mesh lights, maybe later quad lights/sphere lights? */
+	LIGHT_TYPE_AREA = 0, /* I.e., mesh lights, maybe later quad lights/sphere lights? */
 	LIGHT_TYPE_DELTA, /* Point and spot lights */
 	//LIGHT_TYPE_DIRECTIONAL, /* Directional, infinite area lights (TODO) */
 	//LIGHT_TYPE_PORTAL, /* E.g., for sampling backgrounds through windows, etc. (TODO) */

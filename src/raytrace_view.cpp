@@ -51,27 +51,32 @@ void RayTraceView::OnUpdate()
 	else m_Camera = m_LocalCamera;
 
 	/* Update when first switching to new scene */
-	if (m_AppHandle->GetSceneID() != m_SceneID)
+	int appScene = m_AppHandle->GetSceneID();
+	if (appScene != m_SceneID)
 	{
-		m_SceneID = m_AppHandle->GetSceneID();
+		m_SceneID = appScene;
 		m_OptixRenderer = m_OptixRenderers[m_SceneID];
 		m_OptixRenderer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_OptixRenderer->SetCamera(*m_Camera);
 	}
 
-	/* On hover, check for keyboard/mouse inputs */
-	if (m_ViewportHovered)
+	/* We only check for inputs for this view if this view is the currently focused view */
+	if (m_AppHandle->m_FocusedWindow == Application::RayTracedViewport)
 	{
-		/* Set scroll callback for current camera */
-		glfwSetWindowUserPointer(m_WindowHandle, m_Camera);
-		glfwSetScrollCallback(m_WindowHandle, Camera::ScrollCallback);
+		/* On hover, check for keyboard/mouse inputs */
+		if (m_ViewportHovered)
+		{
+			/* Set scroll callback for current camera */
+			glfwSetWindowUserPointer(m_WindowHandle, m_Camera);
+			glfwSetScrollCallback(m_WindowHandle, Camera::ScrollCallback);
 
-		bool updated = m_Camera->Inputs(m_WindowHandle);
-		if (updated) m_OptixRenderer->SetCamera(*m_Camera);
-	}
-	else
-	{
-		glfwSetScrollCallback(m_WindowHandle, ImGui_ImplGlfw_ScrollCallback);
+			bool updated = m_Camera->Inputs(m_WindowHandle);
+			if (updated) m_OptixRenderer->SetCamera(*m_Camera);
+		}
+		else
+		{
+			glfwSetScrollCallback(m_WindowHandle, ImGui_ImplGlfw_ScrollCallback);
+		}
 	}
 
 	/* When switching between viewports... */

@@ -57,28 +57,12 @@ namespace otx
 	__forceinline__ __device__ float3 CalculateDirectLightSamplePDF(PRD_Radiance& prd, PRD_Shadow& shadowRay, int l, float3& lightSampleDirection, float& distance)
 	{
 		/* Get the corresponding light */
-		MISLight light;
-		if (l == 0) light.type = LIGHT_TYPE_BACKGROUND;
-		else light = *(optixLaunchParams.lights + (l - 1) * sizeof(MISLight));
+		MISLight light = *(optixLaunchParams.lights + l * sizeof(MISLight));
 
 		float3 lightRadiance = make_float3(0.0f);
 
 		switch (light.type)
 		{
-		case LIGHT_TYPE_BACKGROUND:
-		{
-			/* Background sample can be anywhere on the unit sphere */
-			lightSampleDirection = prd.random.RandomOnUnitSphere();
-			distance = 1e20f;
-
-			/* Probability of sampling this direction of the background */
-			float cosTheta = max(dot(lightSampleDirection, make_float3(0.0f, 0.0f, 1.0f)), 0.0f);
-			shadowRay.pdf = cosTheta > 0.0f ? 1.0f / cosTheta : 0.0f;
-
-			lightRadiance = optixDirectCall<float3, float3>(CALLABLE_SAMPLE_BACKGROUND, lightSampleDirection);
-
-			break;
-		}
 		case LIGHT_TYPE_AREA:
 		{
 			/* Sample a point on the triangle */
@@ -122,26 +106,12 @@ namespace otx
 		/* Note: The PDFs here will be the inverse of the corresponding PDFs in DirectLightSamplePDF */
 
 		/* Get the corresponding light */
-		MISLight light;
-		if (l == 0) light.type = LIGHT_TYPE_BACKGROUND;
-		else light = *(optixLaunchParams.lights + (l - 1) * sizeof(MISLight));
+		MISLight light = *(optixLaunchParams.lights + l * sizeof(MISLight));
 
 		float3 lightRadiance = make_float3(0.0f);
 
 		switch (light.type)
 		{
-		case LIGHT_TYPE_BACKGROUND:
-		{
-			distance = 1e20f;
-
-			/* Probability of sampling this direction of the background */
-			float cosTheta = max(dot(lightSampleDirection, make_float3(0.0f, 0.0f, 1.0f)), 0.0f);
-			shadowRay.pdf = cosTheta;
-
-			lightRadiance = optixDirectCall<float3, float3>(CALLABLE_SAMPLE_BACKGROUND, lightSampleDirection);
-
-			break;
-		}
 		case LIGHT_TYPE_AREA:
 		{
 			/* Trace the ray and see if it will intersect this triangle */
@@ -222,11 +192,8 @@ namespace otx
 		shadowRay.pdf = 0.0f;
 		shadowRay.reached_light = false;
 
-
-		/* We add 1 light for the back ground... */
-		int nLights = optixLaunchParams.nLights + 1;
-
 		/* Choose a light to sample -- we can later use more advanced methods such as choosing based on light power */
+		int nLights = optixLaunchParams.nLights;
 		int l = (int)((float)nLights * prd.random());
 
 		/* To speed up the frame rate, we randomly choose whether to sample the light directly or the via the bsdf */
@@ -387,7 +354,10 @@ namespace otx
 			previousHitSpecular = prd.specular;
 
 			/* Importance sample the lights */
-			prd.color += prd.throughput * ImportanceSampleLight(prd);
+			if (optixLaunchParams.nLights > 0)
+			{
+				prd.color += prd.throughput * ImportanceSampleLight(prd);
+			}
 
 			/* If max depth == 0, we use russian roulette to determine path termination */
 			if (optixLaunchParams.maxDepth == 0)
@@ -469,7 +439,7 @@ namespace otx
 		}
 
 		/* Determine average color for this call. Cap to prevent speckles (even though this breaks pbr condition) */
-		const float cap = 1e2f;
+		const float cap = 1e16f;
 		const float cr = min(pixelColor.x / numPixelSamples, cap);
 		const float cg = min(pixelColor.y / numPixelSamples, cap);
 		const float cb = min(pixelColor.z / numPixelSamples, cap);

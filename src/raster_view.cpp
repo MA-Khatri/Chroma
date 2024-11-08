@@ -40,6 +40,7 @@ void RasterView::OnDetach()
 
 void RasterView::OnUpdate()
 {
+	/* Update when first switching to new scene */
 	int appScene = m_AppHandle->GetSceneID();
 	if (appScene != m_SceneID)
 	{
@@ -49,32 +50,40 @@ void RasterView::OnUpdate()
 		m_Scene->VkSetup(m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass, m_ViewportFramebuffers);
 	}
 
+	/* We only check for inputs for this view if this view is the currently focused view */
+	if (m_AppHandle->m_FocusedWindow == Application::RasterizedViewport)
+	{
+		/* On hover, check for keyboard/mouse inputs */
+		if (m_ViewportHovered)
+		{
+			/* Set scroll callback for current camera */
+			glfwSetWindowUserPointer(m_WindowHandle, m_Camera);
+			glfwSetScrollCallback(m_WindowHandle, Camera::ScrollCallback);
+
+			bool updated = m_Camera->Inputs(m_WindowHandle);
+		}
+		else
+		{
+			glfwSetScrollCallback(m_WindowHandle, ImGui_ImplGlfw_ScrollCallback);
+		}
+	}
+
+	/* If UI caused camera params to change... */
 	if (m_Camera->m_CameraUIUpdate)
 	{
-		m_Camera->UpdateViewMatrix();
-		m_Camera->UpdateProjectionMatrix();
 		if (m_Camera->m_ControlMode == CONTROL_MODE_ORBIT)
 		{
 			m_Camera->UpdateOrbit();
 		}
+
+		m_Camera->UpdateViewMatrix();
+		m_Camera->UpdateProjectionMatrix();
 	}
 
+	/* When switching between viewports... */
 	if (m_ViewportFocused && m_AppHandle->m_FocusedWindow != Application::RasterizedViewport)
 	{
 		m_AppHandle->m_FocusedWindow = Application::RasterizedViewport;
-	}
-
-	if (m_ViewportHovered)
-	{
-		/* Set scroll callback for current camera */
-		glfwSetWindowUserPointer(m_WindowHandle, m_Camera);
-		glfwSetScrollCallback(m_WindowHandle, Camera::ScrollCallback);
-
-		m_Camera->Inputs(m_WindowHandle);
-	}
-	else
-	{
-		glfwSetScrollCallback(m_WindowHandle, ImGui_ImplGlfw_ScrollCallback);
 	}
 }
 
