@@ -48,70 +48,11 @@ namespace otx
 	/* === Integrators === */
 	/* =================== */
 
-	__forceinline__ __device__ void BSDFIntegrator(PRD_Radiance& prd)
-	{
-		/* Initial prd values -- origin, in_direction already set */
-		prd.depth = 0;
-		prd.done = false;
-		prd.throughput = make_float3(1.0f);
-		prd.pdf = 1.0f;
-		prd.color = make_float3(0.0f);
-
-		uint32_t u0, u1;
-		packPointer(&prd, u0, u1);
-
-		/* === Iterative path tracing loop === */
-		while (true)
-		{
-			/* Trace the primary ray */
-			optixTrace(
-				optixLaunchParams.traversable,
-				prd.origin,
-				prd.in_direction,
-				0.0f, /* tMin */
-				1e20f, /* tMax */
-				0.0f, /* ray time */
-				OptixVisibilityMask(255),
-				OPTIX_RAY_FLAG_DISABLE_ANYHIT,
-				RAY_TYPE_RADIANCE, /* SBT offset */
-				RAY_TYPE_COUNT, /* SBT stride */
-				RAY_TYPE_RADIANCE, /* miss SBT index */
-				u0, u1 /* packed pointer to our PRD */
-			);
-			prd.depth++;
-
-			/* If the ray has terminated (e.g. hit a light / miss), end */
-			if (prd.done)
-			{
-				prd.color += prd.throughput;
-				break;
-			}
-
-			/* If max depth == 0, we use russian roulette to determine path termination */
-			if (optixLaunchParams.maxDepth == 0)
-			{
-				/*
-				 * We do not start russian roulette path termination until after first
-				 * 3 bounces to make sure we can get at least some indirect lighting...
-				 */
-				if (prd.depth > 3)
-				{
-					/* Clamp russian roulette to 0.99f to prevent inf bounces for materials that do not absorb any light */
-					float p = min(prd.pdf, 0.99f);
-					if (prd.random() > p)
-					{
-						break;
-					}
-					prd.pdf /= p;
-				}
-			}
-			/* Not using RR, terminate the random walk if we're at/past the max depth */
-			else if (prd.depth >= optixLaunchParams.maxDepth) break;
-		}
-	}
-
-
 	/* === Path Integrator and related helpers === */
+	/*
+	 * The version of the path integrator that was (finally) working correctly was based on this stack exchange post:
+	 * https://computergraphics.stackexchange.com/questions/5152/progressive-path-tracing-with-explicit-light-sampling
+	 */
 
 	__forceinline__ __device__ float3 CalculateDirectLightSamplePDF(PRD_Radiance& prd, PRD_Shadow& shadowRay, int l, float3& lightSampleDirection, float& distance)
 	{
@@ -178,6 +119,8 @@ namespace otx
 
 	__forceinline__ __device__ float3 CalculateBSDFLightSamplePDF(PRD_Radiance& prd, PRD_Shadow& shadowRay, int l, float3 lightSampleDirection, float& distance)
 	{
+		/* Note: The PDFs here will be the inverse of the corresponding PDFs in DirectLightSamplePDF */
+
 		/* Get the corresponding light */
 		MISLight light;
 		if (l == 0) light.type = LIGHT_TYPE_BACKGROUND;
@@ -193,8 +136,7 @@ namespace otx
 
 			/* Probability of sampling this direction of the background */
 			float cosTheta = max(dot(lightSampleDirection, make_float3(0.0f, 0.0f, 1.0f)), 0.0f);
-			shadowRay.pdf = cosTheta > 0.0f ? 1.0f / cosTheta : 0.0f;
-			//shadowRay.pdf = cosTheta;
+			shadowRay.pdf = cosTheta;
 
 			lightRadiance = optixDirectCall<float3, float3>(CALLABLE_SAMPLE_BACKGROUND, lightSampleDirection);
 
@@ -243,11 +185,8 @@ namespace otx
 			/* Probability of sampling this point on the triangle */
 			float3 lightNormal = InterpolateNormals(make_float2(u, v), light.n0, light.n1, light.n2);
 			float cosTheta = max(dot(lightSampleDirection, -lightNormal), 0.0f);
-			shadowRay.pdf = cosTheta > 0.0f ? distance * distance / (light.area * cosTheta) : 0.0f;
-			//shadowRay.pdf = (light.area * cosTheta) / (distance * distance);
+			shadowRay.pdf = (light.area * cosTheta) / (distance * distance);
 
-			/* We take the square root of the emission color to account for the light being 2D (?) */
-			//lightRadiance = make_float3(sqrtf(light.emissionColor.x), sqrtf(light.emissionColor.y), sqrtf(light.emissionColor.z));
 			lightRadiance = light.emissionColor;
 
 			break;
@@ -290,13 +229,15 @@ namespace otx
 		/* Choose a light to sample -- we can later use more advanced methods such as choosing based on light power */
 		int l = (int)((float)nLights * prd.random());
 
+		/* To speed up the frame rate, we randomly choose whether to sample the light directly or the via the bsdf */
+		float lsr = optixLaunchParams.lightSampleRate;
 
 		/* ============================= */
 		/* === DIRECT LIGHT SAMPLING === */
 		/* ============================= */
 
 		/* Only sample the light directly if this was not a specular bounce */
-		if (!prd.specular)
+		if (!prd.specular && prd.random() < lsr)
 		{
 			/*
 			 * Calculate the PDF of sampling the chosen light (stored in shadowRay.pdf),
@@ -339,49 +280,50 @@ namespace otx
 				}
 			}
 		}
-
-
-		/* =========================== */
-		/* === BSDF LIGHT SAMPLING === */
-		/* =========================== */
-
-		/* Generate a sample direction from the bsdf */
-		lightSampleDirection = optixDirectCall<float3, PRD_Radiance&>(prd.Sample, prd);
-
-		/* Evaluate the bsdf for the chosen direction */
-		bsdf = optixDirectCall<float3, PRD_Radiance&, float3, float3>(prd.Eval, prd, lightSampleDirection, prd.out_direction);
-
-		/* Evaluate the pdf for the chosen direction */
-		scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, lightSampleDirection);
-		
-		if (scatteringPDF > 0.0f && (bsdf.x > 0.0f || bsdf.y > 0.0f || bsdf.z > 0.0f))
+		else
 		{
-			float3 lightRadiance = CalculateBSDFLightSamplePDF(prd, shadowRay, l, lightSampleDirection, distance);
+			/* =========================== */
+			/* === BSDF LIGHT SAMPLING === */
+			/* =========================== */
 
-			/* No bsdf sample if pdf is leq 0 */
-			if (shadowRay.pdf <= 0.0f) return (float)nLights * directLighting;
+			/* Generate a sample direction from the bsdf */
+			lightSampleDirection = optixDirectCall<float3, PRD_Radiance&>(prd.Sample, prd);
 
-			/* Launch the shadow ray towards the selected light */
-			uint32_t s0, s1;
-			packPointer(&shadowRay, s0, s1);
-			optixTrace(
-				optixLaunchParams.traversable,
-				prd.origin, /* I.e., last hit position of the primary ray path */
-				lightSampleDirection,
-				0.0f, /* prd.origin should already be offset */
-				distance,
-				0.0f, /* ray time */
-				OptixVisibilityMask(255),
-				OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
-				RAY_TYPE_SHADOW,
-				RAY_TYPE_COUNT,
-				RAY_TYPE_SHADOW,
-				s0, s1
-			);
+			/* Evaluate the bsdf for the chosen direction */
+			bsdf = optixDirectCall<float3, PRD_Radiance&, float3, float3>(prd.Eval, prd, lightSampleDirection, prd.out_direction);
 
-			if (shadowRay.reached_light)
+			/* Evaluate the pdf for the chosen direction */
+			scatteringPDF = optixDirectCall<float, PRD_Radiance&, float3>(prd.PDF, prd, lightSampleDirection);
+		
+			if (scatteringPDF > 0.0f && (bsdf.x > 0.0f || bsdf.y > 0.0f || bsdf.z > 0.0f))
 			{
-				directLighting += powerHeuristic(scatteringPDF, shadowRay.pdf) * bsdf * lightRadiance / scatteringPDF;
+				float3 lightRadiance = CalculateBSDFLightSamplePDF(prd, shadowRay, l, lightSampleDirection, distance);
+
+				/* No bsdf sample if pdf is leq 0 */
+				if (shadowRay.pdf <= 0.0f) return (float)nLights * directLighting;
+
+				/* Launch the shadow ray towards the selected light */
+				uint32_t s0, s1;
+				packPointer(&shadowRay, s0, s1);
+				optixTrace(
+					optixLaunchParams.traversable,
+					prd.origin, /* I.e., last hit position of the primary ray path */
+					lightSampleDirection,
+					0.0f, /* prd.origin should already be offset */
+					distance,
+					0.0f, /* ray time */
+					OptixVisibilityMask(255),
+					OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
+					RAY_TYPE_SHADOW,
+					RAY_TYPE_COUNT,
+					RAY_TYPE_SHADOW,
+					s0, s1
+				);
+
+				if (shadowRay.reached_light)
+				{
+					directLighting += powerHeuristic(scatteringPDF, shadowRay.pdf) * bsdf * lightRadiance / scatteringPDF;
+				}
 			}
 		}
 
@@ -398,6 +340,7 @@ namespace otx
 		prd.throughput = make_float3(1.0f);
 		prd.pdf = 1.0f;
 		prd.color = make_float3(0.0f);
+		prd.Sample = CALLABLE_COUNT; /* I.e., invalid */
 
 		uint32_t u0, u1;
 		packPointer(&prd, u0, u1);
@@ -474,11 +417,6 @@ namespace otx
 	{
 		switch (optixLaunchParams.integrator)
 		{
-		case INTEGRATOR_TYPE_BSDF_ONLY:
-		{
-			BSDFIntegrator(prd);
-			break;
-		}
 		case INTEGRATOR_TYPE_PATH:
 		{
 			PathIntegrator(prd);
@@ -531,7 +469,7 @@ namespace otx
 		}
 
 		/* Determine average color for this call. Cap to prevent speckles (even though this breaks pbr condition) */
-		const float cap = 1e16f;
+		const float cap = 1e2f;
 		const float cr = min(pixelColor.x / numPixelSamples, cap);
 		const float cg = min(pixelColor.y / numPixelSamples, cap);
 		const float cb = min(pixelColor.z / numPixelSamples, cap);

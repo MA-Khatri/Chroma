@@ -1067,6 +1067,7 @@ namespace otx
 		m_LaunchParams.sampler = m_SamplerType;
 		m_LaunchParams.nStrata = m_nStrata;
 		m_LaunchParams.integrator = m_IntegratorType;
+		m_LaunchParams.lightSampleRate = m_LightSampleRate;
 
 		/* Background settings */
 		m_LaunchParams.backgroundMode = m_Scene->m_BackgroundMode;
@@ -1211,6 +1212,8 @@ namespace otx
 	void Optix::SetSamplesPerRender(int nSamples)
 	{
 		m_SamplesPerRender = nSamples;
+		ResetAccumulation();
+		/* Note: We need to reset accumulation here to properly reset the seed... */
 	}
 
 	void Optix::SetMaxDepth(int maxDepth)
@@ -1257,6 +1260,12 @@ namespace otx
 	void Optix::SetStrataCount(int strata)
 	{
 		m_nStrata = strata;
+		ResetAccumulation();
+	}
+
+	void Optix::SetLightSampleRate(float lsr)
+	{
+		m_LightSampleRate = lsr;
 		ResetAccumulation();
 	}
 
@@ -1315,5 +1324,10 @@ namespace otx
 	int Optix::GetStrataCount()
 	{
 		return m_nStrata;
+	}
+
+	float Optix::GetLightSampleRate()
+	{
+		return m_LightSampleRate;
 	}
 }

@@ -39,8 +39,8 @@ enum SamplerType
 
 enum IntegratorType
 {
-	INTEGRATOR_TYPE_BSDF_ONLY = 0,
-	INTEGRATOR_TYPE_PATH
+	INTEGRATOR_TYPE_PATH = 0,
+	// TODO, more...
 };
 
 enum LightType

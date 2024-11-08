@@ -168,7 +168,7 @@ void RayTraceView::OnUIRender()
 			}
 
 			/* Integrator and sampler names for drop downs. Must match the order in 'common_enums.h' */
-			std::vector<std::string> IntegratorNames = { "BSDF Only", "Path" };
+			std::vector<std::string> IntegratorNames = { "Path" };
 			std::vector<std::string> SamplerNames = { "Independent", "Stratified", /*"Multi-Jitter"*/ };
 
 			int tempIntegrator = m_OptixRenderer->GetIntegratorType();
@@ -193,6 +193,17 @@ void RayTraceView::OnUIRender()
 			{
 				m_OptixRenderer->SetIntegratorType(tempIntegrator);
 			}
+
+			if (m_OptixRenderer->GetIntegratorType() == INTEGRATOR_TYPE_PATH)
+			{
+				float tempLSR = m_OptixRenderer->GetLightSampleRate();
+				ImGui::SliderFloat("Light Sample Rate", &tempLSR, 0.0f, 1.0f);
+				if (tempLSR != m_OptixRenderer->GetLightSampleRate())
+				{
+					m_OptixRenderer->SetLightSampleRate(tempLSR);
+				}
+			}
+
 
 			int tempSampler = m_OptixRenderer->GetSamplerType();
 			const char* selectedSamplerPreview = SamplerNames[tempSampler].c_str();

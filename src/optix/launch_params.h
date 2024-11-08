@@ -141,6 +141,9 @@ namespace otx
 
 		/* The number of importance sampled lights in the scene */
 		int nLights; 
+
+		/* Used for the path integrator to decide at each bounce whether to sample the lights directly or via the bsdf */
+		float lightSampleRate;
 	};
 
 } /* namspace otx */

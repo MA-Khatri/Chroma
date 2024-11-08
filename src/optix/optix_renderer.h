@@ -33,6 +33,7 @@ namespace otx
 		void SetIntegratorType(int integrator);
 		void SetSamplerType(int sampler);
 		void SetStrataCount(int strata);
+		void SetLightSampleRate(float lsr);
 
 		/* === Get Methods === */
 		Camera* GetLastSetCamera();
@@ -46,6 +47,7 @@ namespace otx
 		int GetIntegratorType();
 		int GetSamplerType();
 		int GetStrataCount();
+		float GetLightSampleRate();
 
 
 		/* Render one frame */
@@ -206,6 +208,9 @@ namespace otx
 
 		/* Maximum number of ray bounces before termination -- set to 0 for russian roulette path termination */
 		int m_MaxDepth = 0;
+
+		/* Used for the path integrator to decide at each bounce whether to sample the lights directly or via the bsdf */
+		float m_LightSampleRate = 0.5f; 
 
 		/* Whether to turn on gamma correction for the final (presented) render */
 		bool m_GammaCorrect = true;
