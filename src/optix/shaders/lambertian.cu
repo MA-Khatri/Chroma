@@ -7,9 +7,30 @@ namespace otx
 		return prd.basis.Local(prd.random.RandomOnUnitCosineHemisphere());
 	}
 
-	__forceinline__ __device__ float Eval(PRD_Radiance& prd, float3 indir, float3 outdir)
+	__forceinline__ __device__ float3 Eval(PRD_Radiance& prd, float3 indir, float3 outdir)
 	{
-		return max(dot(indir, prd.basis.w), 0.0f) * M_1_PIf;
+		const SBTData& sbtData = *prd.sbtData;
+		const int3 index = sbtData.index[prd.primID];
+
+		/* Default diffuse color if no diffuse texture */
+		float3 diffuseColor = sbtData.reflectionColor;
+
+		/* === Sample diffuse texture === */
+		float2 tc = TexCoord(prd.uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);
+		if (sbtData.hasDiffuseTexture)
+		{
+			float4 tex = tex2D<float4>(sbtData.diffuseTexture, tc.x, tc.y);
+			diffuseColor = make_float3(tex.x, tex.y, tex.z);
+		}
+
+		/* If this is the first intersection of the ray, set the albedo and normal */
+		if (prd.depth == 0)
+		{
+			prd.albedo = diffuseColor;
+			prd.normal = prd.basis.w;
+		}
+
+		return diffuseColor * max(dot(indir, prd.basis.w), 0.0f) * M_1_PIf;
 	}
 
 
@@ -25,13 +46,13 @@ namespace otx
 		PRD_Radiance& prd = *getPRD<PRD_Radiance>();
 		prd.sbtData = (const SBTData*)optixGetSbtDataPointer();
 		const SBTData& sbtData = *prd.sbtData;
+		prd.Sample = CALLABLE_LAMBERTIAN_SAMPLE;
 		prd.Eval = CALLABLE_LAMBERTIAN_EVAL;
 		prd.PDF = CALLABLE_LAMBERTIAN_PDF;
 		
-
-		const int primID = optixGetPrimitiveIndex();
-		const int3 index = sbtData.index[primID];
-		float2 uv = optixGetTriangleBarycentrics();
+		prd.primID = optixGetPrimitiveIndex();
+		const int3 index = sbtData.index[prd.primID];
+		prd.uv = optixGetTriangleBarycentrics();
 		float3 outDir = -optixGetWorldRayDirection();
 
 		/* === Compute normal === */
@@ -40,7 +61,7 @@ namespace otx
 		const float3& v1 = sbtData.position[index.y];
 		const float3& v2 = sbtData.position[index.z];
 		float3 N = (sbtData.normal) 
-			? InterpolateNormals(uv, sbtData.normal[index.x], sbtData.normal[index.y], sbtData.normal[index.z]) 
+			? InterpolateNormals(prd.uv, sbtData.normal[index.x], sbtData.normal[index.y], sbtData.normal[index.z]) 
 			: cross(v1 - v0, v2 - v0);
 
 		/* Compute world-space normal and normalize */
@@ -58,29 +79,12 @@ namespace otx
 		/* Generate a new sample direction (in_direction) */
 		prd.out_direction = prd.in_direction;
 		prd.in_direction = Sample(prd);
-
-		/* Default diffuse color if no diffuse texture */
-		float3 diffuseColor = sbtData.reflectionColor;
-
-		/* === Sample diffuse texture === */
-		float2 tc = TexCoord(uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);
-		if (sbtData.hasDiffuseTexture)
-		{
-			float4 tex = tex2D<float4>(sbtData.diffuseTexture, tc.x, tc.y);
-			diffuseColor = make_float3(tex.x, tex.y, tex.z);
-		}
-
-		/* If this is the first intersection of the ray, set the albedo and normal */
-		if (prd.depth == 0)
-		{
-			prd.albedo = diffuseColor;
-			prd.normal = N;
-		}
+		prd.specular = false;
 
 		/* Update throughput */
-		float bsdf = Eval(prd, prd.in_direction, prd.out_direction);
+		float3 bsdf = Eval(prd, prd.in_direction, prd.out_direction);
 		float pdf = PDF(prd, prd.in_direction);
-		prd.throughput *= diffuseColor * bsdf / pdf;
+		prd.throughput *= bsdf / pdf;
 		prd.pdf *= pdf;
 	}
 
@@ -97,7 +101,7 @@ namespace otx
 	}
 
 
-	extern "C" __device__ float __direct_callable__eval(PRD_Radiance& prd, float3 indir, float3 outdir)
+	extern "C" __device__ float3 __direct_callable__eval(PRD_Radiance& prd, float3 indir, float3 outdir)
 	{
 		return Eval(prd, indir, outdir);
 	}

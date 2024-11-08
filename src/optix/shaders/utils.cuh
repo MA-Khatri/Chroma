@@ -490,9 +490,17 @@ namespace otx
 		/* Store a pointer to the sbt data for the most recent intersection */
 		const SBTData* sbtData;
 
+		/* Stores the UV coordinates of the intersection */
+		float2 uv;
+		
+		/* Stores the ID of the last hit primitive */
+		int primID;
+
 		/* Used for dielectrics to store whether the sampled ray was refracted */
 		bool refracted;
 
+		/* The path integrator has a special condition for specular bounces, so we track that here */
+		bool specular;
 
 		/* === Store callable function idxs for the most-recent intersection's bsdf interface methods === */
 
@@ -501,8 +509,6 @@ namespace otx
 
 		/* 
 		 * Evaluates the material's ability to reflect light from indir to outdir (i.e., the BSDF term). Includes cosine term.
-		 * Note: does not multiply by surface albedo! That is instead handled by closesthit or by light source sampling.
-		 * As a result, we just return a float instead of a float3.
 		 */
 		int Eval;
 

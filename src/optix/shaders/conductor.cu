@@ -8,15 +8,37 @@ namespace otx
 	}
 
 
-	__forceinline__ __device__ float Eval(PRD_Radiance& prd, float3 indir, float3 outdir)
+	__forceinline__ __device__ float3 Eval(PRD_Radiance& prd, float3 indir, float3 outdir)
 	{
-		/* Note: technically, we should be returning inf / cos(theta) but we do 1 / cos(theta) since the infs in this and the pdf should cancel out */
+		const SBTData& sbtData = *prd.sbtData;
+		const int3 index = sbtData.index[prd.primID];
+
+		/* Default diffuse color if no diffuse texture */
+		float3 diffuseColor = sbtData.reflectionColor;
+
+		/* === Sample diffuse texture === */
+		float2 tc = TexCoord(prd.uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);
+		if (sbtData.hasDiffuseTexture)
+		{
+			float4 tex = tex2D<float4>(sbtData.diffuseTexture, tc.x, tc.y);
+			diffuseColor = make_float3(tex.x, tex.y, tex.z);
+		}
+
+		/* If this is the first intersection of the ray, set the albedo and normal */
+		if (prd.depth == 0)
+		{
+			prd.albedo = sbtData.reflectionColor;
+			prd.normal = prd.basis.w;
+		}
+
+
+		/* Note: technically, we should be using inf / cos(theta) but we do 1 / cos(theta) since the infs in this and the pdf should cancel out */
 
 		/* The full version... */
 		//return max(dot(indir, prd.basis.w), 0.0f) * close(reflect(outdir, prd.basis.w), indir) ? 1.0f / max(dot(indir, prd.basis.w), 1e-4f) : 0.0f;
 
 		/* Cosine terms cancel out so we can set it to just: */
-		return close(reflect(outdir, prd.basis.w), indir) ? 1.0f : 0.0f;
+		return diffuseColor * (close(reflect(outdir, prd.basis.w), indir) ? 1.0f : 0.0f);
 	}
 
 
@@ -65,29 +87,12 @@ namespace otx
 		/* Generate a new sample direction (in_direction) */
 		prd.out_direction = prd.in_direction;
 		prd.in_direction = reflect(-outDir, N);
-
-		/* Default diffuse color if no diffuse texture */
-		float3 diffuseColor = sbtData.reflectionColor;
-
-		/* === Sample diffuse texture === */
-		float2 tc = TexCoord(uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);
-		if (sbtData.hasDiffuseTexture)
-		{
-			float4 tex = tex2D<float4>(sbtData.diffuseTexture, tc.x, tc.y);
-			diffuseColor = make_float3(tex.x, tex.y, tex.z);
-		}
-
-		/* If this is the first intersection of the ray, set the albedo and normal */
-		if (prd.depth == 0)
-		{
-			prd.albedo = sbtData.reflectionColor;
-			prd.normal = N;
-		}
+		prd.specular = true;
 
 		/* Update throughput */
-		float bsdf = Eval(prd, prd.in_direction, prd.out_direction);
+		float3 bsdf = Eval(prd, prd.in_direction, prd.out_direction);
 		float pdf = PDF(prd, prd.in_direction);
-		prd.throughput *= diffuseColor * bsdf / pdf;
+		prd.throughput *= bsdf / pdf;
 		prd.pdf *= pdf;
 	}
 
@@ -104,7 +109,7 @@ namespace otx
 	}
 
 
-	extern "C" __device__ float __direct_callable__eval(PRD_Radiance & prd, float3 indir, float3 outdir)
+	extern "C" __device__ float3 __direct_callable__eval(PRD_Radiance & prd, float3 indir, float3 outdir)
 	{
 		return Eval(prd, indir, outdir);
 	}

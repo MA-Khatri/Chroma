@@ -48,14 +48,17 @@ namespace otx
 		}
 	}
 
-	__forceinline__ __device__ float Eval(PRD_Radiance& prd, float3 indir, float3 outdir)
+	__forceinline__ __device__ float3 Eval(PRD_Radiance& prd, float3 indir, float3 outdir)
 	{
 		/* Note: technically, we should be returning with an inf term but ignore it since the infs in this and the pdf should cancel out */
 
+		const SBTData& sbtData = *prd.sbtData;
+		float3 c;
+
 		if (prd.refracted)
 		{
-			const SBTData& sbtData = *prd.sbtData;
 			float3 N = prd.basis.w;
+			c = sbtData.refractionColor;
 
 			/* Determine if ray is entering/exiting */
 			float cos_theta_i = dot(indir, N);
@@ -84,15 +87,17 @@ namespace otx
 			//return abs(cos_theta_i) * ((eta2 * eta2) / (eta1 * eta1)) * (1.0f - R) / abs(cos_theta_i);
 
 			/* The Cosine terms fall out so we can set it to just this: */
-			return ((eta2 * eta2) / (eta1 * eta1)) * (1.0f - R);
+			return c * ((eta2 * eta2) / (eta1 * eta1)) * (1.0f - R);
 		}
 		else
 		{
+			c = sbtData.reflectionColor;
+
 			/* The full version... */
 			//return max(dot(indir, prd.basis.w), 0.0f) * close(reflect(outdir, prd.basis.w), indir) ? 1.0f / max(dot(indir, prd.basis.w), 1e-4f) : 0.0f;
 
 			/* Cosine terms cancel out so we can set it to just: */
-			return close(reflect(outdir, prd.basis.w), indir) ? 1.0f : 0.0f;
+			return c * (close(reflect(outdir, prd.basis.w), indir) ? 1.0f : 0.0f);
 		}
 	}
 
@@ -168,6 +173,7 @@ namespace otx
 			prd.out_direction = prd.in_direction;
 			prd.in_direction = w_in;
 			prd.refracted = false;
+			prd.specular = true;
 		}
 		else
 		{ /* Refract */
@@ -177,12 +183,13 @@ namespace otx
 			prd.out_direction = prd.in_direction;
 			prd.in_direction = w_in;
 			prd.refracted = true;
+			prd.specular = true;
 		}
 
 		/* Update the throughput */
 		float pdf = PDF(prd, prd.in_direction);
 		prd.pdf *= pdf;
-		prd.throughput *= sbtData.refractionColor * transmittance * Eval(prd, prd.in_direction, prd.out_direction) / pdf;
+		prd.throughput *= transmittance * Eval(prd, prd.in_direction, prd.out_direction) / pdf;
 
 		/* If this is the first intersection of the ray, set the albedo and normal */
 		if (prd.depth == 0)
@@ -205,7 +212,7 @@ namespace otx
 	}
 
 
-	extern "C" __device__ float __direct_callable__eval(PRD_Radiance & prd, float3 indir, float3 outdir)
+	extern "C" __device__ float3 __direct_callable__eval(PRD_Radiance & prd, float3 indir, float3 outdir)
 	{
 		return Eval(prd, indir, outdir);
 	}
