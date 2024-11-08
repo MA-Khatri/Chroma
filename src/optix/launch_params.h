@@ -70,13 +70,13 @@ namespace otx
 		/* Total power of light (i.e., length(emissionColor) * area) */
 		float power;
 
-		/* Position of vertex 0 for area lights; origin of light for delta lights */
+		/* World space position of vertex 0 for area lights; origin of light for delta lights */
 		float3 p0;
 
-		/* Position of vertex 1 for area lights; direction of light for delta lights */
+		/* World space position of vertex 1 for area lights; direction of light for delta lights */
 		float3 p1;
 
-		/* Position of vertex 2 for area lights; x = inner angle, y = outer angle, z = blend mode for delta lights */
+		/* World space position of vertex 2 for area lights; x = inner angle, y = outer angle, z = blend mode for delta lights */
 		float3 p2;
 
 		/* Light normals for area lights */

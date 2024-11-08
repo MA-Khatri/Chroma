@@ -197,6 +197,11 @@ namespace otx
 			prd.albedo = sbtData.reflectionColor;
 			prd.normal = N;
 		}
+
+		/* Store the world space positions of the hit triangle vertices */
+		prd.p0 = optixTransformPointFromObjectToWorldSpace(v0);
+		prd.p1 = optixTransformPointFromObjectToWorldSpace(v1);
+		prd.p2 = optixTransformPointFromObjectToWorldSpace(v2);
 	}
 
 

@@ -54,11 +54,8 @@ namespace otx
 	 * https://computergraphics.stackexchange.com/questions/5152/progressive-path-tracing-with-explicit-light-sampling
 	 */
 
-	__forceinline__ __device__ float3 CalculateDirectLightSamplePDF(PRD_Radiance& prd, PRD_Shadow& shadowRay, int l, float3& lightSampleDirection, float& distance)
+	__forceinline__ __device__ float3 CalculateDirectLightSamplePDF(PRD_Radiance& prd, PRD_Shadow& shadowRay, MISLight& light, float3& lightSampleDirection, float& distance)
 	{
-		/* Get the corresponding light */
-		MISLight light = *(optixLaunchParams.lights + l * sizeof(MISLight));
-
 		float3 lightRadiance = make_float3(0.0f);
 
 		switch (light.type)
@@ -101,12 +98,9 @@ namespace otx
 	}
 
 
-	__forceinline__ __device__ float3 CalculateBSDFLightSamplePDF(PRD_Radiance& prd, PRD_Shadow& shadowRay, int l, float3 lightSampleDirection, float& distance)
+	__forceinline__ __device__ float3 CalculateBSDFLightSamplePDF(PRD_Radiance& prd, PRD_Shadow& shadowRay, MISLight& light, float3 lightSampleDirection, float& distance)
 	{
 		/* Note: The PDFs here will be the inverse of the corresponding PDFs in DirectLightSamplePDF */
-
-		/* Get the corresponding light */
-		MISLight light = *(optixLaunchParams.lights + l * sizeof(MISLight));
 
 		float3 lightRadiance = make_float3(0.0f);
 
@@ -175,6 +169,12 @@ namespace otx
 	}
 
 
+	__forceinline__ __device__ bool IsSameLightAsWasHit(PRD_Radiance& prd, MISLight& light)
+	{
+		return (close(prd.p0, light.p0) && close(prd.p1, light.p1) && close(prd.p2, light.p2));
+	}
+
+
 	__forceinline__ __device__ float3 ImportanceSampleLight(PRD_Radiance& prd)
 	{
 		/* Initializing... */
@@ -192,9 +192,20 @@ namespace otx
 		shadowRay.pdf = 0.0f;
 		shadowRay.reached_light = false;
 
-		/* Choose a light to sample -- we can later use more advanced methods such as choosing based on light power */
+		/* 
+		 * Choose a light to sample that isn't the same as the object that was just hit.
+		 * -- We can later use more advanced methods such as choosing based on light power.
+		 */
 		int nLights = optixLaunchParams.nLights;
-		int l = (int)((float)nLights * prd.random());
+		MISLight light;
+		do {
+			/* Pick a random light */
+			int l = (int)((float)nLights * prd.random());
+
+			/* Get the corresponding light */
+			light = *(optixLaunchParams.lights + l * sizeof(MISLight));
+
+		} while (IsSameLightAsWasHit(prd, light));
 
 		/* To speed up the frame rate, we randomly choose whether to sample the light directly or the via the bsdf */
 		float lsr = optixLaunchParams.lightSampleRate;
@@ -210,7 +221,7 @@ namespace otx
 			 * Calculate the PDF of sampling the chosen light (stored in shadowRay.pdf),
 			 * the radiance of the light, and the distance to the chosen sample point
 			 */
-			float3 lightRadiance = CalculateDirectLightSamplePDF(prd, shadowRay, l, lightSampleDirection, distance);
+			float3 lightRadiance = CalculateDirectLightSamplePDF(prd, shadowRay, light, lightSampleDirection, distance);
 
 			if (shadowRay.pdf > 0.0f)
 			{
@@ -264,7 +275,7 @@ namespace otx
 		
 			if (scatteringPDF > 0.0f && (bsdf.x > 0.0f || bsdf.y > 0.0f || bsdf.z > 0.0f))
 			{
-				float3 lightRadiance = CalculateBSDFLightSamplePDF(prd, shadowRay, l, lightSampleDirection, distance);
+				float3 lightRadiance = CalculateBSDFLightSamplePDF(prd, shadowRay, light, lightSampleDirection, distance);
 
 				/* No bsdf sample if pdf is leq 0 */
 				if (shadowRay.pdf <= 0.0f) return (float)nLights * directLighting;
@@ -343,7 +354,6 @@ namespace otx
 				break;
 			}
 
-
 			/* If this is the first bounce and we hit a light or if we just had a specular hit, we add light emission */
 			if ((prd.depth == 1 || previousHitSpecular) && prd.Sample == CALLABLE_DIFFUSE_LIGHT_SAMPLE)
 			{
@@ -368,7 +378,7 @@ namespace otx
 				 */
 				if (prd.depth > 3)
 				{
-					/* Clamp russian roulette to 0.99f to prevent inf bounces for materials that do not absorb any light */
+					/* Clamp russian roulette to 0.99f to prevent inf bounces for specular materials */
 					float p = min(prd.pdf, 0.99f);
 					if (prd.random() > p)
 					{

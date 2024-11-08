@@ -88,6 +88,11 @@ namespace otx
 		float pdf = PDF(prd, prd.in_direction);
 		prd.throughput *= bsdf / pdf;
 		prd.pdf *= pdf;
+
+		/* Store the world space positions of the hit triangle vertices */
+		prd.p0 = optixTransformPointFromObjectToWorldSpace(v0);
+		prd.p1 = optixTransformPointFromObjectToWorldSpace(v1);
+		prd.p2 = optixTransformPointFromObjectToWorldSpace(v2);
 	}
 
 

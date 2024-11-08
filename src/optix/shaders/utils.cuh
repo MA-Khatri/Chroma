@@ -502,6 +502,11 @@ namespace otx
 		/* The path integrator has a special condition for specular bounces, so we track that here */
 		bool specular;
 
+		/* Store the world-space positions of the hit triangle's vertices */
+		float3 p0;
+		float3 p1;
+		float3 p2;
+
 		/* === Store callable function idxs for the most-recent intersection's bsdf interface methods === */
 
 		/* Generates a new sample direction from the bsdf based on the current prd.out_direction */
