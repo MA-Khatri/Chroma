@@ -97,6 +97,7 @@
     <Font Include="external\imgui-docking\fonts\Roboto-Medium.ttf" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="output\MaxDepth16_CBoxDragon.png" />
     <Image Include="res\textures\teapot_normal.png" />
     <Image Include="res\textures\texture.jpg" />
     <Image Include="res\textures\viking_room_diff.png" />
