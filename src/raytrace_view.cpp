@@ -58,7 +58,15 @@ void RayTraceView::OnUpdate()
 		m_OptixRenderer = m_OptixRenderers[m_SceneID];
 		m_OptixRenderer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_OptixRenderer->SetCamera(*m_Camera);
-		m_FirstRenderCall = true;
+		
+		if (m_AppHandle->m_FocusedWindow == Application::RayTracedViewport)
+		{
+			/* call to render */
+			m_OptixRenderer->CreateEvents();
+			m_OptixRenderer->Render();
+			m_RenderInProgress = true;
+			m_LastRenderCallTime = std::chrono::system_clock::now();
+		}
 	}
 
 	/* We only check for inputs for this view if this view is the currently focused view */
@@ -108,44 +116,37 @@ void RayTraceView::OnUpdate()
 
 	if (m_AppHandle->m_FocusedWindow == Application::RayTracedViewport)
 	{
-		if (m_FirstRenderCall)
-		{
-			CUDA_SYNC_CHECK();
-		}
-
-		/* If this is the first render call or previous render and its post process is complete, we can create a new render call */
-		if (m_FirstRenderCall || (m_OptixRenderer->RenderIsComplete() && m_OptixRenderer->PostProcessIsComplete() && !m_RenderInProgress && !m_PostProcessInProgress))
+		/* If previous render and its post process is complete, we can create a new render call */
+		if (m_OptixRenderer->RenderIsComplete() && m_OptixRenderer->PostProcessIsComplete() && !m_RenderInProgress && !m_PostProcessInProgress)
 		{
 			m_OptixRenderer->CreateEvents();
 			m_OptixRenderer->Render();
-
 			m_RenderInProgress = true;
-			m_FirstRenderCall = false;
+			m_LastRenderCallTime = std::chrono::system_clock::now();
 		}
 
 		/* If the previous render is complete, run post-processing */
-		if (!m_FirstRenderCall && m_OptixRenderer->RenderIsComplete() && !m_PostProcessInProgress)
+		if (m_OptixRenderer->RenderIsComplete() && !m_PostProcessInProgress)
 		{
 			m_RenderInProgress = false;
 			m_OptixRenderer->PostProcess();
 			m_PostProcessInProgress = true;
 		}
 
-		///* If the denoiser is not enabled, we can wait for post processing to finish in this frame */
-		//if (!m_FirstRenderCall && !m_OptixRenderer->GetDenoiserEnabled() && m_PostProcessInProgress)
-		//{
-		//	CUDA_SYNC_CHECK();
-		//}
-
 		/* Check if post-process is complete and then download */
-		if (!m_FirstRenderCall && m_OptixRenderer->PostProcessIsComplete())
+		if (m_OptixRenderer->PostProcessIsComplete())
 		{
-			CUDA_SYNC_CHECK(); /* Redundant check */
 			m_PostProcessInProgress = false;
 
 			/* Instead of downloading to host then re-uploading to GPU, can we upload directly to the ImGui image? */
 			m_OptixRenderer->DownloadPixels(m_RenderedImagePixels.data());
 			m_RenderedImage.SetData(m_RenderedImagePixels.data());
+
+			/* Record time taken and add to frame rate/time graphs */
+			auto end = std::chrono::system_clock::now();
+			float renderTime = std::chrono::duration_cast<std::chrono::microseconds>(end - m_LastRenderCallTime).count();
+			m_FrameTimes.Add(renderTime * 1e-3f);
+			m_FrameRates.Add(1.0f / (renderTime * 1e-6f));
 		}
 	}
 }

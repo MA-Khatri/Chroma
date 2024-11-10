@@ -53,6 +53,15 @@ public:
 		return output;
 	}
 
+	/* Return the last item in the deque */
+	T GetLastItem()
+	{
+		if (m_Deque.size() > 0)
+		{
+			return m_Deque[m_Deque.size() - 1];
+		}
+	}
+
 private:
 	int m_MaxCount;
 	std::deque<T> m_Deque;

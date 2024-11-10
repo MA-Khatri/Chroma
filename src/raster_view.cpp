@@ -66,6 +66,15 @@ void RasterView::OnUpdate()
 		{
 			glfwSetScrollCallback(m_WindowHandle, ImGui_ImplGlfw_ScrollCallback);
 		}
+
+		/* Update frame rate/time */
+		ImGuiIO io = ImGui::GetIO();
+
+		float frame_time = io.DeltaTime * 1000.0f;
+		float frame_rate = 1.0f / io.DeltaTime;
+
+		m_FrameTimes.Add(frame_time);
+		m_FrameRates.Add(frame_rate);
 	}
 
 	/* If UI caused camera params to change... */

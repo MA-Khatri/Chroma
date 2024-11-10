@@ -82,15 +82,7 @@ void Layer::SetupDebug(Application* app)
 
 void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 {
-	ImGuiIO io = ImGui::GetIO();
-
-	float frame_time = io.DeltaTime * 1000.0f;
-	float frame_rate = 1.0f / io.DeltaTime;
-
-	m_FrameTimes.Add(frame_time);
-	m_FrameRates.Add(frame_rate);
-
-	ImGui::Text("Frame Time: %.3f ms/frame (%.1f FPS)", frame_time, frame_rate);
+	ImGui::Text("Frame Time: %.3f ms/frame (%.1f FPS)", m_FrameTimes.GetLastItem(), m_FrameRates.GetLastItem());
 
 	//ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(10, 0));
 	ImPlot::PushStyleColor(ImPlotCol_FrameBg, ImVec4(0, 0, 0, 0));

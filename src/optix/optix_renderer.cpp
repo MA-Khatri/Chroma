@@ -1048,8 +1048,6 @@ namespace otx
 
 	void Optix::Render()
 	{
-		//cudaEventCreate(&m_RenderComplete);
-
 		/* Sanity check: make sure we launch only after first resize is already done */
 		if (m_LaunchParams.frame.size.x == 0 || m_LaunchParams.frame.size.y == 0) return;
 
@@ -1111,11 +1109,6 @@ namespace otx
 
 	void Optix::PostProcess()
 	{
-		///* Wait for render to complete before running post-process. This should already be checked for before PostProcess is called so this is a redundant check. */
-		//cudaStreamWaitEvent(m_PostProcessStream, m_RenderComplete);
-
-		//cudaEventCreate(&m_PostProcessComplete);
-
 		/* === Denoiser Setup === */
 		m_DenoiserIntensity.resize(sizeof(float));
 

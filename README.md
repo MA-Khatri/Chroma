@@ -34,7 +34,7 @@ Chroma is a [Vulkan](https://www.vulkan.org/) and [OptiX](https://developer.nvid
 	- Perspective and orthographic camera projection modes
 		- Additional thin lens projection mode in OptiX
 	- Free-fly and Orbit camera modes
-- Double-buffering for Vulkan *and* OptiX viewports, allowing for smooth control of UI even when running computationally intense scenes.
+- Asynchronous OptiX kernel execution to allow for a smoother UI experience when running computationally expensive kernels.
 
 ## Camera Controls
 
