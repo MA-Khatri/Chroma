@@ -22,6 +22,12 @@ namespace otx
 		/* Resize frame buffer to given resolution */
 		void Resize(uint32_t x, uint32_t y);
 
+		
+		void CreateEvents();
+		bool RenderIsComplete();
+		bool PostProcessIsComplete();
+
+
 		/* === Set Methods === */
 		void SetCamera(const Camera& camera); /* Set camera for Optix */		
 		void SetSamplesPerRender(int nSamples); /* Set the number of samples per pixel per call to Render() */
@@ -52,6 +58,9 @@ namespace otx
 
 		/* Render one frame */
 		void Render();
+
+		/* Sets up and launches the denoiser (if m_DenoiserEnabled) and does gamma correction */
+		void PostProcess();
 
 		/* Download the rendered color buffer */
 		void DownloadPixels(uint32_t h_pixels[]);
@@ -95,19 +104,17 @@ namespace otx
 		/* Upload textures and create cuda texture objects for them */
 		void CreateTextures();
 
-		/* Sets up and launches the denoiser (if m_DenoiserEnabled) */
-		void LaunchDenoiser();
-
 		/* Populate the MISLights cuda buffer that will be passed in as a launch param */
 		void CreateLights();
 
 	protected:
 		/* 
-		 * CUDA device context and stream that Optix popeline will run on,
+		 * CUDA device context and stream that Optix pipeline will run on,
 		 * as well as device properties for this device.
 		 */
 		CUcontext m_CudaContext;
 		CUstream m_Stream;
+		CUstream m_PostProcessStream;
 		cudaDeviceProp m_DeviceProps;
 
 		/* The Optix context our pipeline will run in */
@@ -193,6 +200,11 @@ namespace otx
 		CUDABuffer m_DenoiserState;
 		CUDABuffer m_DenoiserIntensity;
 
+		/* Cuda event to track when optixLaunch completes */
+		cudaEvent_t m_RenderComplete = nullptr;
+
+		/* Cuda event to track when denoising kernel completes */
+		cudaEvent_t m_PostProcessComplete = nullptr;
 
 		/* === Externally configurable params === */
 

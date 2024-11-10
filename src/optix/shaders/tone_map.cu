@@ -1,8 +1,5 @@
 #include "tone_map.cuh"
 
-#include <cuda_runtime.h>
-#include <vector_math.h>
-
 /* 
  * Based on: https://github.com/ingowald/optix7course/blob/29e279745161003cf905a8a4f1fb603268d48efa/example12_denoiseSeparateChannels/toneMap.cu 
  * WARNING: All debugging has been turned off in the properties page for this file. Otherwise it seemed to be raising errors when running in debug...
@@ -49,11 +46,11 @@ namespace otx
         finalColorBuffer[pixelID] = rgba;
     }
 
-    void ComputeFinalPixelColors(int2 fbSize, uint32_t* finalColorBuffer, float4* denoisedBuffer, bool gammaCorrect)
+    void ComputeFinalPixelColors(int2 fbSize, uint32_t* finalColorBuffer, float4* denoisedBuffer, CUstream stream, bool gammaCorrect)
     {
         int2 blockSize = make_int2(32);
         int2 numBlocks = make_int2((fbSize.x + blockSize.x - 1) / blockSize.x, (fbSize.y + blockSize.y - 1) / blockSize.y);
 
-        computeFinalPixelColorsKernel<<<dim3(numBlocks.x, numBlocks.y), dim3(blockSize.x, blockSize.y)>>>(finalColorBuffer, denoisedBuffer, fbSize, gammaCorrect);
+        computeFinalPixelColorsKernel<<<dim3(numBlocks.x, numBlocks.y), dim3(blockSize.x, blockSize.y), 0, stream>>>(finalColorBuffer, denoisedBuffer, fbSize, gammaCorrect);
     }
 }

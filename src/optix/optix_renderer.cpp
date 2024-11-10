@@ -75,7 +75,7 @@ namespace otx
 
 		Debug("[Optix] Creating callable programs...");
 		CreateCallablePrograms();
-		
+
 		Debug("[Optix] Building acceleration structures...");
 		m_LaunchParams.traversable = BuildGasAndIas();
 
@@ -90,6 +90,9 @@ namespace otx
 
 		Debug("[Optix] Setting up importance sampled lights...");
 		CreateLights();
+
+		Debug("[Optix] Creating events...");
+		CreateEvents();
 
 		Debug("\033[1;32m[Optix] Optix fully set up!\033[0m");
 
@@ -126,6 +129,7 @@ namespace otx
 		const int deviceID = 0;
 		CUDA_CHECK(SetDevice(deviceID));
 		CUDA_CHECK(StreamCreate(&m_Stream));
+		CUDA_CHECK(StreamCreate(&m_PostProcessStream));
 
 		cudaGetDeviceProperties(&m_DeviceProps, deviceID);
 		Debug("Optix Running on device " << m_DeviceProps.name);
@@ -976,8 +980,11 @@ namespace otx
 			MISLights.push_back(light->m_MISLight);
 		}
 
-		m_MISLights.alloc_and_upload(MISLights);
-		m_LaunchParams.lights = (MISLight*)m_MISLights.d_pointer();
+		if (!MISLights.empty())
+		{
+			m_MISLights.alloc_and_upload(MISLights);
+			m_LaunchParams.lights = (MISLight*)m_MISLights.d_pointer();
+		}
 		m_LaunchParams.nLights = MISLights.size();
 	}
 
@@ -1041,6 +1048,8 @@ namespace otx
 
 	void Optix::Render()
 	{
+		//cudaEventCreate(&m_RenderComplete);
+
 		/* Sanity check: make sure we launch only after first resize is already done */
 		if (m_LaunchParams.frame.size.x == 0 || m_LaunchParams.frame.size.y == 0) return;
 
@@ -1094,22 +1103,19 @@ namespace otx
 			m_LaunchParams.frame.size.y, 
 			1
 		));
+		cudaEventRecord(m_RenderComplete, m_Stream);
 
 		m_AccumulatedSampleCount += nSamples;
-
-		/* Run the denoiser */
-		LaunchDenoiser();
-
-		/*
-		 * Make sure frame is rendered before we display. BUT -- Vulkan does not know when this is finished!
-		 * For higher performance, we should use streams and do double-buffering
-		 */
-		CUDA_SYNC_CHECK();
 	}
 
 
-	void Optix::LaunchDenoiser()
+	void Optix::PostProcess()
 	{
+		///* Wait for render to complete before running post-process. This should already be checked for before PostProcess is called so this is a redundant check. */
+		//cudaStreamWaitEvent(m_PostProcessStream, m_RenderComplete);
+
+		//cudaEventCreate(&m_PostProcessComplete);
+
 		/* === Denoiser Setup === */
 		m_DenoiserIntensity.resize(sizeof(float));
 
@@ -1155,7 +1161,7 @@ namespace otx
 		{
 			OPTIX_CHECK(optixDenoiserComputeIntensity(
 				m_Denoiser,
-				0, /* stream */
+				m_PostProcessStream, /* stream */
 				&inputLayer[0],
 				(CUdeviceptr)m_DenoiserIntensity.d_pointer(),
 				(CUdeviceptr)m_DenoiserScratch.d_pointer(),
@@ -1172,7 +1178,7 @@ namespace otx
 
 			OPTIX_CHECK(optixDenoiserInvoke(
 				m_Denoiser,
-				0, /* stream */
+				m_PostProcessStream, /* stream */
 				&denoiserParams,
 				m_DenoiserState.d_pointer(),
 				m_DenoiserState.sizeInBytes,
@@ -1193,9 +1199,26 @@ namespace otx
 				cudaMemcpyDeviceToDevice
 			);
 		}
-		ComputeFinalPixelColors(m_LaunchParams.frame.size, (uint32_t*)m_FinalColorBuffer.d_pointer(), (float4*)m_DenoisedBuffer.d_pointer(), m_GammaCorrect);
+		ComputeFinalPixelColors(m_LaunchParams.frame.size, (uint32_t*)m_FinalColorBuffer.d_pointer(), (float4*)m_DenoisedBuffer.d_pointer(), m_PostProcessStream, m_GammaCorrect);
+
+		cudaEventRecord(m_PostProcessComplete, m_PostProcessStream);
 	}
 
+	void Optix::CreateEvents()
+	{
+		cudaEventCreate(&m_RenderComplete);
+		cudaEventCreate(&m_PostProcessComplete);
+	}
+
+	bool Optix::RenderIsComplete()
+	{
+		return cudaEventQuery(m_RenderComplete) == cudaSuccess;
+	}
+
+	bool Optix::PostProcessIsComplete()
+	{
+		return cudaEventQuery(m_PostProcessComplete) == cudaSuccess;
+	}
 
 	void Optix::DownloadPixels(uint32_t h_pixels[])
 	{
@@ -1225,13 +1248,13 @@ namespace otx
 	void Optix::SetGammaCorrect(bool correct)
 	{
 		m_GammaCorrect = correct;
-		LaunchDenoiser();
+		PostProcess();
 	}
 
 	void Optix::SetDenoiserEnabled(bool enabled)
 	{
 		m_DenoiserEnabled = enabled;
-		LaunchDenoiser();
+		PostProcess();
 	}
 
 	void Optix::SetMaxSampleCount(int nSamples)

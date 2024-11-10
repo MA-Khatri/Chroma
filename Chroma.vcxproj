@@ -207,10 +207,10 @@
       <UseHostLibraryDependencies>false</UseHostLibraryDependencies>
     </CudaLink>
     <PreBuildEvent>
-      <Command>del $(ProjectDir)src\optix\shaders\compiled\*.optixir</Command>
+      <Command>del $(ProjectDir)src\optix\shaders\compiled\*.optixir $(ProjectDir)src\optix\shaders\compiled\*.cubin</Command>
     </PreBuildEvent>
     <PreBuildEvent>
-      <Message>Deleting existing optixir files...</Message>
+      <Message>Deleting existing optixir and cubin files...</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -250,10 +250,10 @@
       <UseHostLibraryDependencies>false</UseHostLibraryDependencies>
     </CudaLink>
     <PreBuildEvent>
-      <Command>del $(ProjectDir)src\optix\shaders\compiled\*.optixir</Command>
+      <Command>del $(ProjectDir)src\optix\shaders\compiled\*.optixir $(ProjectDir)src\optix\shaders\compiled\*.cubin</Command>
     </PreBuildEvent>
     <PreBuildEvent>
-      <Message>Deleting existing optixir files...</Message>
+      <Message>Deleting existing optixir and cubin files...</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

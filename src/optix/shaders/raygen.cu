@@ -354,9 +354,10 @@ namespace otx
 				break;
 			}
 
-			/* If this is the first bounce and we hit a light or if we just had a specular hit, we add light emission */
+			/* If this was the first bounce or if we had a specular hit on the previous bounce, and we hit a light, we add the light's emission */
 			if ((prd.depth == 1 || previousHitSpecular) && prd.Sample == CALLABLE_DIFFUSE_LIGHT_SAMPLE)
 			{
+
 				prd.color += prd.throughput;
 			}
 

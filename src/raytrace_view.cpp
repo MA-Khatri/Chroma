@@ -58,6 +58,7 @@ void RayTraceView::OnUpdate()
 		m_OptixRenderer = m_OptixRenderers[m_SceneID];
 		m_OptixRenderer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 		m_OptixRenderer->SetCamera(*m_Camera);
+		m_FirstRenderCall = true;
 	}
 
 	/* We only check for inputs for this view if this view is the currently focused view */
@@ -105,12 +106,47 @@ void RayTraceView::OnUpdate()
 		m_OptixRenderer->SetCamera(*m_Camera);
 	}
 
-	/* Call to render the ray traced image */
 	if (m_AppHandle->m_FocusedWindow == Application::RayTracedViewport)
 	{
-		m_OptixRenderer->Render();
-		m_OptixRenderer->DownloadPixels(m_RenderedImagePixels.data()); /* Instead of downloading to host then re-uploading to GPU, can we upload directly? */
-		m_RenderedImage.SetData(m_RenderedImagePixels.data());
+		if (m_FirstRenderCall)
+		{
+			CUDA_SYNC_CHECK();
+		}
+
+		/* If this is the first render call or previous render and its post process is complete, we can create a new render call */
+		if (m_FirstRenderCall || (m_OptixRenderer->RenderIsComplete() && m_OptixRenderer->PostProcessIsComplete() && !m_RenderInProgress && !m_PostProcessInProgress))
+		{
+			m_OptixRenderer->CreateEvents();
+			m_OptixRenderer->Render();
+
+			m_RenderInProgress = true;
+			m_FirstRenderCall = false;
+		}
+
+		/* If the previous render is complete, run post-processing */
+		if (!m_FirstRenderCall && m_OptixRenderer->RenderIsComplete() && !m_PostProcessInProgress)
+		{
+			m_RenderInProgress = false;
+			m_OptixRenderer->PostProcess();
+			m_PostProcessInProgress = true;
+		}
+
+		///* If the denoiser is not enabled, we can wait for post processing to finish in this frame */
+		//if (!m_FirstRenderCall && !m_OptixRenderer->GetDenoiserEnabled() && m_PostProcessInProgress)
+		//{
+		//	CUDA_SYNC_CHECK();
+		//}
+
+		/* Check if post-process is complete and then download */
+		if (!m_FirstRenderCall && m_OptixRenderer->PostProcessIsComplete())
+		{
+			CUDA_SYNC_CHECK(); /* Redundant check */
+			m_PostProcessInProgress = false;
+
+			/* Instead of downloading to host then re-uploading to GPU, can we upload directly to the ImGui image? */
+			m_OptixRenderer->DownloadPixels(m_RenderedImagePixels.data());
+			m_RenderedImage.SetData(m_RenderedImagePixels.data());
+		}
 	}
 }
 
