@@ -22,13 +22,13 @@ namespace otx
 			result = lerp(optixLaunchParams.gradientBottom, optixLaunchParams.gradientTop, t);
 			break;
 		}
-		case BACKGROUND_MODE_TEXTURE:
+		case BACKGROUND_MODE_ENVIRONMENT_MAP:
 		{
 			/* Convert the input ray direction to UV coordinates to access the background texture */
-			float u = 0.5f * (1.0f + atan2(rayDir.x, rayDir.y) * M_1_PIf) + optixLaunchParams.backgroundRotation;
+			float u = 0.5f * (1.0f + atan2(rayDir.x, rayDir.y) * M_1_PIf) + optixLaunchParams.environmentMapRotation;
 			float v = atan2(length(make_float2(rayDir.x, rayDir.y)), rayDir.z) * M_1_PIf;
 
-			float4 tex = tex2D<float4>(optixLaunchParams.backgroundTexture, u, v);
+			float4 tex = tex2D<float4>(optixLaunchParams.environmentMapTexture, u, v);
 			result = make_float3(tex.x, tex.y, tex.z);
 			break;
 		}

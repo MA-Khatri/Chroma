@@ -18,10 +18,12 @@ namespace otx
 		CALLABLE_DIELECTRIC_SAMPLE,
 		CALLABLE_DIELECTRIC_EVAL,
 		CALLABLE_DIELECTRIC_PDF,
+		CALLABLE_PRINCIPLED_SAMPLE,
+		CALLABLE_PRINCIPLED_EVAL,
+		CALLABLE_PRINCIPLED_PDF,
 		CALLABLE_DIFFUSE_LIGHT_SAMPLE,
 		CALLABLE_DIFFUSE_LIGHT_EVAL,
 		CALLABLE_DIFFUSE_LIGHT_PDF,
-
 
 		CALLABLE_SAMPLE_BACKGROUND,
 		// TODO... add the rest
@@ -131,8 +133,8 @@ namespace otx
 		float3 clearColor;
 		float3 gradientBottom;
 		float3 gradientTop;
-		cudaTextureObject_t backgroundTexture;
-		float backgroundRotation;
+		cudaTextureObject_t environmentMapTexture;
+		float environmentMapRotation;
 
 		bool gammaCorrect; /* Should gamma correction be applied to the final image? */
 

@@ -193,10 +193,10 @@ void Scene::MakeScene(int scene)
 		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);
 
-		m_BackgroundMode = BACKGROUND_MODE_TEXTURE;
-		//m_BackgroundTexture.filePath = "res/backgrounds/overcast_soil_puresky_4k.hdr";
-		//m_BackgroundTexture.filePath = "res/backgrounds/kloofendal_48d_partly_cloudy_puresky_4k.hdr";
-		m_BackgroundTexture.filePath = "res/backgrounds/christmas_photo_studio_07_4k.hdr";
+		m_BackgroundMode = BACKGROUND_MODE_ENVIRONMENT_MAP;
+		//m_EnvironmentMapTexture.filePath = "res/backgrounds/overcast_soil_puresky_4k.hdr";
+		//m_EnvironmentMapTexture.filePath = "res/backgrounds/kloofendal_48d_partly_cloudy_puresky_4k.hdr";
+		m_EnvironmentMapTexture.filePath = "res/backgrounds/christmas_photo_studio_07_4k.hdr";
 
 		break;
 	}
@@ -269,9 +269,9 @@ void Scene::MakeScene(int scene)
 	// TODO: more?
 	}
 
-	if (m_BackgroundMode == BACKGROUND_MODE_TEXTURE)
+	if (m_BackgroundMode == BACKGROUND_MODE_ENVIRONMENT_MAP)
 	{
-		m_BackgroundTexture.LoadTexture();
+		m_EnvironmentMapTexture.LoadTexture();
 	}
 }
 

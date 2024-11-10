@@ -300,11 +300,11 @@ void RayTraceView::OnUIRender()
 				m_OptixRenderer->SetMaxDepth(tempDepth);
 			}
 
-			float tempBR = m_OptixRenderer->GetBackgroundRotation();
-			ImGui::SliderFloat("Background Rotation", &tempBR, 0.0f, 360.0f);
-			if (tempBR != m_OptixRenderer->GetBackgroundRotation())
+			float tempEMR = m_OptixRenderer->GetEnvironmentMapRotation();
+			ImGui::SliderFloat("Environment Map Rotation", &tempEMR, 0.0f, 360.0f);
+			if (tempEMR != m_OptixRenderer->GetEnvironmentMapRotation())
 			{
-				m_OptixRenderer->SetBackgroundRotation(tempBR);
+				m_OptixRenderer->SetEnvironmentMapRotation(tempEMR);
 			}
 		}
 		ImGui::End();

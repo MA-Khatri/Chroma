@@ -392,8 +392,13 @@ namespace otx
 		pgDescs[CALLABLE_DIELECTRIC_PDF] = pgDesc;
 
 		/* Principled BSDF */
-		// TODO
-
+		pgDesc.callables.moduleDC = m_PrincipledModule;
+		pgDesc.callables.entryFunctionNameDC = "__direct_callable__sample";
+		pgDescs[CALLABLE_DIELECTRIC_SAMPLE] = pgDesc;
+		pgDesc.callables.entryFunctionNameDC = "__direct_callable__eval";
+		pgDescs[CALLABLE_DIELECTRIC_EVAL] = pgDesc;
+		pgDesc.callables.entryFunctionNameDC = "__direct_callable__pdf";
+		pgDescs[CALLABLE_DIELECTRIC_PDF] = pgDesc;
 
 		/* Diffuse Light */
 		pgDesc.callables.moduleDC = m_DiffuseLightModule;
@@ -681,7 +686,7 @@ namespace otx
 			if (mat->m_NormalTexture.pixels.size() > 0) nTextures++;
 		}
 
-		if (m_Scene->m_BackgroundTexture.pixels.size() > 0)
+		if (m_Scene->m_EnvironmentMapTexture.pixels.size() > 0)
 		{
 			nTextures++;
 		}
@@ -744,10 +749,10 @@ namespace otx
 			}
 		}
 
-		/* Load background texture if there is one */
-		if (m_Scene->m_BackgroundTexture.pixels.size() > 0)
+		/* Load environment map texture if there is one */
+		if (m_Scene->m_EnvironmentMapTexture.pixels.size() > 0)
 		{
-			auto& tex = m_Scene->m_BackgroundTexture;
+			auto& tex = m_Scene->m_EnvironmentMapTexture;
 			tex.textureID = textureID;
 
 			int32_t width = tex.resolution.x;
@@ -1082,9 +1087,9 @@ namespace otx
 		m_LaunchParams.gradientBottom = ToFloat3(m_Scene->m_GradientBottom);
 		m_LaunchParams.gradientTop = ToFloat3(m_Scene->m_GradientTop);
 
-		int backgroundID = m_Scene->m_BackgroundTexture.textureID;
-		if (backgroundID >= 0) m_LaunchParams.backgroundTexture = m_TextureObjects[backgroundID];
-		m_LaunchParams.backgroundRotation = glm::radians(m_BackgroundRotation) * 0.5f * M_1_PIf; /* Convert from degrees to [0, 1] tex coord offset */
+		int envMapID = m_Scene->m_EnvironmentMapTexture.textureID;
+		if (envMapID >= 0) m_LaunchParams.environmentMapTexture = m_TextureObjects[envMapID];
+		m_LaunchParams.environmentMapRotation = glm::radians(m_EnvironmentMapRotation) * 0.5f * M_1_PIf; /* Convert from degrees to [0, 1] tex coord offset */
 
 		/* Upload launch params */
 		m_LaunchParamsBuffer.upload(&m_LaunchParams, 1);
@@ -1255,9 +1260,9 @@ namespace otx
 		m_MaxSampleCount = nSamples;
 	}
 
-	void Optix::SetBackgroundRotation(float deg)
+	void Optix::SetEnvironmentMapRotation(float deg)
 	{
-		m_BackgroundRotation = deg;
+		m_EnvironmentMapRotation = deg;
 		ResetAccumulation();
 	}
 
@@ -1322,9 +1327,9 @@ namespace otx
 		return m_MaxSampleCount;
 	}
 
-	float Optix::GetBackgroundRotation()
+	float Optix::GetEnvironmentMapRotation()
 	{
-		return m_BackgroundRotation;
+		return m_EnvironmentMapRotation;
 	}
 
 	int Optix::GetIntegratorType()

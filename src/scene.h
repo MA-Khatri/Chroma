@@ -53,8 +53,8 @@ public:
 	/* Scene top background gradient color used if m_BackgroundMode == GRADIENT */
 	glm::vec3 m_GradientTop = glm::vec3(1.0f);
 
-	/* Background texture loaded as a float to enable hdr skyboxes */
-	Texture<float> m_BackgroundTexture;
+	/* Environment map texture loaded as a float to enable hdr skyboxes */
+	Texture<float> m_EnvironmentMapTexture;
 
 	/* List of pipeline types for Vulkan rendering */
 	enum PipelineType

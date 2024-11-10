@@ -35,7 +35,7 @@ namespace otx
 		void SetGammaCorrect(bool correct);
 		void SetDenoiserEnabled(bool enabled);
 		void SetMaxSampleCount(int nSamples);
-		void SetBackgroundRotation(float deg);
+		void SetEnvironmentMapRotation(float deg);
 		void SetIntegratorType(int integrator);
 		void SetSamplerType(int sampler);
 		void SetStrataCount(int strata);
@@ -49,7 +49,7 @@ namespace otx
 		int GetMaxDepth();
 		bool GetDenoiserEnabled();
 		int GetMaxSampleCount();
-		float GetBackgroundRotation();
+		float GetEnvironmentMapRotation();
 		int GetIntegratorType();
 		int GetSamplerType();
 		int GetStrataCount();
@@ -231,7 +231,7 @@ namespace otx
 		bool m_DenoiserEnabled = false;
 
 		/* Adjust horizontal offset angle of sky texture, locally expressed as degrees */
-		float m_BackgroundRotation = 0.0f;
+		float m_EnvironmentMapRotation = 0.0f;
 	};
 
 
