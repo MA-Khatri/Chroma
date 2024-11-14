@@ -146,6 +146,7 @@ namespace otx
 		/* Generate a new sample direction (in_direction) */
 		prd.out_direction = prd.in_direction;
 		prd.in_direction = Sample(prd);
+		prd.h = normalize(prd.in_direction + prd.out_direction);
 		prd.specular = false; // MAY NEED TO EDIT THIS!!!
 
 		/* Update throughput */
