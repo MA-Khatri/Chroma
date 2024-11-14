@@ -32,14 +32,16 @@ public:
 public:
 	enum SceneType
 	{
-		DEFAULT = 0,
-		CORNELL_BOX,
-		MAX_SCENE_COUNT
+		SCENE_DEFAULT = 0,
+		SCENE_CORNELL_BOX,
+		SCENE_MATERIAL_PREVIEW,
+		SCENE_COUNT
 	};
 
 	const std::map<int, std::string> m_SceneNames = {
-		{DEFAULT, "Default"},
-		{CORNELL_BOX, "Cornell Box"}
+		{SCENE_DEFAULT, "Default"},
+		{SCENE_CORNELL_BOX, "Cornell Box"},
+		{SCENE_MATERIAL_PREVIEW, "Material Preview"},
 	};
 
 	int m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;

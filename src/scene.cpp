@@ -116,6 +116,7 @@ void Scene::MakeScene(int scene)
 	std::shared_ptr<Mesh> gridMesh = std::make_shared<Mesh>(CreateGroundGrid()); m_Meshes.push_back(gridMesh);
 	std::shared_ptr<Mesh> axesMesh = std::make_shared<Mesh>(CreateXYAxes()); m_Meshes.push_back(axesMesh);
 	std::shared_ptr<Mesh> planeMesh = std::make_shared<Mesh>(CreatePlane()); m_Meshes.push_back(planeMesh);
+	std::shared_ptr<Mesh> backdropMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/backdrop.obj")); m_Meshes.push_back(backdropMesh);
 	std::shared_ptr<Mesh> vikingRoomMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/viking_room.obj")); m_Meshes.push_back(vikingRoomMesh);
 	std::shared_ptr<Mesh> dragonMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/dragon.obj")); m_Meshes.push_back(dragonMesh);
 	std::shared_ptr<Mesh> lucyMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/lucy.obj")); m_Meshes.push_back(lucyMesh);
@@ -136,14 +137,18 @@ void Scene::MakeScene(int scene)
 	/* === Scene Setup === */
 	switch (scene)
 	{
-	case DEFAULT:
+	case SCENE_DEFAULT:
 	{
-		m_SceneType = DEFAULT;
+		m_SceneType = SCENE_DEFAULT;
 
 		/* === Scene Objects === */
-		std::shared_ptr<Object> plane0 = std::make_shared<Object>(planeMesh, fullWhiteMat);
-		plane0->Scale(100.0f);
-		PushToBoth(plane0);
+		//std::shared_ptr<Object> plane0 = std::make_shared<Object>(planeMesh, fullWhiteMat);
+		//plane0->Scale(100.0f);
+		//PushToBoth(plane0);
+
+		std::shared_ptr<Object> backdrop = std::make_shared<Object>(backdropMesh, diffuseWhiteMat);
+		backdrop->Scale(5.0f, 100.0f, 5.0f);
+		PushToBoth(backdrop);
 		
 		std::shared_ptr<Object> vikingRoom = std::make_shared<Object>(vikingRoomMesh, vikingRoomMat);
 		vikingRoom->Translate(0.0f, 0.0f, 0.5f);
@@ -200,9 +205,9 @@ void Scene::MakeScene(int scene)
 
 		break;
 	}
-	case CORNELL_BOX:
+	case SCENE_CORNELL_BOX:
 	{
-		m_SceneType = CORNELL_BOX;
+		m_SceneType = SCENE_CORNELL_BOX;
 
 		/* === Walls === */
 		std::shared_ptr<Object> bottom = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
@@ -263,6 +268,42 @@ void Scene::MakeScene(int scene)
 
 		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);
+
+		break;
+	}
+	case SCENE_MATERIAL_PREVIEW:
+	{
+		m_SceneType = SCENE_MATERIAL_PREVIEW;
+
+		std::shared_ptr<Material> disney01 = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_PRINCIPLED);
+		//disney01->m_BaseColor = glm::vec3(0.0f, 0.0f, 1.0f);
+		m_Materials.push_back(disney01);
+
+
+		/* === Scene Objects === */
+		std::shared_ptr<Object> backdrop = std::make_shared<Object>(backdropMesh, diffuseWhiteMat);
+		//backdrop->Scale(5.0f, 100.0f, 5.0f);
+		PushToBoth(backdrop);
+
+		std::shared_ptr<Object> sphere0 = std::make_shared<Object>(sphereMesh, disney01);
+		sphere0->Translate(0.0f, 0.0f, 1.0f);
+		PushToBoth(sphere0);
+
+		/* === Light(s) === */
+		// TODO...
+
+		/* === Background === */
+		//m_BackgroundMode = BACKGROUND_MODE_GRADIENT;
+		//m_GradientBottom = glm::vec3(0.3f);
+		//m_GradientTop = glm::vec3(1.0f);
+
+		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
+		m_ClearColor = glm::vec3(0.0f);
+
+		m_BackgroundMode = BACKGROUND_MODE_ENVIRONMENT_MAP;
+		//m_EnvironmentMapTexture.filePath = "res/backgrounds/overcast_soil_puresky_4k.hdr";
+		//m_EnvironmentMapTexture.filePath = "res/backgrounds/kloofendal_48d_partly_cloudy_puresky_4k.hdr";
+		m_EnvironmentMapTexture.filePath = "res/backgrounds/christmas_photo_studio_07_4k.hdr";
 
 		break;
 	}

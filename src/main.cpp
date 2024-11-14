@@ -11,8 +11,9 @@ int main()
 
 	/* Make scenes */
 	std::vector<std::shared_ptr<Scene>> scenes;
-	scenes.push_back(std::make_shared<Scene>(Scene::DEFAULT));
-	scenes.push_back(std::make_shared<Scene>(Scene::CORNELL_BOX));
+	//scenes.push_back(std::make_shared<Scene>(Scene::SCENE_DEFAULT));
+	//scenes.push_back(std::make_shared<Scene>(Scene::SCENE_CORNELL_BOX));
+	scenes.push_back(std::make_shared<Scene>(Scene::SCENE_MATERIAL_PREVIEW));
 	app->SetScenes(scenes);
 
 	/* Create and initialize layers */

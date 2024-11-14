@@ -48,11 +48,25 @@ namespace otx
 
 		float etaIn;
 		float etaOut;
-		float roughness;
 		float3 reflectionColor;
 		float3 refractionColor;
 		float3 emissionColor;
 		float3 extinction;
+
+
+		/* Principled BSDF Parameters */
+		float3 baseColor;
+		float specularTransmission;
+		float metallic;
+		float subsurface;
+		float specular;
+		float roughness;
+		float specularTint;
+		float anisotropic;
+		float sheen;
+		float sheenTint;
+		float clearcoat;
+		float clearcoatGloss;
 	};
 	
 

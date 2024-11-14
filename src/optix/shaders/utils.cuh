@@ -484,6 +484,9 @@ namespace otx
 		/* I.e., the direction of outgoing light from the surface. */
 		float3 out_direction;
 
+		/* The (normalized) half-way vector between the in and out directions */
+		float3 h;
+
 		/* ONB of the most recent intersection -- can be used to get normal vector (basis.w) or do model/world transformations */
 		OrthonormalBasis basis;
 

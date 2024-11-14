@@ -91,13 +91,27 @@ public:
 	int m_RTMaterialType = 0; /* Ray tracing material type -- i.e., MaterialType enum */
 
 	/* Material properties */
-	float m_Roughness = 0.0f;
 	float m_EtaIn = 1.0f;
 	float m_EtaOut = 1.0f;
 	glm::vec3 m_ReflectionColor = glm::vec3(1.0f);
 	glm::vec3 m_RefractionColor = glm::vec3(1.0f);
 	glm::vec3 m_Extinction = glm::vec3(0.0f);
 	glm::vec3 m_EmissionColor = glm::vec3(0.0f); /* I.e., radiant exitance -- emitted flux per unit area */
+
+	/* Disney's Principled BSDF material properties */
+	glm::vec3 m_BaseColor = glm::vec3(1.0f);
+	float m_SpecularTransmission = 0.0f;
+	float m_Metallic = 0.0f;
+	float m_Subsurface = 0.0f;
+	float m_Specular = 0.5f;
+	float m_Roughness = 0.5f;
+	float m_SpecularTint = 0.0f;
+	float m_Anisotropic = 0.0f;
+	float m_Sheen = 0.0f;
+	float m_SheenTint = 0.5f;
+	float m_Clearcoat = 0.0f;
+	float m_ClearcoatGloss = 1.0f;
+
 
 	/* The vulkan graphics pipeline to be used to draw this material */
 	int m_VKPipelineType = -1; /* Used to access the Scene::PipelineType enum */

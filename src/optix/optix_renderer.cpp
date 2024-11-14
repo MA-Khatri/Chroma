@@ -871,13 +871,25 @@ namespace otx
 					rec.data.normal = (float3*)m_NormalBuffers[objectID].d_pointer();
 					
 					/* Set remaining material properties */
-					rec.data.roughness = mat->m_Roughness;
 					rec.data.etaIn = mat->m_EtaIn;
 					rec.data.etaOut = mat->m_EtaOut;
 					rec.data.reflectionColor = ToFloat3(mat->m_ReflectionColor);
 					rec.data.refractionColor = ToFloat3(mat->m_RefractionColor);
 					rec.data.emissionColor = ToFloat3(mat->m_EmissionColor);
 					rec.data.extinction = ToFloat3(mat->m_Extinction);
+
+					rec.data.baseColor = ToFloat3(mat->m_BaseColor);
+					rec.data.specularTransmission = mat->m_SpecularTransmission;
+					rec.data.metallic = mat->m_Metallic;
+					rec.data.subsurface = mat->m_Subsurface;
+					rec.data.specular = mat->m_Specular;
+					rec.data.roughness = mat->m_Roughness;
+					rec.data.specularTint = mat->m_SpecularTint;
+					rec.data.anisotropic = mat->m_Anisotropic;
+					rec.data.sheen = mat->m_Sheen;
+					rec.data.sheenTint = mat->m_SheenTint;
+					rec.data.clearcoat = mat->m_Clearcoat;
+					rec.data.clearcoatGloss = mat->m_ClearcoatGloss;
 				}
 				/* Shadow rays only */
 				else if (rayID == RAY_TYPE_SHADOW)
