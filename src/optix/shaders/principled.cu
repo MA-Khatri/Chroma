@@ -64,7 +64,6 @@ namespace otx
 
 	__forceinline__ __device__ float3 Diffuse(PRD_Radiance& prd, const SBTData& sbtData)
 	{
-		return BaseDiffuse(prd, sbtData);
 		return (1.0f - sbtData.subsurface) * BaseDiffuse(prd, sbtData) + sbtData.subsurface * Subsurface(prd, sbtData);
 	}
 

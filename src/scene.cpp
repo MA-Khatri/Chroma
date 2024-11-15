@@ -276,13 +276,12 @@ void Scene::MakeScene(int scene)
 		m_SceneType = SCENE_MATERIAL_PREVIEW;
 
 		std::shared_ptr<Material> disney01 = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_PRINCIPLED);
-		//disney01->m_BaseColor = glm::vec3(0.0f, 0.0f, 1.0f);
+		disney01->m_Roughness = 1.0f;
 		m_Materials.push_back(disney01);
 
 
 		/* === Scene Objects === */
 		std::shared_ptr<Object> backdrop = std::make_shared<Object>(backdropMesh, diffuseWhiteMat);
-		//backdrop->Scale(5.0f, 100.0f, 5.0f);
 		PushToBoth(backdrop);
 
 		std::shared_ptr<Object> sphere0 = std::make_shared<Object>(sphereMesh, disney01);
@@ -290,7 +289,11 @@ void Scene::MakeScene(int scene)
 		PushToBoth(sphere0);
 
 		/* === Light(s) === */
-		// TODO...
+		std::shared_ptr<Object> light = std::make_shared<Object>(planeMesh, whiteDiffuseLightMat);
+		light->Translate(0.0f, 0.0f, 10.0f);
+		light->Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 180.0f);
+		light->Scale(3.0f);
+		PushObjectLight(light);
 
 		/* === Background === */
 		//m_BackgroundMode = BACKGROUND_MODE_GRADIENT;
@@ -300,7 +303,7 @@ void Scene::MakeScene(int scene)
 		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);
 
-		m_BackgroundMode = BACKGROUND_MODE_ENVIRONMENT_MAP;
+		//m_BackgroundMode = BACKGROUND_MODE_ENVIRONMENT_MAP;
 		//m_EnvironmentMapTexture.filePath = "res/backgrounds/overcast_soil_puresky_4k.hdr";
 		//m_EnvironmentMapTexture.filePath = "res/backgrounds/kloofendal_48d_partly_cloudy_puresky_4k.hdr";
 		m_EnvironmentMapTexture.filePath = "res/backgrounds/christmas_photo_studio_07_4k.hdr";
