@@ -394,11 +394,11 @@ namespace otx
 		/* Principled BSDF */
 		pgDesc.callables.moduleDC = m_PrincipledModule;
 		pgDesc.callables.entryFunctionNameDC = "__direct_callable__sample";
-		pgDescs[CALLABLE_DIELECTRIC_SAMPLE] = pgDesc;
+		pgDescs[CALLABLE_PRINCIPLED_SAMPLE] = pgDesc;
 		pgDesc.callables.entryFunctionNameDC = "__direct_callable__eval";
-		pgDescs[CALLABLE_DIELECTRIC_EVAL] = pgDesc;
+		pgDescs[CALLABLE_PRINCIPLED_EVAL] = pgDesc;
 		pgDesc.callables.entryFunctionNameDC = "__direct_callable__pdf";
-		pgDescs[CALLABLE_DIELECTRIC_PDF] = pgDesc;
+		pgDescs[CALLABLE_PRINCIPLED_PDF] = pgDesc;
 
 		/* Diffuse Light */
 		pgDesc.callables.moduleDC = m_DiffuseLightModule;
