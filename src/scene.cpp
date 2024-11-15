@@ -276,7 +276,9 @@ void Scene::MakeScene(int scene)
 		m_SceneType = SCENE_MATERIAL_PREVIEW;
 
 		std::shared_ptr<Material> disney01 = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_PRINCIPLED);
+		disney01->m_BaseColor = glm::vec3(1.0f);
 		disney01->m_Roughness = 1.0f;
+		disney01->m_Subsurface = 0.0f;
 		m_Materials.push_back(disney01);
 
 
@@ -287,6 +289,12 @@ void Scene::MakeScene(int scene)
 		std::shared_ptr<Object> sphere0 = std::make_shared<Object>(sphereMesh, disney01);
 		sphere0->Translate(0.0f, 0.0f, 1.0f);
 		PushToBoth(sphere0);
+
+		std::shared_ptr<Object> cube = std::make_shared<Object>(cubeMesh, disney01);
+		cube->Translate(-2.0f, -2.0f, 1.0f);
+		cube->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 20.0f);
+		cube->Scale(2.0f, 2.0f, 2.0f);
+		PushToBoth(cube);
 
 		/* === Light(s) === */
 		std::shared_ptr<Object> light = std::make_shared<Object>(planeMesh, whiteDiffuseLightMat);

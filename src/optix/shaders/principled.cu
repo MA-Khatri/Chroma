@@ -79,8 +79,14 @@ namespace otx
 		const SBTData& sbtData = *prd.sbtData;
 		const int3 index = sbtData.index[prd.primID];
 
+		PRD_Radiance tempPRD;
+		tempPRD.basis = prd.basis;
+		tempPRD.h = prd.h;
+		tempPRD.in_direction = indir;
+		tempPRD.out_direction = outdir;
+
 		/* Default diffuse color if no diffuse texture */
-		float3 diffuseColor = Diffuse(prd, sbtData);
+		float3 diffuseColor = Diffuse(tempPRD, sbtData);
 
 		/* === Sample diffuse texture === */
 		float2 tc = TexCoord(prd.uv, sbtData.texCoord[index.x], sbtData.texCoord[index.y], sbtData.texCoord[index.z]);

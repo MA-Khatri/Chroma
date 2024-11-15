@@ -77,7 +77,8 @@ namespace otx
 
 			/* Probability of sampling this point on the triangle */
 			float3 lightNormal = InterpolateNormals(uv, light.n0, light.n1, light.n2);
-			float cosTheta = max(dot(lightSampleDirection, -lightNormal), 0.0f);
+			//float cosTheta = max(dot(lightSampleDirection, -lightNormal), 0.0f); /* for uni-directional lights */
+			float cosTheta = abs(dot(lightSampleDirection, -lightNormal)); /* for bi-directional lights */
 			shadowRay.pdf = cosTheta > 0.0f ? distance2 / (light.area * cosTheta) : 0.0f;
 
 			lightRadiance = light.emissionColor;
@@ -148,7 +149,8 @@ namespace otx
 
 			/* Probability of sampling this point on the triangle */
 			float3 lightNormal = InterpolateNormals(make_float2(u, v), light.n0, light.n1, light.n2);
-			float cosTheta = max(dot(lightSampleDirection, -lightNormal), 0.0f);
+			//float cosTheta = max(dot(lightSampleDirection, -lightNormal), 0.0f); /* for uni-directional lights */
+			float cosTheta = abs(dot(lightSampleDirection, -lightNormal)); /* for bi-directional lights */
 			shadowRay.pdf = (light.area * cosTheta) / (distance * distance);
 
 			lightRadiance = light.emissionColor;
@@ -354,10 +356,19 @@ namespace otx
 				break;
 			}
 
-			/* If this was the first bounce or if we had a specular hit on the previous bounce, and we hit a light, we add the light's emission */
-			if ((prd.depth == 1 || previousHitSpecular) && prd.Sample == CALLABLE_DIFFUSE_LIGHT_SAMPLE)
+			/* If the first hit was a light, add the light's emission */
+			if (prd.depth == 1 && prd.Sample == CALLABLE_DIFFUSE_LIGHT_SAMPLE)
 			{
+				//if (dot(prd.basis.w, prd.out_direction) > 0.0f) /* For uni-directional lights -- needs some editing */
+				{
+					prd.color += prd.throughput;
+				}
+			}
 
+			/* If we had a specular hit on the previous bounce, and now we hit a light, we add the light's emission */
+			/* NOTE: We may need to change how we check if we hit a light in this case if our lights are not physical... */
+			if (previousHitSpecular && prd.Sample == CALLABLE_DIFFUSE_LIGHT_SAMPLE)
+			{
 				prd.color += prd.throughput;
 			}
 
@@ -450,7 +461,7 @@ namespace otx
 		}
 
 		/* Determine average color for this call. Cap to prevent speckles (even though this breaks pbr condition) */
-		const float cap = 1e16f;
+		const float cap = 100.0f;
 		const float cr = min(pixelColor.x / numPixelSamples, cap);
 		const float cg = min(pixelColor.y / numPixelSamples, cap);
 		const float cb = min(pixelColor.z / numPixelSamples, cap);
