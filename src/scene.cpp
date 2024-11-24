@@ -120,7 +120,7 @@ void Scene::MakeScene(int scene)
 	std::shared_ptr<Mesh> vikingRoomMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/viking_room.obj")); m_Meshes.push_back(vikingRoomMesh);
 	std::shared_ptr<Mesh> dragonMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/dragon.obj")); m_Meshes.push_back(dragonMesh);
 	std::shared_ptr<Mesh> lucyMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/lucy.obj")); m_Meshes.push_back(lucyMesh);
-	std::shared_ptr<Mesh> charles4Mesh = std::make_shared<Mesh>(LoadMesh("res/meshes/charles4.obj")); m_Meshes.push_back(charles4Mesh);
+	//std::shared_ptr<Mesh> charles4Mesh = std::make_shared<Mesh>(LoadMesh("res/meshes/charles4.obj")); m_Meshes.push_back(charles4Mesh);
 	std::shared_ptr<Mesh> sphereMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/sphere.obj")); m_Meshes.push_back(sphereMesh);
 	std::shared_ptr<Mesh> cubeMesh = std::make_shared<Mesh>(LoadMesh("res/meshes/cube.obj")); m_Meshes.push_back(cubeMesh);
 
@@ -167,11 +167,11 @@ void Scene::MakeScene(int scene)
 		lucy->Scale(5.0f);
 		PushToBoth(lucy);
 
-		std::shared_ptr<Object> charles = std::make_shared<Object>(charles4Mesh, charles4Mat);
-		charles->Translate(0.0f, 8.0f, 0.0f);
-		charles->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 135.0f);
-		charles->Scale(3.0f);
-		PushToBoth(charles);
+		//std::shared_ptr<Object> charles = std::make_shared<Object>(charles4Mesh, charles4Mat);
+		//charles->Translate(0.0f, 8.0f, 0.0f);
+		//charles->Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 135.0f);
+		//charles->Scale(3.0f);
+		//PushToBoth(charles);
 
 		std::shared_ptr<Object> sphere0 = std::make_shared<Object>(sphereMesh, transparentGlassMat);
 		sphere0->Translate(6.0f, 2.0f, 2.0f);
@@ -276,14 +276,18 @@ void Scene::MakeScene(int scene)
 		m_SceneType = SCENE_MATERIAL_PREVIEW;
 
 		std::shared_ptr<Material> disney01 = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_PRINCIPLED);
-		disney01->m_BaseColor = glm::vec3(1.0f);
+		disney01->m_BaseColor = glm::vec3(0.8f);
 		disney01->m_Roughness = 1.0f;
 		disney01->m_Subsurface = 0.0f;
+		disney01->m_Metallic = 1.0f;
+		disney01->m_Anisotropic = 0.0f;
 		m_Materials.push_back(disney01);
 
 
 		/* === Scene Objects === */
-		std::shared_ptr<Object> backdrop = std::make_shared<Object>(backdropMesh, diffuseWhiteMat);
+		//std::shared_ptr<Object> backdrop = std::make_shared<Object>(backdropMesh, diffuseWhiteMat);
+		std::shared_ptr<Object> backdrop = std::make_shared<Object>(backdropMesh, disney01);
+		backdrop->Scale(5.0f);
 		PushToBoth(backdrop);
 
 		std::shared_ptr<Object> sphere0 = std::make_shared<Object>(sphereMesh, disney01);
