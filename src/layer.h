@@ -60,6 +60,8 @@ public:
 		{
 			return m_Deque[m_Deque.size() - 1];
 		}
+
+		return 0;
 	}
 
 private:

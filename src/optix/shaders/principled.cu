@@ -126,6 +126,44 @@ namespace otx
 	}
 
 
+	/* 
+	 * Visible Normal (VNDF) sampling based on 
+	 * https://jcgt.org/published/0007/04/01/
+	 * https://jcgt.org/published/0007/04/01/slides.pdf
+	 * 
+	 * Inputs:
+	 * -- Ve: view direction
+	 * -- alpha: roughness parameters (anisotropy)
+	 * -- u: two uniform random numbers [0, 1)
+	 */
+	__forceinline__ __device__ float3 SampleGGXVNDF(float3 Ve, float2 alpha, float2 U)
+	{
+		/* Transform the view direction to the hemisphere configuration */
+		float3 Vh = normalize(make_float3(alpha.x * Ve.x, alpha.y * Ve.y, Ve.z));
+
+		/* Create an orthonormal basis */
+		float3 T1 = (Vh.z < 0.9999f) 
+			? normalize(cross(make_float3(0.0f, 0.0f, 1.0f), Vh)) 
+			: make_float3(1.0f, 0.0f, 0.0f);
+		float3 T2 = cross(Vh, T1);
+
+		/* Parameterization of the projected area */
+		float r = sqrt(U.x);
+		float phi = 2.0f * M_PI * U.y;
+		float t1 = r * cos(phi);
+		float t2 = r * sin(phi);
+		float s = 0.5f * (1.0f - t1 * t1) + s * t2;
+		t2 = (1.0f - s) * sqrt(1.0f - t1 * t1) + s * t2;
+
+		/* Reprojection onto the hemisphere */
+		float3 Nh = t1 * T1 + t2 * T2 + sqrt(max(0.0f, 1.0f - t1 * t1 - t2 * t2)) * Vh;
+
+		/* Transforming the normal back to the ellipsoid configuration */
+		float3 Ne = normalize(make_float3(alpha.x * Nh.x, alpha.y * Nh.y, max(0.0f, Nh.z)));
+		return Ne;
+	}
+
+
 	__forceinline__ __device__ float3 Eval(PRD_Radiance& prd, float3 indir, float3 outdir)
 	{
 		const SBTData& sbtData = *prd.sbtData;
@@ -160,13 +198,45 @@ namespace otx
 	{
 		const SBTData& sbtData = *prd.sbtData;
 
+		/* Get the normalized weight for each lobe */
 		float diffuseWeight = (1.0f - sbtData.metallic) * (1.0f - sbtData.specularTransmission);
 		float metalWeight = (1.0f - sbtData.specularTransmission * (1.0f - sbtData.metallic));
 		float glassWeight = (1.0f - sbtData.metallic) * sbtData.specularTransmission;
 		float clearcoatWeight = 0.25f * sbtData.clearcoat;
+		float sumOfWeights = diffuseWeight + metalWeight + glassWeight + clearcoatWeight;
+		diffuseWeight = diffuseWeight / sumOfWeights;
+		metalWeight = (metalWeight / sumOfWeights) + diffuseWeight;
+		glassWeight = (glassWeight / sumOfWeights) + metalWeight;
+		clearcoatWeight = (clearcoatWeight / sumOfWeights) + glassWeight;
 
-		return prd.basis.Local(prd.random.RandomOnUnitCosineHemisphere());
-		/* TODO: sampling for metals, other... */
+		/* Choose the lobe to sample */
+		float rand = prd.random();
+
+		if (rand < diffuseWeight)
+		{ /* Sample the diffuse lobe */
+			return prd.basis.Local(prd.random.RandomOnUnitCosineHemisphere());
+		}
+		else if (diffuseWeight <= rand < metalWeight)
+		{ /* Sample the metal lobe */
+			float2 alpha = Alphas(sbtData.roughness, sbtData.anisotropic);
+			float2 U = prd.random.RandomSample2D();
+			return prd.basis.Local(SampleGGXVNDF(prd.basis.Canonical(prd.out_direction), alpha, U));
+			/* Do we need to do this canonical -> local conversion? Also, seems like this case is not actually being reached. */
+		}
+		else if (metalWeight <= rand < glassWeight)
+		{ /* Sample the glass lobe */
+			// TODO
+			return prd.basis.Local(prd.random.RandomOnUnitCosineHemisphere());
+		}
+		else if (glassWeight <= rand < clearcoatWeight)
+		{ /* Sample the clearcoat lobe */
+			// TODO
+			return prd.basis.Local(prd.random.RandomOnUnitCosineHemisphere());
+		}
+		else
+		{ /* This should never happen since clearcoatWeight should be 1.0f... (default to cosine hemisphere) */
+			return prd.basis.Local(prd.random.RandomOnUnitCosineHemisphere());
+		}
 	}
 
 

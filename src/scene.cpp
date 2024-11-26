@@ -277,10 +277,11 @@ void Scene::MakeScene(int scene)
 
 		std::shared_ptr<Material> disney01 = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_PRINCIPLED);
 		disney01->m_BaseColor = glm::vec3(0.8f);
-		disney01->m_Roughness = 1.0f;
+		disney01->m_Roughness = 0.5f;
 		disney01->m_Subsurface = 0.0f;
 		disney01->m_Metallic = 1.0f;
 		disney01->m_Anisotropic = 0.0f;
+		disney01->m_Clearcoat = 0.0f;
 		m_Materials.push_back(disney01);
 
 
