@@ -134,7 +134,7 @@ namespace otx
 	 * Inputs:
 	 * -- Ve: view direction
 	 * -- alpha: roughness parameters (anisotropy)
-	 * -- u: two uniform random numbers [0, 1)
+	 * -- u: two uniform random numbers in [0, 1)
 	 */
 	__forceinline__ __device__ float3 SampleGGXVNDF(float3 Ve, float2 alpha, float2 U)
 	{
@@ -142,8 +142,9 @@ namespace otx
 		float3 Vh = normalize(make_float3(alpha.x * Ve.x, alpha.y * Ve.y, Ve.z));
 
 		/* Create an orthonormal basis */
-		float3 T1 = (Vh.z < 0.9999f) 
-			? normalize(cross(make_float3(0.0f, 0.0f, 1.0f), Vh)) 
+		float lensq = Vh.x * Vh.x + Vh.y * Vh.y;
+		float3 T1 = lensq > 0.0f
+			? make_float3(-Vh.y, Vh.x, 0.0f) * rsqrt(lensq) /* rsqrt = inverse sqrt */
 			: make_float3(1.0f, 0.0f, 0.0f);
 		float3 T2 = cross(Vh, T1);
 
@@ -152,7 +153,7 @@ namespace otx
 		float phi = 2.0f * M_PI * U.y;
 		float t1 = r * cos(phi);
 		float t2 = r * sin(phi);
-		float s = 0.5f * (1.0f - t1 * t1) + s * t2;
+		float s = 0.5f * (1.0f + Vh.z);
 		t2 = (1.0f - s) * sqrt(1.0f - t1 * t1) + s * t2;
 
 		/* Reprojection onto the hemisphere */
@@ -242,8 +243,10 @@ namespace otx
 
 	__forceinline__ __device__ float PDF(PRD_Radiance& prd, float3 w)
 	{
-		return max(dot(w, prd.basis.w), 0.0f) * M_1_PIf;
+		//return max(dot(w, prd.basis.w), 0.0f) * M_1_PIf;
 		/* TODO: other than just assuming cosine hemisphere... */
+
+		return dot(w, prd.basis.w) * M_1_PIf;
 	}
 
 

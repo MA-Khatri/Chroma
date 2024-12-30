@@ -282,6 +282,7 @@ void Scene::MakeScene(int scene)
 		disney01->m_Metallic = 1.0f;
 		disney01->m_Anisotropic = 0.0f;
 		disney01->m_Clearcoat = 0.0f;
+		disney01->m_SpecularTransmission = 0.0f;
 		m_Materials.push_back(disney01);
 
 
@@ -316,7 +317,7 @@ void Scene::MakeScene(int scene)
 		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);
 
-		//m_BackgroundMode = BACKGROUND_MODE_ENVIRONMENT_MAP;
+		m_BackgroundMode = BACKGROUND_MODE_ENVIRONMENT_MAP;
 		//m_EnvironmentMapTexture.filePath = "res/backgrounds/overcast_soil_puresky_4k.hdr";
 		//m_EnvironmentMapTexture.filePath = "res/backgrounds/kloofendal_48d_partly_cloudy_puresky_4k.hdr";
 		m_EnvironmentMapTexture.filePath = "res/backgrounds/christmas_photo_studio_07_4k.hdr";
