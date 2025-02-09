@@ -36,8 +36,8 @@ namespace otx
 		void SetDenoiserEnabled(bool enabled);
 		void SetMaxSampleCount(int nSamples);
 		void SetEnvironmentMapRotation(float deg);
-		void SetIntegratorType(int integrator);
-		void SetSamplerType(int sampler);
+		void SetIntegratorType(IntegratorType integrator);
+		void SetSamplerType(SamplerType sampler);
 		void SetStrataCount(int strata);
 		void SetLightSampleRate(float lsr);
 
@@ -50,8 +50,8 @@ namespace otx
 		bool GetDenoiserEnabled();
 		int GetMaxSampleCount();
 		float GetEnvironmentMapRotation();
-		int GetIntegratorType();
-		int GetSamplerType();
+		IntegratorType GetIntegratorType();
+		SamplerType GetSamplerType();
 		int GetStrataCount();
 		float GetLightSampleRate();
 
@@ -208,8 +208,8 @@ namespace otx
 
 		/* === Externally configurable params === */
 
-		int m_IntegratorType = INTEGRATOR_TYPE_PATH;
-		int m_SamplerType = SAMPLER_TYPE_STRATIFIED;
+		IntegratorType m_IntegratorType = IntegratorType::PATH;
+		SamplerType m_SamplerType = SamplerType::STRATIFIED;
 		int m_nStrata = 8;
 
 		/* Maximum allowed number of accumulated samples -- set to 0 for unlimited */

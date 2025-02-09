@@ -10,19 +10,19 @@ namespace otx
 
 		switch (optixLaunchParams.backgroundMode)
 		{
-		case BACKGROUND_MODE_SOLID_COLOR:
+		case BackgroundMode::SOLID_COLOR:
 		{
 			result = optixLaunchParams.clearColor;
 			break;
 		}
-		case BACKGROUND_MODE_GRADIENT:
+		case BackgroundMode::GRADIENT:
 		{
 			/* Dot rayDir with the up vector and use the result to interpolate between the bottom and top gradient colors */
 			float t = max(dot(normalize(rayDir), make_float3(0.0f, 0.0f, 1.0f)), 0.0f);
 			result = lerp(optixLaunchParams.gradientBottom, optixLaunchParams.gradientTop, t);
 			break;
 		}
-		case BACKGROUND_MODE_ENVIRONMENT_MAP:
+		case BackgroundMode::ENVIRONMENT_MAP:
 		{
 			/* Convert the input ray direction to UV coordinates to access the background texture */
 			float u = 0.5f * (1.0f + atan2(rayDir.x, rayDir.y) * M_1_PIf) + optixLaunchParams.environmentMapRotation;

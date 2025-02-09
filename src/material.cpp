@@ -2,7 +2,7 @@
 #include "vulkan/vulkan_utils.h"
 
 
-Material::Material(TexturePaths texturePaths, int vkPipelineType, int rtMaterialType)
+Material::Material(TexturePaths texturePaths, int vkPipelineType, MaterialType rtMaterialType)
     : m_TexturePaths(texturePaths), m_VKPipelineType(vkPipelineType), m_RTMaterialType(rtMaterialType)
 {
     LoadTextures();

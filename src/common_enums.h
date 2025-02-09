@@ -1,66 +1,66 @@
 #pragma once
 
-enum ControlMode
+enum class ControlMode
 {
-	CONTROL_MODE_FREE_FLY,
-	CONTROL_MODE_ORBIT,
+	FREE_FLY,
+	ORBIT,
 };
 
-enum ProjectionMode
+enum class ProjectionMode
 {
-	PROJECTION_MODE_PERSPECTIVE,
-	PROJECTION_MODE_ORTHOGRAPHIC,
-	PROJECTION_MODE_THIN_LENS,
+	PERSPECTIVE,
+	ORTHOGRAPHIC,
+	THIN_LENS,
 };
 
-enum MaterialType
+enum class MaterialType
 {
-	MATERIAL_TYPE_LAMBERTIAN = 0,
-	MATERIAL_TYPE_CONDUCTOR,
-	MATERIAL_TYPE_DIELECTRIC,
-	MATERIAL_TYPE_PRINCIPLED,
-	MATERIAL_TYPE_DIFFUSE_LIGHT,
-	MATERIAL_TYPE_COUNT
+	LAMBERTIAN = 0,
+	CONDUCTOR,
+	DIELECTRIC,
+	PRINCIPLED,
+	DIFFUSE_LIGHT,
+	COUNT
 };
 
-enum RayType
+enum class RayType
 {
-	RAY_TYPE_RADIANCE = 0,
-	RAY_TYPE_SHADOW,
-	RAY_TYPE_COUNT
+	RADIANCE = 0,
+	SHADOW,
+	COUNT
 };
 
-enum SamplerType
+enum class SamplerType
 {
-	SAMPLER_TYPE_INDEPENDENT = 0,
-	SAMPLER_TYPE_STRATIFIED,
-	SAMPLER_TYPE_MULTIJITTER
+	INDEPENDENT = 0,
+	STRATIFIED,
+	MULTIJITTER
 };
 
-enum IntegratorType
+enum class IntegratorType
 {
-	INTEGRATOR_TYPE_PATH = 0,
+	PATH = 0,
 	// TODO, more...
 };
 
-enum LightType
+enum class LightType
 {
-	LIGHT_TYPE_AREA = 0, /* I.e., mesh lights, maybe later quad lights/sphere lights? */
-	LIGHT_TYPE_DELTA, /* Point and spot lights */
-	//LIGHT_TYPE_DIRECTIONAL, /* Directional, infinite area lights (TODO) */
-	//LIGHT_TYPE_PORTAL, /* E.g., for sampling backgrounds through windows, etc. (TODO) */
-	LIGHT_TYPE_COUNT
+	AREA = 0, /* I.e., mesh lights, maybe later quad lights/sphere lights? */
+	DELTA, /* Point and spot lights */
+	// DIRECTIONAL, /* Directional, infinite area lights (TODO) */
+	// PORTAL, /* E.g., for sampling backgrounds through windows, etc. (TODO) */
+	COUNT
 };
 
-enum BackgroundMode
+enum class BackgroundMode
 {
-	BACKGROUND_MODE_SOLID_COLOR,
-	BACKGROUND_MODE_GRADIENT,
-	BACKGROUND_MODE_ENVIRONMENT_MAP
+	SOLID_COLOR,
+	GRADIENT,
+	ENVIRONMENT_MAP
 };
 
-enum BlendMode
+enum class BlendMode
 {
-	BLEND_MODE_LINEAR,
+	LINEAR,
 	// TODO, more...
 };

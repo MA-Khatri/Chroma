@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "stb_image.h"
-
+#include "common_enums.h"
 
 struct PipelineInfo
 {
@@ -72,7 +72,7 @@ struct Texture
 class Material
 {
 public:
-	Material(TexturePaths texturePaths, int vkPipelineType, int rtMaterialType);
+	Material(TexturePaths texturePaths, int vkPipelineType, MaterialType rtMaterialType);
 	~Material();
 
 	void LoadTextures();
@@ -88,7 +88,7 @@ public:
 	Texture<uint8_t> m_SpecularTexture;
 	Texture<uint8_t> m_NormalTexture;
 
-	int m_RTMaterialType = 0; /* Ray tracing material type -- i.e., MaterialType enum */
+	MaterialType m_RTMaterialType; /* Ray tracing material type -- i.e., MaterialType enum */
 
 	/* Material properties */
 	float m_EtaIn = 1.0f;

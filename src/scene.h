@@ -18,10 +18,24 @@ struct PipelineInfo;
 class Scene
 {
 public:
-	Scene(int scene);
+	enum class SceneType
+	{
+		DEFAULT = 0,
+		CORNELL_BOX,
+		MATERIAL_PREVIEW,
+		COUNT
+	};
+
+	const std::map<SceneType, std::string> m_SceneNames = {
+		{SceneType::DEFAULT, "Default"},
+		{SceneType::CORNELL_BOX, "Cornell Box"},
+		{SceneType::MATERIAL_PREVIEW, "Material Preview"},
+	};
+
+	Scene(SceneType scene);
 	~Scene();
 
-	void MakeScene(int scene);
+	void MakeScene(SceneType scene);
 
 	/* Utility functions for scene setup and rendering with Vulkan */
 	void VkSetup(ImVec2 viewportSize, VkSampleCountFlagBits sampleCount, VkRenderPass& renderPass, std::vector<VkFramebuffer>& framebuffers);
@@ -29,22 +43,7 @@ public:
 	void VkDraw(const Camera& camera);
 	void VkCleanup();
 
-public:
-	enum SceneType
-	{
-		SCENE_DEFAULT = 0,
-		SCENE_CORNELL_BOX,
-		SCENE_MATERIAL_PREVIEW,
-		SCENE_COUNT
-	};
-
-	const std::map<int, std::string> m_SceneNames = {
-		{SCENE_DEFAULT, "Default"},
-		{SCENE_CORNELL_BOX, "Cornell Box"},
-		{SCENE_MATERIAL_PREVIEW, "Material Preview"},
-	};
-
-	int m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
+	BackgroundMode m_BackgroundMode = BackgroundMode::SOLID_COLOR;
 
 	/* Scene clear/background color used if m_BackgroundMode == SOLID_COLOR */
 	glm::vec3 m_ClearColor = glm::vec3(63.0f / 255.0f, 63.0f / 255.0f, 63.0f / 255.0f);
@@ -67,7 +66,7 @@ public:
 		VK_PIPELINE_LINES, /* Displays line list with color */
 	};
 
-	int m_SceneType;
+	SceneType m_SceneType;
 	std::vector<std::shared_ptr<Material>> m_Materials;
 	std::vector<std::shared_ptr<Mesh>> m_Meshes;
 	std::vector<std::shared_ptr<Object>> m_RasterObjects; /* Objects to be drawn in RasterView */

@@ -20,19 +20,19 @@ namespace otx
 
 		switch (optixLaunchParams.camera.projectionMode)
 		{
-		case PROJECTION_MODE_PERSPECTIVE:
+		case ProjectionMode::PERSPECTIVE:
 		{
 			prd.origin = camera.position;
 			prd.in_direction = normalize(camera.direction + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical);
 			break;
 		}
-		case PROJECTION_MODE_ORTHOGRAPHIC:
+		case ProjectionMode::ORTHOGRAPHIC:
 		{
 			prd.origin = camera.position + (screen.x - 0.5f) * camera.horizontal + (screen.y - 0.5f) * camera.vertical;
 			prd.in_direction = camera.direction;
 			break;
 		}
-		case PROJECTION_MODE_THIN_LENS:
+		case ProjectionMode::THIN_LENS:
 		{
 			float2 p = prd.random.RandomInUnitDisk();
 			float3 orgOffset = (p.x * camera.defocusDiskU) + (p.y * camera.defocusDiskV);
@@ -60,7 +60,7 @@ namespace otx
 
 		switch (light.type)
 		{
-		case LIGHT_TYPE_AREA:
+		case LightType::AREA:
 		{
 			/* Sample a point on the triangle */
 			float3 a = light.p1 - light.p0;
@@ -85,7 +85,7 @@ namespace otx
 
 			break;
 		}
-		case LIGHT_TYPE_DELTA:
+		case LightType::DELTA:
 		{
 			//TODO
 			break;
@@ -107,7 +107,7 @@ namespace otx
 
 		switch (light.type)
 		{
-		case LIGHT_TYPE_AREA:
+		case LightType::AREA:
 		{
 			/* Trace the ray and see if it will intersect this triangle */
 			/* https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm */
@@ -157,7 +157,7 @@ namespace otx
 
 			break;
 		}
-		case LIGHT_TYPE_DELTA:
+		case LightType::DELTA:
 		{
 			//TODO
 			break;
@@ -247,9 +247,9 @@ namespace otx
 						0.0f, /* ray time */
 						OptixVisibilityMask(255),
 						OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
-						RAY_TYPE_SHADOW,
-						RAY_TYPE_COUNT,
-						RAY_TYPE_SHADOW,
+						static_cast<int>(RayType::SHADOW),
+						static_cast<int>(RayType::COUNT),
+						static_cast<int>(RayType::SHADOW),
 						s0, s1
 					);
 
@@ -294,9 +294,9 @@ namespace otx
 					0.0f, /* ray time */
 					OptixVisibilityMask(255),
 					OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT | OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
-					RAY_TYPE_SHADOW,
-					RAY_TYPE_COUNT,
-					RAY_TYPE_SHADOW,
+					static_cast<int>(RayType::SHADOW),
+					static_cast<int>(RayType::COUNT),
+					static_cast<int>(RayType::SHADOW),
 					s0, s1
 				);
 
@@ -341,9 +341,9 @@ namespace otx
 				0.0f, /* ray time */
 				OptixVisibilityMask(255),
 				OPTIX_RAY_FLAG_DISABLE_ANYHIT,
-				RAY_TYPE_RADIANCE, /* SBT offset */
-				RAY_TYPE_COUNT, /* SBT stride */
-				RAY_TYPE_RADIANCE, /* miss SBT index */
+				static_cast<int>(RayType::RADIANCE), /* SBT offset */
+				static_cast<int>(RayType::COUNT), /* SBT stride */
+				static_cast<int>(RayType::RADIANCE), /* miss SBT index */
 				u0, u1 /* packed pointer to our PRD */
 			);
 			prd.depth++;
@@ -409,7 +409,7 @@ namespace otx
 	{
 		switch (optixLaunchParams.integrator)
 		{
-		case INTEGRATOR_TYPE_PATH:
+		case IntegratorType::PATH:
 		{
 			PathIntegrator(prd);
 			break;

@@ -80,7 +80,7 @@ void RasterView::OnUpdate()
 	/* If UI caused camera params to change... */
 	if (m_Camera->m_CameraUIUpdate)
 	{
-		if (m_Camera->m_ControlMode == CONTROL_MODE_ORBIT)
+		if (m_Camera->m_ControlMode == ControlMode::ORBIT)
 		{
 			m_Camera->UpdateOrbit();
 		}

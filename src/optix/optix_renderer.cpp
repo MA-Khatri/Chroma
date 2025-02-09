@@ -239,8 +239,8 @@ namespace otx
 	void Optix::CreateMissPrograms()
 	{
 		std::vector<OptixProgramGroupDesc> pgDescs;
-		pgDescs.reserve(RAY_TYPE_COUNT);
-		m_MissPGs.resize(RAY_TYPE_COUNT);
+		pgDescs.reserve(static_cast<int>(RayType::COUNT));
+		m_MissPGs.resize(static_cast<int>(RayType::COUNT));
 
 		OptixProgramGroupOptions pgOptions = {};
 		OptixProgramGroupDesc pgDesc = {};
@@ -260,7 +260,7 @@ namespace otx
 		/* Create the programs */
 		char log[2048];
 		size_t sizeof_log = sizeof(log);
-		for (int i = 0; i < RAY_TYPE_COUNT; i++)
+		for (int i = 0; i < static_cast<int>(RayType::COUNT); i++)
 		{
 			OPTIX_CHECK(optixProgramGroupCreate(
 				m_OptixContext,
@@ -281,10 +281,10 @@ namespace otx
 		std::vector<OptixProgramGroupDesc> pgDescs;
 
 		/*
-		 * We do -1 to remove RAY_TYPE_RADIANCE since we have no radiance-ray specific hitgroup
+		 * We do -1 to remove RayType::RADIANCE since we have no radiance-ray specific hitgroup
 		 * programs but still need to add hitgroup programs for other ray types.
 		 */
-		int nPrograms = MATERIAL_TYPE_COUNT + RAY_TYPE_COUNT - 1;
+		int nPrograms = static_cast<int>(MaterialType::COUNT) + static_cast<int>(RayType::COUNT) - 1;
 
 		m_HitgroupPGs.resize(nPrograms);
 		pgDescs.reserve(nPrograms);
@@ -651,7 +651,7 @@ namespace otx
 			memcpy(instance.transform, m_Transforms[objectID].data(), sizeof(float) * 12); /* Copy over the object's transform */
 			instance.instanceId = objectID;
 			instance.visibilityMask = 255;
-			instance.sbtOffset = objectID * RAY_TYPE_COUNT;			
+			instance.sbtOffset = objectID * static_cast<int>(RayType::COUNT);			
 			instance.flags = OPTIX_INSTANCE_FLAG_NONE;
 			instance.traversableHandle = gasHandle;
 
@@ -824,17 +824,17 @@ namespace otx
 		std::vector<HitgroupRecord> hitgroupRecords;
 		for (int objectID = 0; objectID < nObjects; objectID++)
 		{
-			for (int rayID = 0; rayID < RAY_TYPE_COUNT; rayID++)
+			for (int rayID = 0; rayID < static_cast<int>(RayType::COUNT); rayID++)
 			{
 				auto obj = m_Scene->m_RayTraceObjects[objectID];
 				auto mat = obj->m_Material;
 				HitgroupRecord rec;
 
 				/* RADIANCE rays only */
-				if (rayID == RAY_TYPE_RADIANCE)
+				if (rayID == static_cast<int>(RayType::RADIANCE))
 				{
 					/* Assign the material type (program) here */
-					OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[mat->m_RTMaterialType], &rec));
+					OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[static_cast<int>(mat->m_RTMaterialType)], &rec));
 
 					/* Textures... */
 					if (mat->m_DiffuseTexture.textureID >= 0)
@@ -892,9 +892,9 @@ namespace otx
 					rec.data.clearcoatGloss = mat->m_ClearcoatGloss;
 				}
 				/* Shadow rays only */
-				else if (rayID == RAY_TYPE_SHADOW)
+				else if (rayID == static_cast<int>(RayType::SHADOW))
 				{
-					OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[rayID + MATERIAL_TYPE_COUNT - 1], &rec));
+					OPTIX_CHECK(optixSbtRecordPackHeader(m_HitgroupPGs[rayID + static_cast<int>(MaterialType::COUNT) - 1], &rec));
 				}
 				else
 				{
@@ -1002,7 +1002,7 @@ namespace otx
 			m_MISLights.alloc_and_upload(MISLights);
 			m_LaunchParams.lights = (MISLight*)m_MISLights.d_pointer();
 		}
-		m_LaunchParams.nLights = MISLights.size();
+		m_LaunchParams.nLights = static_cast<int>(MISLights.size());
 	}
 
 
@@ -1015,7 +1015,7 @@ namespace otx
 
 		switch (camera.m_ProjectionMode)
 		{
-		case PROJECTION_MODE_PERSPECTIVE:
+		case ProjectionMode::PERSPECTIVE:
 		{
 			float aspect = m_LaunchParams.frame.size.x / float(m_LaunchParams.frame.size.y);
 			float focal_length = glm::length(camera.m_Orientation);
@@ -1024,17 +1024,17 @@ namespace otx
 			float width = height * aspect;
 			m_LaunchParams.camera.horizontal = width * normalize(cross(m_LaunchParams.camera.direction, ToFloat3(camera.m_Up)));
 			m_LaunchParams.camera.vertical = height * normalize(cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
-			m_LaunchParams.camera.projectionMode = PROJECTION_MODE_PERSPECTIVE;
+			m_LaunchParams.camera.projectionMode = ProjectionMode::PERSPECTIVE;
 			break;
 		}
-		case PROJECTION_MODE_ORTHOGRAPHIC:
+		case ProjectionMode::ORTHOGRAPHIC:
 		{
 			m_LaunchParams.camera.horizontal = m_LaunchParams.frame.size.x * camera.m_OrthoScale * normalize(cross(m_LaunchParams.camera.direction, ToFloat3(camera.m_Up)));
 			m_LaunchParams.camera.vertical = m_LaunchParams.frame.size.y * camera.m_OrthoScale * normalize(cross(m_LaunchParams.camera.horizontal, m_LaunchParams.camera.direction));
-			m_LaunchParams.camera.projectionMode = PROJECTION_MODE_ORTHOGRAPHIC;
+			m_LaunchParams.camera.projectionMode = ProjectionMode::ORTHOGRAPHIC;
 			break;
 		}
-		case PROJECTION_MODE_THIN_LENS:
+		case ProjectionMode::THIN_LENS:
 		{
 			float aspect = m_LaunchParams.frame.size.x / float(m_LaunchParams.frame.size.y);
 			float h = glm::tan(glm::radians(camera.m_VFoV) / 2.0f);
@@ -1047,7 +1047,7 @@ namespace otx
 			m_LaunchParams.camera.horizontal = width * u;
 			m_LaunchParams.camera.vertical = height * v;
 			m_LaunchParams.camera.direction *= camera.m_FocusDistance;
-			m_LaunchParams.camera.projectionMode = PROJECTION_MODE_THIN_LENS;
+			m_LaunchParams.camera.projectionMode = ProjectionMode::THIN_LENS;
 
 			/* Determine the defocus disk basis vectors */
 			float defocusRadius = camera.m_FocusDistance * glm::tan(glm::radians(camera.m_DefocusAngle / 2.0f));
@@ -1278,13 +1278,13 @@ namespace otx
 		ResetAccumulation();
 	}
 
-	void Optix::SetIntegratorType(int integrator)
+	void Optix::SetIntegratorType(IntegratorType integrator)
 	{
 		m_IntegratorType = integrator;
 		ResetAccumulation();
 	}
 
-	void Optix::SetSamplerType(int sampler)
+	void Optix::SetSamplerType(SamplerType sampler)
 	{
 		m_SamplerType = sampler;
 		ResetAccumulation();
@@ -1344,12 +1344,12 @@ namespace otx
 		return m_EnvironmentMapRotation;
 	}
 
-	int Optix::GetIntegratorType()
+	IntegratorType Optix::GetIntegratorType()
 	{
 		return m_IntegratorType;
 	}
 
-	int Optix::GetSamplerType()
+	SamplerType Optix::GetSamplerType()
 	{
 		return m_SamplerType;
 	}

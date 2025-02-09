@@ -74,7 +74,7 @@ namespace otx
 	struct MISLight
 	{
 		/* Index into LightType enum (in common_enums.h) */
-		int type;
+		LightType type;
 
 		/* Emission color */
 		float3 emissionColor;
@@ -112,9 +112,9 @@ namespace otx
 
 	struct LaunchParams
 	{
-		int sampler; /* Index into SamplerType enum */
+		SamplerType sampler; /* Index into SamplerType enum */
 		int nStrata; /* Number of strata along each sampling dimension */
-		int integrator; /* Index into IntegratorType enum */
+		IntegratorType integrator; /* Index into IntegratorType enum */
 
 		struct {
 			float4* colorBuffer;
@@ -130,7 +130,7 @@ namespace otx
 			float3 direction;
 			float3 horizontal;
 			float3 vertical;
-			int projectionMode;
+			ProjectionMode projectionMode;
 
 			/* Specific to thin lens */
 			float3 defocusDiskU;
@@ -143,7 +143,7 @@ namespace otx
 		unsigned long long traversable; /* Optix traversable handle for top-level scene AS */
 
 
-		int backgroundMode;
+		BackgroundMode backgroundMode;
 		float3 clearColor;
 		float3 gradientBottom;
 		float3 gradientTop;

@@ -83,5 +83,5 @@ private:
 	float m_OuterAngle = M_PIf;
 
 	/* Index into blend mode, signifies how to blend intensity between inner and outer angles. */
-	int m_BlendMode = BLEND_MODE_LINEAR;
+	BlendMode m_BlendMode = BlendMode::LINEAR;
 };

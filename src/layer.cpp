@@ -69,14 +69,6 @@ void Layer::SetupDebug(Application* app)
 	{
 		m_SceneNames.push_back(scene->m_SceneNames.at(scene->m_SceneType));
 	}
-	for (auto& controlMode : app->GetMainCamera()->m_ControlModeNames)
-	{
-		m_ControlModeNames.push_back(controlMode.second);
-	}
-	for (auto& projectionMode : app->GetMainCamera()->m_ProjectionModeNames)
-	{
-		m_ProjectionModeNames.push_back(projectionMode.second);
-	}
 }
 
 
@@ -129,15 +121,15 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 		ImGui::Checkbox("Link Cameras", &app->m_LinkCameras);
 		
 		/* Choose camera control mode */
-		int selectedControlMode = camera.m_ControlMode;
-		const char* controlModePreview = m_ControlModeNames[selectedControlMode].c_str();
+		ControlMode selectedControlMode = camera.m_ControlMode;
+		const char* controlModePreview = camera.m_ControlModeNames[selectedControlMode].c_str();
 		if (ImGui::BeginCombo("Control Mode", controlModePreview))
 		{
-			for (int n = 0; n < m_ControlModeNames.size(); n++)
+			for (auto& controlMode : camera.m_ControlModeNames)
 			{
+				ControlMode n = controlMode.first;
 				const bool isSelected = (selectedControlMode == n);
-				if (ImGui::Selectable(m_ControlModeNames[n].c_str(), isSelected)) selectedControlMode = n;
-
+				if (ImGui::Selectable(camera.m_ControlModeNames[n].c_str(), isSelected)) selectedControlMode = n;
 				if (isSelected) ImGui::SetItemDefaultFocus();
 			}
 			ImGui::EndCombo();
@@ -146,15 +138,15 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 		camera.m_ControlMode = selectedControlMode;
 
 		/* Choose camera projection mode */
-		int selectedProjectionMode = camera.m_ProjectionMode;
-		const char* projectionModePreview = m_ProjectionModeNames[selectedProjectionMode].c_str();
+		ProjectionMode selectedProjectionMode = camera.m_ProjectionMode;
+		const char* projectionModePreview = camera.m_ProjectionModeNames[selectedProjectionMode].c_str();
 		if (ImGui::BeginCombo("Projection Mode", projectionModePreview))
 		{
-			for (int n = 0; n < m_ProjectionModeNames.size(); n++)
+			for (auto& projectionMode : camera.m_ProjectionModeNames)
 			{
+				ProjectionMode n = projectionMode.first;
 				const bool isSelected = (selectedProjectionMode == n);
-				if (ImGui::Selectable(m_ProjectionModeNames[n].c_str(), isSelected)) selectedProjectionMode = n;
-
+				if (ImGui::Selectable(camera.m_ProjectionModeNames[n].c_str(), isSelected)) selectedProjectionMode = n;
 				if (isSelected) ImGui::SetItemDefaultFocus();
 			}
 			ImGui::EndCombo();
@@ -163,21 +155,21 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 		camera.m_ProjectionMode = selectedProjectionMode;
 
 		/* Projection mode settings */
-		if (camera.m_ProjectionMode == PROJECTION_MODE_PERSPECTIVE)
+		if (camera.m_ProjectionMode == ProjectionMode::PERSPECTIVE)
 		{
 			float fov = camera.m_VFoV;
 			ImGui::DragFloat("Vertical FoV", &fov, 0.1f, camera.m_MinFoV, camera.m_MaxFoV);
 			if (!Close(fov, camera.m_VFoV)) camera.m_CameraUIUpdate = true;
 			camera.m_VFoV = fov;
 		}
-		else if (camera.m_ProjectionMode == PROJECTION_MODE_ORTHOGRAPHIC)
+		else if (camera.m_ProjectionMode == ProjectionMode::ORTHOGRAPHIC)
 		{
 			float scale = camera.m_OrthoScale;
 			ImGui::DragFloat("Ortho Scale", &scale, camera.m_MinOrthoScale, camera.m_MinOrthoScale);
 			if (!Close(scale, camera.m_OrthoScale)) camera.m_CameraUIUpdate = true;
 			camera.m_OrthoScale = scale;
 		}
-		else if (camera.m_ProjectionMode == PROJECTION_MODE_THIN_LENS)
+		else if (camera.m_ProjectionMode == ProjectionMode::THIN_LENS)
 		{
 			float fov = camera.m_VFoV;
 			ImGui::DragFloat("Vertical FoV", &fov, 0.1f, camera.m_MinFoV, camera.m_MaxFoV);
@@ -196,7 +188,7 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 		}
 
 		/* Control mode settings */
-		if (camera.m_ControlMode == CONTROL_MODE_FREE_FLY)
+		if (camera.m_ControlMode == ControlMode::FREE_FLY)
 		{
 			float posn[3] = { camera.m_Position.x, camera.m_Position.y, camera.m_Position.z };
 			ImGui::DragFloat3("Camera Position", posn, 0.1f);
@@ -210,7 +202,7 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 			if (!Close(newOrnt, camera.m_Orientation)) camera.m_CameraUIUpdate = true;
 			camera.m_Orientation = newOrnt;
 		}
-		else if (camera.m_ControlMode == CONTROL_MODE_ORBIT)
+		else if (camera.m_ControlMode == ControlMode::ORBIT)
 		{
 			float orig[3] = { camera.m_OrbitOrigin.x, camera.m_OrbitOrigin.y, camera.m_OrbitOrigin.z };
 			ImGui::DragFloat3("Orbit Origin", orig, 0.1f);
@@ -241,4 +233,15 @@ void Layer::CommonDebug(Application* app, ImVec2 viewport_size, Camera& camera)
 	}
 	ImGui::Text(m_ScreenshotString.c_str());
 
+
+	ImGui::SeparatorText("Material Properties");
+	{
+		int scene_id = app->GetSceneID();
+		std::shared_ptr<Scene> scene = app->GetScenes()[scene_id];
+		
+		for (std::shared_ptr<Material> material : scene->m_Materials)
+		{
+			//if (material->m_RTMaterialType == )
+		}
+	}
 }

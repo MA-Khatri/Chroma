@@ -4,7 +4,7 @@
 #include "common_enums.h"
 
 
-Scene::Scene(int scene)
+Scene::Scene(SceneType scene)
 {
 	/* === Make Scene Objects === */
 	MakeScene(scene);
@@ -17,7 +17,7 @@ Scene::~Scene()
 }
 
 
-void Scene::MakeScene(int scene)
+void Scene::MakeScene(SceneType scene)
 {
 	/*
 	 * Note: we are loading in all the materials and meshes on the outset.
@@ -40,38 +40,38 @@ void Scene::MakeScene(int scene)
 
 
 	/* === Create materials === */
-	std::shared_ptr<Material> linesMat = std::make_shared<Material>(noTextures, VK_PIPELINE_LINES, -1);
+	std::shared_ptr<Material> linesMat = std::make_shared<Material>(noTextures, VK_PIPELINE_LINES, MaterialType::LAMBERTIAN);
 	linesMat->m_DepthTest = false;
 	m_Materials.push_back(linesMat);
 
-	std::shared_ptr<Material> vikingRoomMat = std::make_shared<Material>(vikingRoomTextures, VK_PIPELINE_FLAT, MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> vikingRoomMat = std::make_shared<Material>(vikingRoomTextures, VK_PIPELINE_FLAT, MaterialType::LAMBERTIAN);
 	m_Materials.push_back(vikingRoomMat);
 
-	std::shared_ptr<Material> charles4Mat = std::make_shared<Material>(charles4Textures, VK_PIPELINE_FLAT, MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> charles4Mat = std::make_shared<Material>(charles4Textures, VK_PIPELINE_FLAT, MaterialType::LAMBERTIAN);
 	m_Materials.push_back(charles4Mat);
 
-	std::shared_ptr<Material> redGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIELECTRIC);
+	std::shared_ptr<Material> redGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MaterialType::DIELECTRIC);
 	redGlassMat->m_ReflectionColor = glm::vec3(1.0f, 0.3f, 0.3f);
 	redGlassMat->m_RefractionColor = glm::vec3(1.0f, 0.3f, 0.3f);
 	redGlassMat->m_EtaIn = 1.5f;
 	redGlassMat->m_Extinction = glm::vec3(0.5f);
 	m_Materials.push_back(redGlassMat);
 
-	std::shared_ptr<Material> greenGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIELECTRIC);
+	std::shared_ptr<Material> greenGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MaterialType::DIELECTRIC);
 	greenGlassMat->m_ReflectionColor = glm::vec3(0.3f, 1.0f, 0.3f);
 	greenGlassMat->m_RefractionColor = glm::vec3(0.3f, 1.0f, 0.3f);
 	greenGlassMat->m_EtaIn = 1.5f;
 	greenGlassMat->m_Extinction = glm::vec3(0.5f);
 	m_Materials.push_back(greenGlassMat);
 
-	std::shared_ptr<Material> blueGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIELECTRIC);
+	std::shared_ptr<Material> blueGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MaterialType::DIELECTRIC);
 	blueGlassMat->m_ReflectionColor = glm::vec3(0.3f, 0.3f, 1.0f);
 	blueGlassMat->m_RefractionColor = glm::vec3(0.3f, 0.3f, 1.0f);
 	blueGlassMat->m_EtaIn = 1.5f;
 	blueGlassMat->m_Extinction = glm::vec3(0.5f);
 	m_Materials.push_back(blueGlassMat);
 
-	std::shared_ptr<Material> transparentGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIELECTRIC);
+	std::shared_ptr<Material> transparentGlassMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MaterialType::DIELECTRIC);
 	transparentGlassMat->m_ReflectionColor = glm::vec3(1.0f);
 	transparentGlassMat->m_RefractionColor = glm::vec3(1.0f);
 	transparentGlassMat->m_EtaIn = 1.5f;
@@ -79,36 +79,36 @@ void Scene::MakeScene(int scene)
 	transparentGlassMat->m_Roughness = 0.0f;
 	m_Materials.push_back(transparentGlassMat);
 
-	std::shared_ptr<Material> greenConductorMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_CONDUCTOR);
+	std::shared_ptr<Material> greenConductorMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MaterialType::CONDUCTOR);
 	greenConductorMat->m_ReflectionColor = glm::vec3(0.2f, 0.7f, 0.2f);
 	greenConductorMat->m_Roughness = 0.0f;
 	m_Materials.push_back(greenConductorMat);
 
-	std::shared_ptr<Material> mirrorMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_CONDUCTOR);
+	std::shared_ptr<Material> mirrorMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MaterialType::CONDUCTOR);
 	mirrorMat->m_ReflectionColor = glm::vec3(0.7f);
 	mirrorMat->m_Roughness = 0.0f;
 	m_Materials.push_back(mirrorMat);
 
-	std::shared_ptr<Material> fullWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> fullWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MaterialType::LAMBERTIAN);
 	fullWhiteMat->m_ReflectionColor = glm::vec3(1.0f);
 	m_Materials.push_back(fullWhiteMat);
 
-	std::shared_ptr<Material> diffuseWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> diffuseWhiteMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MaterialType::LAMBERTIAN);
 	diffuseWhiteMat->m_ReflectionColor = glm::vec3(0.73f);
 	m_Materials.push_back(diffuseWhiteMat);
 
-	std::shared_ptr<Material> diffuseRedMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> diffuseRedMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MaterialType::LAMBERTIAN);
 	diffuseRedMat->m_ReflectionColor = glm::vec3(0.65f, 0.05f, 0.05f);
 	m_Materials.push_back(diffuseRedMat);
 
-	std::shared_ptr<Material> diffuseGreenMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> diffuseGreenMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MaterialType::LAMBERTIAN);
 	diffuseGreenMat->m_ReflectionColor = glm::vec3(0.12f, 0.45f, 0.15f);
 	m_Materials.push_back(diffuseGreenMat);
 
-	std::shared_ptr<Material> blueCheckerMat = std::make_shared<Material>(blueCheckerTextures, VK_PIPELINE_FLAT, MATERIAL_TYPE_LAMBERTIAN);
+	std::shared_ptr<Material> blueCheckerMat = std::make_shared<Material>(blueCheckerTextures, VK_PIPELINE_FLAT, MaterialType::LAMBERTIAN);
 	m_Materials.push_back(blueCheckerMat);
 
-	std::shared_ptr<Material> whiteDiffuseLightMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_DIFFUSE_LIGHT);
+	std::shared_ptr<Material> whiteDiffuseLightMat = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MaterialType::DIFFUSE_LIGHT);
 	whiteDiffuseLightMat->m_EmissionColor = glm::vec3(50.0f);
 	m_Materials.push_back(whiteDiffuseLightMat);
 
@@ -137,9 +137,9 @@ void Scene::MakeScene(int scene)
 	/* === Scene Setup === */
 	switch (scene)
 	{
-	case SCENE_DEFAULT:
+	case SceneType::DEFAULT:
 	{
-		m_SceneType = SCENE_DEFAULT;
+		m_SceneType = SceneType::DEFAULT;
 
 		/* === Scene Objects === */
 		//std::shared_ptr<Object> plane0 = std::make_shared<Object>(planeMesh, fullWhiteMat);
@@ -191,23 +191,23 @@ void Scene::MakeScene(int scene)
 		//PushObjectLight(light);
 
 		/* === Background === */
-		//m_BackgroundMode = BACKGROUND_MODE_GRADIENT;
+		//m_BackgroundMode = BackgroundMode::GRADIENT;
 		//m_GradientBottom = glm::vec3(0.3f);
 		//m_GradientTop = glm::vec3(1.0f);
 
-		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
+		m_BackgroundMode = BackgroundMode::SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);
 
-		m_BackgroundMode = BACKGROUND_MODE_ENVIRONMENT_MAP;
+		m_BackgroundMode = BackgroundMode::ENVIRONMENT_MAP;
 		//m_EnvironmentMapTexture.filePath = "res/backgrounds/overcast_soil_puresky_4k.hdr";
 		//m_EnvironmentMapTexture.filePath = "res/backgrounds/kloofendal_48d_partly_cloudy_puresky_4k.hdr";
 		m_EnvironmentMapTexture.filePath = "res/backgrounds/christmas_photo_studio_07_4k.hdr";
 
 		break;
 	}
-	case SCENE_CORNELL_BOX:
+	case SceneType::CORNELL_BOX:
 	{
-		m_SceneType = SCENE_CORNELL_BOX;
+		m_SceneType = SceneType::CORNELL_BOX;
 
 		/* === Walls === */
 		std::shared_ptr<Object> bottom = std::make_shared<Object>(planeMesh, diffuseWhiteMat);
@@ -266,20 +266,20 @@ void Scene::MakeScene(int scene)
 		sphere->Scale(2.0f);
 		PushToBoth(sphere);
 
-		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
+		m_BackgroundMode = BackgroundMode::SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);
 
 		break;
 	}
-	case SCENE_MATERIAL_PREVIEW:
+	case SceneType::MATERIAL_PREVIEW:
 	{
-		m_SceneType = SCENE_MATERIAL_PREVIEW;
+		m_SceneType = SceneType::MATERIAL_PREVIEW;
 
-		std::shared_ptr<Material> disney01 = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MATERIAL_TYPE_PRINCIPLED);
-		disney01->m_BaseColor = glm::vec3(0.8f);
-		disney01->m_Roughness = 0.5f;
+		std::shared_ptr<Material> disney01 = std::make_shared<Material>(noTextures, VK_PIPELINE_SOLID, MaterialType::PRINCIPLED);
+		disney01->m_BaseColor = glm::vec3(0.43f);
+		disney01->m_Roughness = 1.0f;
 		disney01->m_Subsurface = 0.0f;
-		disney01->m_Metallic = 1.0f;
+		disney01->m_Metallic = 0.0f;
 		disney01->m_Anisotropic = 0.0f;
 		disney01->m_Clearcoat = 0.0f;
 		disney01->m_SpecularTransmission = 0.0f;
@@ -310,14 +310,14 @@ void Scene::MakeScene(int scene)
 		PushObjectLight(light);
 
 		/* === Background === */
-		//m_BackgroundMode = BACKGROUND_MODE_GRADIENT;
+		//m_BackgroundMode = BackgroundMode::GRADIENT;
 		//m_GradientBottom = glm::vec3(0.3f);
 		//m_GradientTop = glm::vec3(1.0f);
 
-		m_BackgroundMode = BACKGROUND_MODE_SOLID_COLOR;
+		m_BackgroundMode = BackgroundMode::SOLID_COLOR;
 		m_ClearColor = glm::vec3(0.0f);
 
-		m_BackgroundMode = BACKGROUND_MODE_ENVIRONMENT_MAP;
+		m_BackgroundMode = BackgroundMode::ENVIRONMENT_MAP;
 		//m_EnvironmentMapTexture.filePath = "res/backgrounds/overcast_soil_puresky_4k.hdr";
 		//m_EnvironmentMapTexture.filePath = "res/backgrounds/kloofendal_48d_partly_cloudy_puresky_4k.hdr";
 		m_EnvironmentMapTexture.filePath = "res/backgrounds/christmas_photo_studio_07_4k.hdr";
@@ -327,7 +327,7 @@ void Scene::MakeScene(int scene)
 	// TODO: more?
 	}
 
-	if (m_BackgroundMode == BACKGROUND_MODE_ENVIRONMENT_MAP)
+	if (m_BackgroundMode == BackgroundMode::ENVIRONMENT_MAP)
 	{
 		m_EnvironmentMapTexture.LoadTexture();
 	}

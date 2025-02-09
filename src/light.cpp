@@ -2,7 +2,7 @@
 
 AreaLight::AreaLight(Vertex v0, Vertex v1, Vertex v2, glm::vec3 radiantExitance, glm::mat4 transform /* = glm::mat4(1.0f)*/, glm::mat4 nTransform /* = glm::mat4(1.0f)*/)
 {
-	m_MISLight.type = LIGHT_TYPE_AREA;
+	m_MISLight.type = LightType::AREA;
 
 	/* === Pre-apply transformations === */
 	m_MISLight.p0 = ToFloat3(glm::vec3(transform * glm::vec4(v0.posn, 1.0f)));

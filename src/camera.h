@@ -28,19 +28,19 @@ private:
 
 public:
 
-	std::map<int, std::string> m_ControlModeNames = {
-		{CONTROL_MODE_FREE_FLY, "Free Fly"},
-		{CONTROL_MODE_ORBIT, "Orbit"},
+	std::map<ControlMode, std::string> m_ControlModeNames = {
+		{ControlMode::FREE_FLY, "Free Fly"},
+		{ControlMode::ORBIT, "Orbit"},
 	};
 
-	std::map<int, std::string> m_ProjectionModeNames = {
-		{PROJECTION_MODE_PERSPECTIVE, "Perspective"},
-		{PROJECTION_MODE_ORTHOGRAPHIC, "Orthographic"},
-		{PROJECTION_MODE_THIN_LENS, "Thin Lens"},
+	std::map<ProjectionMode, std::string> m_ProjectionModeNames = {
+		{ProjectionMode::PERSPECTIVE, "Perspective"},
+		{ProjectionMode::ORTHOGRAPHIC, "Orthographic"},
+		{ProjectionMode::THIN_LENS, "Thin Lens"},
 	};
 
-	int m_ControlMode = CONTROL_MODE_FREE_FLY;
-	int m_ProjectionMode = PROJECTION_MODE_PERSPECTIVE;
+	ControlMode m_ControlMode = ControlMode::FREE_FLY;
+	ProjectionMode m_ProjectionMode = ProjectionMode::PERSPECTIVE;
 
 	bool m_CameraUIUpdate = false; /* Set to true if camera values changed by UI */
 

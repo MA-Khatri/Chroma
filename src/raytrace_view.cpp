@@ -103,7 +103,7 @@ void RayTraceView::OnUpdate()
 	/* If UI caused camera params to change... */
 	if (m_Camera->m_CameraUIUpdate)
 	{
-		if (m_Camera->m_ControlMode == CONTROL_MODE_ORBIT)
+		if (m_Camera->m_ControlMode == ControlMode::ORBIT)
 		{
 			m_Camera->UpdateOrbit();
 		}
@@ -144,7 +144,7 @@ void RayTraceView::OnUpdate()
 
 			/* Record time taken and add to frame rate/time graphs */
 			auto end = std::chrono::system_clock::now();
-			float renderTime = std::chrono::duration_cast<std::chrono::microseconds>(end - m_LastRenderCallTime).count();
+			float renderTime = static_cast<float>(std::chrono::duration_cast<std::chrono::microseconds>(end - m_LastRenderCallTime).count());
 			m_FrameTimes.Add(renderTime * 1e-3f);
 			m_FrameRates.Add(1.0f / (renderTime * 1e-6f));
 		}
@@ -209,18 +209,25 @@ void RayTraceView::OnUIRender()
 				m_OptixRenderer->SetDenoiserEnabled(tempDenoise);
 			}
 
-			/* Integrator and sampler names for drop downs. Must match the order in 'common_enums.h' */
-			std::vector<std::string> IntegratorNames = { "Path" };
-			std::vector<std::string> SamplerNames = { "Independent", "Stratified", /*"Multi-Jitter"*/ };
+			/* Integrator and sampler names for drop downs, based on common_enums.h */
+			std::map<IntegratorType, std::string> integratorNames = { 
+				{ IntegratorType::PATH, "Path" },
+			};
+			std::map<SamplerType, std::string> samplerNames = {
+				{ SamplerType::INDEPENDENT, "Independent" },
+				{ SamplerType::STRATIFIED, "Stratified" },
+				// { SamplerType::MULTIJITTER, "Multi-jitter" },
+			};
 
-			int tempIntegrator = m_OptixRenderer->GetIntegratorType();
-			const char* selectedIntegratorPreview = IntegratorNames[tempIntegrator].c_str();
+			IntegratorType tempIntegrator = m_OptixRenderer->GetIntegratorType();
+			const char* selectedIntegratorPreview = integratorNames[tempIntegrator].c_str();
 			if (ImGui::BeginCombo("Integrator", selectedIntegratorPreview))
 			{
-				for (int n = 0; n < IntegratorNames.size(); n++)
+				for (auto& integrator : integratorNames)
 				{
+					IntegratorType n = integrator.first;
 					const bool isSelected = (tempIntegrator == n);
-					if (ImGui::Selectable(IntegratorNames[n].c_str(), isSelected))
+					if (ImGui::Selectable(integratorNames[n].c_str(), isSelected))
 					{
 						tempIntegrator = n;
 					}
@@ -236,7 +243,7 @@ void RayTraceView::OnUIRender()
 				m_OptixRenderer->SetIntegratorType(tempIntegrator);
 			}
 
-			if (m_OptixRenderer->GetIntegratorType() == INTEGRATOR_TYPE_PATH)
+			if (m_OptixRenderer->GetIntegratorType() == IntegratorType::PATH)
 			{
 				float tempLSR = m_OptixRenderer->GetLightSampleRate();
 				ImGui::SliderFloat("Light Sample Rate", &tempLSR, 0.0f, 1.0f);
@@ -247,14 +254,15 @@ void RayTraceView::OnUIRender()
 			}
 
 
-			int tempSampler = m_OptixRenderer->GetSamplerType();
-			const char* selectedSamplerPreview = SamplerNames[tempSampler].c_str();
+			SamplerType tempSampler = m_OptixRenderer->GetSamplerType();
+			const char* selectedSamplerPreview = samplerNames[tempSampler].c_str();
 			if (ImGui::BeginCombo("Sampler", selectedSamplerPreview))
 			{
-				for (int n = 0; n < SamplerNames.size(); n++)
+				for (auto& sampler : samplerNames)
 				{
+					SamplerType n = sampler.first;
 					const bool isSelected = (tempSampler == n);
-					if (ImGui::Selectable(SamplerNames[n].c_str(), isSelected))
+					if (ImGui::Selectable(samplerNames[n].c_str(), isSelected))
 					{
 						tempSampler = n;
 					}
@@ -267,7 +275,7 @@ void RayTraceView::OnUIRender()
 			}
 			if (tempSampler != m_OptixRenderer->GetSamplerType()) m_OptixRenderer->SetSamplerType(tempSampler);
 
-			if (tempSampler == SAMPLER_TYPE_STRATIFIED || tempSampler == SAMPLER_TYPE_MULTIJITTER)
+			if (tempSampler == SamplerType::STRATIFIED || tempSampler == SamplerType::MULTIJITTER)
 			{
 				int tempStrata = m_OptixRenderer->GetStrataCount();
 				ImGui::SliderInt("Strata Per Dimension", &tempStrata, 1, 16);

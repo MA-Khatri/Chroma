@@ -287,7 +287,7 @@ namespace otx
 		uint32_t state;
 
 		/* Index into SampleType enum -- used to determine method for generating 1D/2D samples */
-		int samplerType;
+		SamplerType samplerType;
 
 		/* Used in some samplers to determine the number of strata to divide the sample domain into, along each dimension */
 		int nStrata;
@@ -304,12 +304,12 @@ namespace otx
 			 */
 		}
 
-		__forceinline__ __host__ __device__ PCG(uint32_t seed, int type, int strata)
+		__forceinline__ __host__ __device__ PCG(uint32_t seed, SamplerType type, int strata)
 		{
 			Init(seed, type, strata);
 		}
 
-		__forceinline__ __host__ __device__ void Init(uint32_t seed, int type, int strata)
+		__forceinline__ __host__ __device__ void Init(uint32_t seed, SamplerType type, int strata)
 		{
 			state = seed;
 			samplerType = type;
@@ -345,19 +345,19 @@ namespace otx
 
 			switch (samplerType)
 			{
-			case SAMPLER_TYPE_INDEPENDENT:
+			case SamplerType::INDEPENDENT:
 			{
 				sample = RandomValue();
 				break;
 			}
-			case SAMPLER_TYPE_STRATIFIED:
+			case SamplerType::STRATIFIED:
 			{
 				int stratum = (int)(RandomValue() * (float)nStrata); /* Pick a random stratum */
 				float offset = (float)stratum * stratumWidth;
 				sample = offset + RandomValue() * stratumWidth;
 				break;
 			}
-			case SAMPLER_TYPE_MULTIJITTER:
+			case SamplerType::MULTIJITTER:
 			{
 				// TODO
 				// https://graphics.pixar.com/library/MultiJitteredSampling/
@@ -375,12 +375,12 @@ namespace otx
 
 			switch (samplerType)
 			{
-			case SAMPLER_TYPE_INDEPENDENT:
+			case SamplerType::INDEPENDENT:
 			{
 				sample = make_float2(RandomValue(), RandomValue());
 				break;
 			}
-			case SAMPLER_TYPE_STRATIFIED:
+			case SamplerType::STRATIFIED:
 			{
 				int stratum = (int)(RandomValue() * (float)(nStrata * nStrata)); /* Pick a random stratum in 2D */
 				float offsetX = (float)(stratum % nStrata) * stratumWidth;
@@ -388,7 +388,7 @@ namespace otx
 				sample = make_float2(offsetX + RandomValue() * stratumWidth, offsetY + RandomValue() * stratumWidth);
 				break;
 			}
-			case SAMPLER_TYPE_MULTIJITTER:
+			case SamplerType::MULTIJITTER:
 			{
 				// TODO
 				// https://graphics.pixar.com/library/MultiJitteredSampling/
