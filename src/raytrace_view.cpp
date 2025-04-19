@@ -325,7 +325,7 @@ std::string RayTraceView::TakeScreenshot()
 	int width = static_cast<int>(m_ViewportSize.x);
 	int height = static_cast<int>(m_ViewportSize.y);
 
-	std::vector<uint32_t> out = RotateAndFlip(m_RenderedImagePixels, width, height);
+	std::vector<uint32_t> out = FlipImageVertically(m_RenderedImagePixels, width, height);
 
 	/* Write to file */
 	return WriteImageToFile(

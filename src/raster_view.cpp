@@ -248,7 +248,7 @@ std::string RasterView::TakeScreenshot()
 		data += subResourceLayout.rowPitch;
 	}
 
-	std::vector<uint32_t> out = RotateAndFlip(pixels, width, height);
+	std::vector<uint32_t> out = FlipImageVertically(pixels, width, height);
 
 	/* Save cpt image to file */
 	std::string msg = WriteImageToFile(

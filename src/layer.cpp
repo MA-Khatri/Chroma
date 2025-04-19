@@ -26,20 +26,15 @@ std::string GetDateTimeStr()
 }
 
 
-std::vector<uint32_t> RotateAndFlip(const std::vector<uint32_t>& in, uint32_t width, uint32_t height)
+std::vector<uint32_t> FlipImageVertically(const std::vector<uint32_t>& in, uint32_t width, uint32_t height)
 {
-	/* Rotate image ? */
-	std::vector<uint32_t> copy = in;
-	std::reverse(copy.begin(), copy.end());
-	std::vector<uint32_t> out;
-	out.resize(copy.size());
+	std::vector<uint32_t> out(in.size());
 
-	/* Flip image horizontally */
 	for (uint32_t j = 0; j < height; j++)
 	{
 		for (uint32_t i = 0; i < width; i++)
 		{
-			out[(j * width) + i] = copy[(j * width) + (width - i - 1)];
+			out[(j * width) + i] = in[(height - j - 1) * width + i];
 		}
 	}
 
