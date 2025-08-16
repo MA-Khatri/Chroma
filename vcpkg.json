@@ -1,0 +1,19 @@
+{
+    "name": "chroma",
+    "version-string": "0.1.0",
+    "dependencies": [
+        "plog",
+        "vulkan",
+        "glm",
+        {
+            "name": "sdl3",
+            "features": [
+                "vulkan"
+            ]
+        },
+        "sdl3-image",
+        "shaderc",
+        "stb",
+        "tinyobjloader"
+    ]
+}

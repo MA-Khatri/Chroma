@@ -1,43 +1,23 @@
-#define GLM_FORCE_CUDA /* Make sure this is defined before any include <glm/glm.hpp> */
+#include "application.hpp"
 
-#include "application.h"
-#include "raster_view.h"
-#include "raytrace_view.h"
+#include <plog/Appenders/ColorConsoleAppender.h>
+#include <plog/Appenders/RollingFileAppender.h>
+#include <plog/Formatters/TxtFormatter.h>
+#include <plog/Initializers/RollingFileInitializer.h>
+#include <plog/Log.h>
 
-int main()
-{
-	/* Initialize the application */
-	Application* app = new Application();
+int main() {
 
-	/* Make scenes */
-	std::vector<std::shared_ptr<Scene>> scenes;
-	scenes.push_back(std::make_shared<Scene>(Scene::SceneType::DEFAULT));
-	scenes.push_back(std::make_shared<Scene>(Scene::SceneType::CORNELL_BOX));
-	scenes.push_back(std::make_shared<Scene>(Scene::SceneType::MATERIAL_PREVIEW));
-	app->SetScenes(scenes);
+  // Initialize logger with up to 3, 10 MB files (stored in build dir)
+  static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
+  static plog::RollingFileAppender<plog::TxtFormatter> fileAppender(
+      "log.txt", 10 * 1024 * 1024, 3);
+  plog::init(plog::debug, &fileAppender).addAppender(&consoleAppender);
 
-	/* Create and initialize layers */
-	app->PushLayer(std::make_shared<RasterView>());
-	app->PushLayer(std::make_shared<RayTraceView>());
+  // Initialize singleton app instance
+  Application *app = Application::GetInstance();
 
+  app->Run();
 
-	/* App menubar setup */
-	app->SetMenubarCallback([app]()
-		{
-			if (ImGui::BeginMenu("File"))
-			{
-				if (ImGui::MenuItem("Exit"))
-				{
-					app->Close();
-				}
-				ImGui::EndMenu();
-			}
-		});
-
-
-	/* Run the application */
-	app->Run();
-
-
-	return 0;
+  return 0;
 }

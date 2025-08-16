@@ -1,0 +1,5 @@
+CompileFlags:
+  CompilationDatabase: build/ninja-vcpkg-release
+
+InlayHints:
+  Enabled: No

@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "iostream": "cpp"
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/ninja-vcpkg-release/compile_commands.json",
+    "cmake.sourceDirectory": "${workspaceFolder}",
+    "cmake.buildDirectory": "${workspaceFolder}/build/ninja-vcpkg-release",
+    "cmake.configureOnOpen": true,
+    "clangd.arguments": [
+        "--function-arg-placeholders=0"
+    ]
+}

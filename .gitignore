@@ -402,3 +402,5 @@ FodyWeavers.xsd
 output/*
 *.cubin
 /src/optix/shaders/compiled
+
+build/
