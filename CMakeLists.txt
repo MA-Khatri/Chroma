@@ -62,11 +62,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE $<IF:$<TARGET_EXISTS:SDL3_image::S
 find_package(unofficial-shaderc CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::shaderc::shaderc)
 
-# # TODO: Switch from stb to sdl3's image library
-# find_package(Stb REQUIRED)
-# target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
-# target_link_libraries(${PROJECT_NAME} PRIVATE Stb)
-
 # TODO: Switch to better mesh loader (assimp?)
 find_package(tinyobjloader CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE tinyobjloader::tinyobjloader)

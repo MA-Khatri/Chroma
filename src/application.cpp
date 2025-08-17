@@ -83,7 +83,7 @@ void Application::Init() {
       SDL_Vulkan_GetInstanceExtensions(&sdl_extensions_count);
   for (uint32_t n = 0; n < sdl_extensions_count; n++)
     extensions.push_back(sdl_extensions[n]);
-  // SetupVulkan(extensions); // TODO
+  vk::SetupVulkan(extensions);
 
   // Create window surface
   VkSurfaceKHR surface;
@@ -142,6 +142,7 @@ void Application::Init() {
 
 void Application::NextFrame() {
   // TODO
+  m_Running = false;
 
   int64_t timeNS = GetTimeNS();
   m_FrameTimeNS = timeNS - m_LastFrameTimeNS;

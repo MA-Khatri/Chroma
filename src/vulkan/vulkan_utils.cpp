@@ -1,7 +1,9 @@
 #include "vulkan_utils.hpp"
 
+#include <plog/Log.h>
 #include <stdlib.h>
 #include <vector>
+#include <vulkan/vulkan_core.h>
 
 // #include "shader.hpp"
 
@@ -36,8 +38,7 @@ VkDebugReportCallbackEXT DebugReport = VK_NULL_HANDLE;
 VkAllocationCallbacks *Allocator = nullptr;
 
 // Per-frame-in-flight
-std::vector<std::vector<VkCommandBuffer>>
-    AllocatedGraphicsCommandBuffers{};
+std::vector<std::vector<VkCommandBuffer>> AllocatedGraphicsCommandBuffers{};
 std::vector<std::vector<std::function<void()>>> ResourceFreeQueue{};
 
 // Unlike g_MainWindowData.FrameIndex, this is not the the swapchain image index
@@ -48,16 +49,11 @@ uint32_t CurrentFrameIndex = 0;
 // === Error Handling Utilities ===
 // ================================
 
-void glfw_error_callback(int error, const char *description) {
-  std::cerr << "GLFW Error " << error << " : " << description << std::endl;
-}
-
+// TODO: Modify this to include more debug info like the calling line number
 void check_vk_result(VkResult err) {
   if (err == 0)
     return;
-  std::cerr << "[Vulkan] Error: VkResult = " << err << std::endl;
-  if (err < 0)
-    exit(-1);
+  PLOG_ERROR << "[Vulkan] Error: VkResult = " << err;
 }
 
 #ifdef APP_USE_VULKAN_DEBUG_REPORT
@@ -72,9 +68,8 @@ debug_report(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType,
   (void)pUserData;
   (void)pLayerPrefix; // Unused arguments
 
-  std::cerr << "[Vulkan] Debug report from ObjectType: " << objectType
-            << " Message: " << pMessage << std::endl
-            << std::endl;
+  PLOG_ERROR << "[Vulkan] Debug report from ObjectType: " << objectType
+             << " Message: " << pMessage;
 
   return VK_FALSE;
 }
@@ -216,9 +211,9 @@ VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates,
     }
   }
 
-  std::cerr << "FindSupportedFormat(): Error! Failed to find supported format!"
-            << std::endl;
-  exit(-1);
+  PLOG_ERROR
+      << "FindSupportedFormat(): Error! Failed to find supported format!";
+  return VK_FORMAT_UNDEFINED;
 }
 
 VkFormat FindDepthFormat() {
@@ -257,10 +252,9 @@ void SetupVulkanWindow(ImGui_ImplVulkanH_Window *wd, VkSurfaceKHR surface,
   vkGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, GraphicsQueueFamily,
                                        wd->Surface, &res);
   if (res != VK_TRUE) {
-    std::cerr << "SetupVulkanWindow(): Error! No WSI support on selected "
-                 "physical device"
-              << std::endl;
-    exit(-1);
+    PLOG_FATAL << "SetupVulkanWindow(): Fatal error! No WSI support on "
+                  "selected physical device";
+    return;
   }
 
   // Select surface format
@@ -394,11 +388,9 @@ void SelectPhysicalDevice() {
   }
 
   // If we get here, no GPUs were found
-  std::cerr << "SelectPhysicalDevice(): Error! Failed to find GPU with Vulkan "
-               "support!"
-            << std::endl;
+  PLOG_FATAL << "SelectPhysicalDevice(): Fatal error! Failed to find GPU with "
+                "Vulkan support!";
   PhysicalDevice = VK_NULL_HANDLE;
-  exit(-1);
   return;
 }
 
@@ -425,19 +417,16 @@ void GetQueueFamilies() {
 
   // Print a warning if any of the queue families are missing
   if (GraphicsQueueFamily == (uint32_t)-1) {
-    std::cerr << "GetQueueFamilies(): Warning! Missing graphics queue family "
-                 "on selected device!"
-              << std::endl;
+    PLOG_WARNING << "GetQueueFamilies(): Warning! Missing graphics queue "
+                    "family on selected device!";
   }
   if (ComputeQueueFamily == (uint32_t)-1) {
-    std::cerr << "GetQueueFamilies(): Warning! Missing compute queue family on "
-                 "selected device!"
-              << std::endl;
+    PLOG_WARNING << "GetQueueFamilies(): Warning! Missing compute queue family "
+                    "on selected device!";
   }
   if (TransferQueueFamily == (uint32_t)-1) {
-    std::cerr << "GetQueueFamilies(): Warning! Missing transfer queue family "
-                 "on selected device!"
-              << std::endl;
+    PLOG_WARNING << "GetQueueFamilies(): Warning! Missing transfer queue "
+                    "family on selected device!";
   }
 }
 
@@ -1024,7 +1013,7 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
   dynamicState.pDynamicStates = dynamicStates.data();
 
   // ====== Pipeline layout ======
-  // what we use to determine push constants/uniforms being sent to the shaders
+  // What we use to determine push constants/uniforms being sent to the shaders
 
   // We can send upto 2 4x4 matrices as push constants (128 bytes)
   VkPushConstantRange pushConstant{};
@@ -1058,7 +1047,7 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
   pipelineInfo.renderPass = renderPass;
   // Index of the subpass where this graphics pipeline will be used
   pipelineInfo.subpass = 0;
-  // optional -- used if you are creating derivative pipelines
+  // Optional -- used if you are creating derivative pipelines
   pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
   pipelineInfo.basePipelineIndex = -1; // optional
   err = vkCreateGraphicsPipelines(Device, VK_NULL_HANDLE, 1, &pipelineInfo,
@@ -1169,9 +1158,8 @@ uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     }
   }
 
-  std::cerr << "FindMemoryType(): Error! Failed to find suitable memory type!"
-            << std::endl;
-  exit(-1);
+  PLOG_ERROR << "FindMemoryType(): Error! Failed to find suitable memory type!";
+  return UINT32_MAX; // Return invalid memory type
 }
 
 void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
@@ -1540,7 +1528,7 @@ void TransitionImageLayout(VkCommandBuffer &commandBuffer, VkImage image,
 
     sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
     // May need to change the destination stage if we are using the texture
-    // *earlier than the fragment shader(e.g., using displacement maps in
+    // earlier than the fragment shader(e.g., using displacement maps in
     // vertex/tes/geometry shader)
     destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
   } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
@@ -1575,13 +1563,10 @@ void TransitionImageLayout(VkCommandBuffer &commandBuffer, VkImage image,
 
     sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
     destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-  }
-
-  else {
-    std::cerr << "TransitionImageLayout(): Unsupported layout transition! Old "
-                 "layout: "
-              << oldLayout << ", new layout: " << newLayout << std::endl;
-    exit(-1);
+  } else {
+    PLOG_ERROR << "TransitionImageLayout(): Unsupported layout transition! Old "
+                  "layout: "
+               << oldLayout << ", new layout: " << newLayout;
   }
 
   vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0,
@@ -1599,8 +1584,7 @@ void TransitionImageLayout(VkImage image, VkFormat format,
 
 void CopyBufferToImage(VkCommandBuffer &commandBuffer, VkBuffer buffer,
                        VkImage image, uint32_t width, uint32_t height) {
-  // Specify which part of the buffer is going to be copied to which part of the
-  // image
+  // Specify which part of buffer is going to be copied to which part of image
   VkBufferImageCopy region{};
 
   // Offset into buffer at which values start
@@ -1699,14 +1683,13 @@ void GenerateMipMaps(VkImage image, VkFormat imageFormat, int32_t texWidth,
                                       &formatProperties);
   if (!(formatProperties.optimalTilingFeatures &
         VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
-    std::cerr << "GenerateMipMaps(): Texture image format does not support "
-                 "linear blitting!"
-              << std::endl;
-    exit(-1);
+    PLOG_ERROR << "GenerateMipMaps(): Texture image format does not support "
+                  "linear blitting!";
     // TODO: If this happens, we can try to convert to an image format that does
     // support linear filtering. Otherwise, we could also try to pre-make the
     // mip map levels using stb_image_resize and load them in so that we are not
     // generating mip maps at run time.
+    return;
   }
 
   VkCommandBuffer commandBuffer = GetGraphicsCommandBuffer();

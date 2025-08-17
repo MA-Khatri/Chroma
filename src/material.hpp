@@ -1,11 +1,13 @@
 #pragma once
 
-#include <iostream>
+#include <cstdint>
 #include <string>
 #include <vector>
 
+#include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
 #include <glm/glm.hpp>
-// #include <stb_image.h>
+#include <plog/Log.h>
 #include <vulkan/vulkan.h>
 
 struct PipelineInfo {
@@ -29,37 +31,48 @@ template <typename T> struct Texture {
   int textureID = -1;    // textureID set in optix_renderer -> CreateTextures()
 
   void LoadTexture() {
-    int texWidth, texHeight, texChannels;
-    T *data;
-    // if (std::is_same<T, uint8_t>::value) {
-    //   // Note: we load image with alpha channel even if it doesn't have one
-    //   data = (T *)stbi_load(filePath.c_str(), &texWidth, &texHeight,
-    //                         &texChannels, STBI_rgb_alpha);
-    // } else if (std::is_same<T, float>::value) {
-    //   data = (T *)stbi_loadf(filePath.c_str(), &texWidth, &texHeight,
-    //                          &texChannels, STBI_rgb_alpha);
-    // } else {
-    //   std::cerr << "LoadTexture(): Error! Unsupported texture format!"
-    //             << std::endl;
-    // }
-
-    if (!data) {
-      std::cerr << "LoadTexture(): Error! Failed to load image " << filePath
-                << " ! " << std::endl;
-      exit(-1);
+    SDL_Surface *imageSurface = IMG_Load(filePath.c_str());
+    if (!imageSurface) {
+      PLOG_ERROR << "LoadTexture(): Error! Failed to load image " << filePath
+                 << "! SDL_Image Error: " << SDL_GetError();
+      return;
     }
 
-#ifdef _DEBUG
-    if (texChannels != 4)
-      std::cout << "Warning: loaded texture only has " << texChannels
-                << " channels. Force loaded with 4 channels!" << std::endl;
-#endif
-    resolution = glm::ivec3(texWidth, texHeight, 4);
+    // Convert surface to RGBA32 format
+    SDL_Surface *convertedSurface =
+        SDL_ConvertSurface(imageSurface, SDL_PIXELFORMAT_RGBA32);
+    SDL_DestroySurface(imageSurface); // Free original surface
+    if (!convertedSurface) {
+      PLOG_ERROR
+          << "LoadTexture(): Error! Failed to convert image to RGBA32 format: "
+          << SDL_GetError();
+      return;
+    }
 
-    // Copy pixels to local std::vector and free originally read data
-    pixels = std::vector<T>(
-        data, data + (resolution.x * resolution.y * resolution.z));
-    // stbi_image_free(data);
+    int texWidth = convertedSurface->w;
+    int texHeight = convertedSurface->h;
+    int texChannels = 4;
+    resolution = glm::ivec3(texWidth, texHeight, texChannels);
+    size_t dataSize = texWidth * texHeight * texChannels;
+
+    if (std::is_same<T, uint8_t>::value) {
+      uint8_t *data = static_cast<uint8_t *>(convertedSurface->pixels);
+      pixels.assign(data, data + dataSize);
+    } else if (std::is_same<T, float>::value) {
+      // Convert uint8_t to float
+      uint8_t *data = static_cast<uint8_t *>(convertedSurface->pixels);
+      pixels.resize(dataSize);
+      for (size_t i = 0; i < dataSize; ++i) {
+        pixels[i] = static_cast<float>(data[i]) / 255.0f;
+      }
+    } else {
+      PLOG_ERROR << "LoadTexture(): Error! Unsupported texture format!";
+      SDL_DestroySurface(convertedSurface);
+      return;
+    }
+
+    SDL_DestroySurface(convertedSurface);
+    return;
   }
 };
 

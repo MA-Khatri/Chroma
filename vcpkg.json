@@ -13,7 +13,6 @@
         },
         "sdl3-image",
         "shaderc",
-        "stb",
         "tinyobjloader"
     ]
 }
