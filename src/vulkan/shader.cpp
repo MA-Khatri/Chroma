@@ -6,8 +6,8 @@
 
 #include "vulkan_utils.hpp"
 
-bool print_glsl_code = false;
-bool print_spirv_code = false;
+constexpr bool PRINT_GLSL_CODE = false;
+constexpr bool PRINT_SPIRV_CODE = false;
 
 namespace vk {
 std::string ParseShaderFile(std::string filename) {
@@ -77,7 +77,7 @@ void PreprocessShader(CompilationInfo &info) {
 
   // Print output if in debug and set to print glsl code
 #ifdef _DEBUG
-  if (print_glsl_code) {
+  if (PRINT_GLSL_CODE) {
     std::string output = {info.source.data(),
                           info.source.data() + info.source.size()};
     std::cout << "---- Preprocessed GLSL source code ----" << std::endl
@@ -106,7 +106,7 @@ std::vector<uint32_t> CompileShader(CompilationInfo &info) {
 
   // Print output if in debug and set to print spirv code
 #ifdef _DEBUG
-  if (print_spirv_code) {
+  if (PRINT_SPIRV_CODE) {
     std::string prntOut = {info.source.data(),
                            info.source.data() + info.source.size()};
     std::cout << "---- SPIR-V Assembly code ----" << std::endl

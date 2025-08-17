@@ -6,16 +6,16 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# For VSCode Intellisense
+# For VSCode Intellisense (/Clangd)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Add source files
 set(SOURCES
 
-    src/vulkan/image.hpp
-    src/vulkan/image.cpp
-    src/vulkan/shader.hpp
-    src/vulkan/shader.cpp
+    # src/vulkan/image.hpp
+    # src/vulkan/image.cpp
+    # src/vulkan/shader.hpp
+    # src/vulkan/shader.cpp
     src/vulkan/vulkan_utils.hpp
     src/vulkan/vulkan_utils.cpp
 
@@ -62,9 +62,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE $<IF:$<TARGET_EXISTS:SDL3_image::S
 find_package(unofficial-shaderc CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::shaderc::shaderc)
 
-# TODO: Switch from stb to sdl3's image library
-find_package(Stb REQUIRED)
-target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
+# # TODO: Switch from stb to sdl3's image library
+# find_package(Stb REQUIRED)
+# target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
 # target_link_libraries(${PROJECT_NAME} PRIVATE Stb)
 
 # TODO: Switch to better mesh loader (assimp?)
@@ -99,7 +99,7 @@ PUBLIC
 
 target_include_directories(${PROJECT_NAME}
 PRIVATE
-    IMGUI_DIR
+    ${IMGUI_DIR}
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE imgui)

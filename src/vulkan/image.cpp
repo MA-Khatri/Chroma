@@ -4,7 +4,6 @@
 #include "image.hpp"
 
 #include <fstream>
-#include <iostream>
 #include <vulkan/vulkan_core.h>
 
 #include <imgui_impl_vulkan.h>

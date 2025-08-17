@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <cuda.h>
-
 #include "vulkan/vulkan.h"
 #include <string>
 

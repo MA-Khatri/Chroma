@@ -3,46 +3,46 @@
 #include <stdlib.h>
 #include <vector>
 
-#include "shader.hpp"
+// #include "shader.hpp"
 
 // Much of the code in this file is based on: https://vulkan-tutorial.com/
 
 namespace vk {
 // === Namespace Globals ===
-extern VkInstance Instance = VK_NULL_HANDLE;
-extern VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
-extern VkDevice Device = VK_NULL_HANDLE;
-extern VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
-extern VkPipelineCache PipelineCache = VK_NULL_HANDLE;
-extern VkCommandPool TransferCommandPool = VK_NULL_HANDLE;
-extern VkCommandPool GraphicsCommandPool = VK_NULL_HANDLE;
+VkInstance Instance = VK_NULL_HANDLE;
+VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
+VkDevice Device = VK_NULL_HANDLE;
+VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
+VkPipelineCache PipelineCache = VK_NULL_HANDLE;
+VkCommandPool TransferCommandPool = VK_NULL_HANDLE;
+VkCommandPool GraphicsCommandPool = VK_NULL_HANDLE;
 
-extern ImGui_ImplVulkanH_Window MainWindowData{};
-extern uint32_t MinImageCount = 2;
-extern uint32_t ImageCount = MinImageCount;
-extern bool SwapChainRebuild = false;
+ImGui_ImplVulkanH_Window MainWindowData{};
+uint32_t MinImageCount = 2;
+uint32_t ImageCount = MinImageCount;
+bool SwapChainRebuild = false;
 
-extern VkSampleCountFlagBits MaxMSAASamples = VK_SAMPLE_COUNT_1_BIT;
+VkSampleCountFlagBits MaxMSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
-extern uint32_t GraphicsQueueFamily = (uint32_t)-1;
-extern uint32_t ComputeQueueFamily = (uint32_t)-1;
-extern uint32_t TransferQueueFamily = (uint32_t)-1;
+uint32_t GraphicsQueueFamily = (uint32_t)-1;
+uint32_t ComputeQueueFamily = (uint32_t)-1;
+uint32_t TransferQueueFamily = (uint32_t)-1;
 
-extern VkQueue GraphicsQueue = VK_NULL_HANDLE;
-extern VkQueue ComputeQueue = VK_NULL_HANDLE;
-extern VkQueue TransferQueue = VK_NULL_HANDLE;
+VkQueue GraphicsQueue = VK_NULL_HANDLE;
+VkQueue ComputeQueue = VK_NULL_HANDLE;
+VkQueue TransferQueue = VK_NULL_HANDLE;
 
-extern VkDebugReportCallbackEXT DebugReport = VK_NULL_HANDLE;
-extern VkAllocationCallbacks *Allocator = nullptr;
+VkDebugReportCallbackEXT DebugReport = VK_NULL_HANDLE;
+VkAllocationCallbacks *Allocator = nullptr;
 
 // Per-frame-in-flight
-extern std::vector<std::vector<VkCommandBuffer>>
+std::vector<std::vector<VkCommandBuffer>>
     AllocatedGraphicsCommandBuffers{};
-extern std::vector<std::vector<std::function<void()>>> ResourceFreeQueue{};
+std::vector<std::vector<std::function<void()>>> ResourceFreeQueue{};
 
 // Unlike g_MainWindowData.FrameIndex, this is not the the swapchain image index
 // and is always guaranteed to increase (eg. 0, 1, 2, 0, 1, 2)
-extern uint32_t CurrentFrameIndex = 0;
+uint32_t CurrentFrameIndex = 0;
 
 // ================================
 // === Error Handling Utilities ===
@@ -891,8 +891,8 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
   //     {CreateShaderModule(fragShader), VK_SHADER_STAGE_FRAGMENT_BIT});
   // auto shaderStages = CreateShaderStages(shaderModules);
 
-  auto shaderModules = CreateShaderModules(shaderFiles);
-  auto shaderStages = CreateShaderStages(shaderModules);
+  // auto shaderModules = CreateShaderModules(shaderFiles);
+  // auto shaderStages = CreateShaderStages(shaderModules);
 
   // ====== Fixed Function Stages ======
 
@@ -1044,8 +1044,8 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
   // ====== Pipeline creation ======
   VkGraphicsPipelineCreateInfo pipelineInfo{};
   pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-  pipelineInfo.stageCount = (uint32_t)shaderStages.size();
-  pipelineInfo.pStages = shaderStages.data();
+  // pipelineInfo.stageCount = (uint32_t)shaderStages.size();
+  // pipelineInfo.pStages = shaderStages.data();
   pipelineInfo.pVertexInputState = &vertexInputInfo;
   pipelineInfo.pInputAssemblyState = &inputAssembly;
   pipelineInfo.pViewportState = &viewportState;
@@ -1066,7 +1066,7 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
   check_vk_result(err);
 
   // === Clean up ===
-  DestroyShaderModules(shaderModules);
+  // DestroyShaderModules(shaderModules);
 }
 
 VkPipeline

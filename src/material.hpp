@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <glm/glm.hpp>
-#include <stb_image.h>
+// #include <stb_image.h>
 #include <vulkan/vulkan.h>
 
 struct PipelineInfo {
@@ -31,17 +31,17 @@ template <typename T> struct Texture {
   void LoadTexture() {
     int texWidth, texHeight, texChannels;
     T *data;
-    if (std::is_same<T, uint8_t>::value) {
-      // Note: we load image with alpha channel even if it doesn't have one
-      data = (T *)stbi_load(filePath.c_str(), &texWidth, &texHeight,
-                            &texChannels, STBI_rgb_alpha);
-    } else if (std::is_same<T, float>::value) {
-      data = (T *)stbi_loadf(filePath.c_str(), &texWidth, &texHeight,
-                             &texChannels, STBI_rgb_alpha);
-    } else {
-      std::cerr << "LoadTexture(): Error! Unsupported texture format!"
-                << std::endl;
-    }
+    // if (std::is_same<T, uint8_t>::value) {
+    //   // Note: we load image with alpha channel even if it doesn't have one
+    //   data = (T *)stbi_load(filePath.c_str(), &texWidth, &texHeight,
+    //                         &texChannels, STBI_rgb_alpha);
+    // } else if (std::is_same<T, float>::value) {
+    //   data = (T *)stbi_loadf(filePath.c_str(), &texWidth, &texHeight,
+    //                          &texChannels, STBI_rgb_alpha);
+    // } else {
+    //   std::cerr << "LoadTexture(): Error! Unsupported texture format!"
+    //             << std::endl;
+    // }
 
     if (!data) {
       std::cerr << "LoadTexture(): Error! Failed to load image " << filePath
@@ -59,7 +59,7 @@ template <typename T> struct Texture {
     // Copy pixels to local std::vector and free originally read data
     pixels = std::vector<T>(
         data, data + (resolution.x * resolution.y * resolution.z));
-    stbi_image_free(data);
+    // stbi_image_free(data);
   }
 };
 
