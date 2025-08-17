@@ -1,6 +1,15 @@
 #pragma once
 
-#include <cstdint>
+#include <cstdint> // for int64_t
+
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_init.h>
+#include <SDL3/SDL_video.h>
+#include <SDL3/SDL_vulkan.h>
+
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_vulkan.h>
 
 // Singleton
 class Application {
@@ -30,6 +39,8 @@ private:
   void Init();
   void Shutdown();
   void NextFrame();
+
+  SDL_Window *m_WindowHandle;
 
   bool m_Running;
 

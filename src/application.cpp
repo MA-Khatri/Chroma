@@ -1,19 +1,6 @@
 #include "application.hpp"
-
-#include <SDL3/SDL_init.h>
-#include <SDL3/SDL_video.h>
-#include <cstdint>
-#include <glm/glm.hpp>
-#include <plog/Log.h>
-
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_vulkan.h>
-
-#include <imgui.h>
-#include <imgui_impl_sdl3.h>
-#include <imgui_impl_vulkan.h>
-
 #include "vulkan/vulkan_utils.hpp"
+#include <plog/Log.h>
 
 constexpr uint64_t SecondsToNanoseconds(double seconds) {
   return seconds * SDL_NS_PER_SECOND;
@@ -23,9 +10,9 @@ constexpr double NanosecondsToSeconds(uint64_t nanoseconds) {
   return nanoseconds / static_cast<double>(SDL_NS_PER_SECOND);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-/// Public Methods
-///////////////////////////////////////////////////////////////////////////////
+// ======================
+// === Public Methods ===
+// ======================
 
 // Singleton instance
 Application *Application::s_Instance = nullptr;
@@ -35,7 +22,6 @@ void Application::Run() {
 
   while (m_Running) {
     NextFrame();
-    break;
   }
 }
 
@@ -49,9 +35,9 @@ int64_t Application::GetTimeNS() {
   return -1;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-/// Private Methods
-///////////////////////////////////////////////////////////////////////////////
+// =======================
+// === Private Methods ===
+// =======================
 
 Application::Application() { Init(); }
 
@@ -70,9 +56,9 @@ void Application::Init() {
   SDL_WindowFlags window_flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE |
                                  SDL_WINDOW_HIDDEN |
                                  SDL_WINDOW_HIGH_PIXEL_DENSITY;
-  SDL_Window *window = SDL_CreateWindow("Chroma", (int)(1280 * main_scale),
-                                        (int)(720 * main_scale), window_flags);
-  if (window == nullptr) {
+  m_WindowHandle = SDL_CreateWindow("Chroma", (int)(1280 * main_scale),
+                                    (int)(720 * main_scale), window_flags);
+  if (!m_WindowHandle) {
     PLOG_FATAL << "Failed to create SDL window: " << SDL_GetError();
     return;
   }
@@ -88,28 +74,34 @@ void Application::Init() {
   // Create window surface
   VkSurfaceKHR surface;
   VkResult err;
-  if (!SDL_Vulkan_CreateSurface(window, 0, nullptr, nullptr)) {
+  if (!SDL_Vulkan_CreateSurface(m_WindowHandle, vk::Instance, vk::Allocator,
+                                &surface)) {
     PLOG_FATAL << "Failed to create Vulkan surface!";
     return;
   }
 
   // Create framebuffers
   int w, h;
-  SDL_GetWindowSize(window, &w, &h);
+  SDL_GetWindowSize(m_WindowHandle, &w, &h);
   ImGui_ImplVulkanH_Window *wd = &vk::MainWindowData;
   vk::SetupVulkanWindow(wd, surface, w, h);
-  SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-  SDL_ShowWindow(window);
+  SDL_SetWindowPosition(m_WindowHandle, SDL_WINDOWPOS_CENTERED,
+                        SDL_WINDOWPOS_CENTERED);
+  SDL_ShowWindow(m_WindowHandle);
+
+  vk::AllocatedGraphicsCommandBuffers.resize(wd->ImageCount);
+  vk::ResourceFreeQueue.resize(wd->ImageCount);
 
   // Setup Dear Imgui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
   (void)io;
-  io.ConfigFlags |=
-      ImGuiConfigFlags_NavEnableKeyboard; // Enable keyboard controls
-  io.ConfigFlags |=
-      ImGuiConfigFlags_NavEnableGamepad; // Enable gamepad controls
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+  // Enables multiple windows for the program
+  io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
   // Setup Dear ImGui style
   ImGui::StyleColorsDark();
@@ -117,42 +109,201 @@ void Application::Init() {
 
   // Setup scaling
   ImGuiStyle &style = ImGui::GetStyle();
+  if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+    style.WindowRounding = 0.0f;
+    style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+  }
   style.ScaleAllSizes(main_scale);
   style.FontScaleDpi = main_scale;
 
   // Setup Platform/Renderer backends
-  ImGui_ImplSDL3_InitForVulkan(window);
+  ImGui_ImplSDL3_InitForVulkan(m_WindowHandle);
   ImGui_ImplVulkan_InitInfo init_info = {};
-  // init_info.Instance = g_Instance;
-  // init_info.PhysicalDevice = g_PhysicalDevice;
-  // init_info.Device = g_Device;
-  // init_info.QueueFamily = g_QueueFamily;
-  // init_info.Queue = g_Queue;
-  // init_info.PipelineCache = g_PipelineCache;
-  // init_info.DescriptorPool = g_DescriptorPool;
-  // init_info.RenderPass = wd->RenderPass;
-  // init_info.Subpass = 0;
-  // init_info.MinImageCount = g_MinImageCount;
-  // init_info.ImageCount = wd->ImageCount;
-  // init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-  // init_info.Allocator = g_Allocator;
-  // init_info.CheckVkResultFn = check_vk_result;
+  init_info.Instance = vk::Instance;
+  init_info.PhysicalDevice = vk::PhysicalDevice;
+  init_info.Device = vk::Device;
+  init_info.QueueFamily = vk::GraphicsQueueFamily;
+  init_info.Queue = vk::GraphicsQueue;
+  init_info.PipelineCache = vk::PipelineCache;
+  init_info.DescriptorPool = vk::DescriptorPool;
+  init_info.RenderPass = wd->RenderPass;
+  init_info.Subpass = 0;
+  init_info.MinImageCount = vk::MinImageCount;
+  init_info.ImageCount = wd->ImageCount;
+  init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+  init_info.Allocator = vk::Allocator;
+  init_info.CheckVkResultFn = vk::check_vk_result;
   ImGui_ImplVulkan_Init(&init_info);
+
+  // Change default font
+  ImFontConfig fontConfig;
+  fontConfig.FontDataOwnedByAtlas = false;
+  float font_size = 16;
+  ImFont *default_font = io.Fonts->AddFontFromFileTTF(
+      "external/imgui/misc/fonts/Roboto-Medium.ttf", font_size, &fontConfig);
+  io.FontDefault = default_font;
 }
 
 void Application::NextFrame() {
-  // TODO
-  m_Running = false;
+  ImGui_ImplVulkanH_Window *wd = &vk::MainWindowData;
+  ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+  ImGuiIO &io = ImGui::GetIO();
 
+  SDL_Event event;
+  while (SDL_PollEvent(&event)) {
+    switch (event.type) {
+    case SDL_EVENT_QUIT:
+      m_Running = false;
+      break;
+
+    case SDL_EVENT_MOUSE_BUTTON_DOWN:
+      PLOG_INFO << "Mouse key pressed!";
+      break;
+
+    default:
+      break;
+    }
+  }
+
+  // TODO: Update layers
+
+  // Resize swapchain if window(s) resized
+  if (vk::SwapChainRebuild) {
+    int w, h;
+    SDL_GetWindowSize(m_WindowHandle, &w, &h);
+    if (w > 0 && h > 0) {
+      ImGui_ImplVulkan_SetMinImageCount(vk::MinImageCount);
+      ImGui_ImplVulkanH_CreateOrResizeWindow(
+          vk::Instance, vk::PhysicalDevice, vk::Device, &vk::MainWindowData,
+          vk::GraphicsQueueFamily, vk::Allocator, w, h, vk::MinImageCount);
+      vk::MainWindowData.FrameIndex = 0;
+
+      // Clear allocated command buffers from here since entire pool is
+      // destroyed
+      vk::AllocatedGraphicsCommandBuffers.clear();
+      vk::AllocatedGraphicsCommandBuffers.resize(vk::MainWindowData.ImageCount);
+
+      vk::SwapChainRebuild = false;
+    }
+  }
+
+  // Start the Dear ImGui frame
+  ImGui_ImplVulkan_NewFrame();
+  ImGui_ImplSDL3_NewFrame();
+  ImGui::NewFrame();
+
+  // Window contents
+  {
+    static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+
+    // We are using the ImGuiWindowFlags_NoDocking flag to make the parent
+    // window not dockable into, becuase it would be confusing to have two
+    // docking targets within each other.
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
+    // if (m_MenubarCallback) {
+    //   window_flags |= ImGuiWindowFlags_MenuBar;
+    // }
+
+    const ImGuiViewport *viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->WorkPos);
+    ImGui::SetNextWindowSize(viewport->WorkSize);
+    ImGui::SetNextWindowViewport(viewport->ID);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
+                    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+    window_flags |=
+        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+    // When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will
+    // render our background and handle the pass-thru hole, so we ask Begin() to
+    // not render a background.
+    if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode) {
+      window_flags |= ImGuiWindowFlags_NoBackground;
+    }
+
+    // Important: note that we proceed even if Begin() returns false (aka window
+    // is collapsed). This is because we want to keep our DockSpace() active. If
+    // a DockSpace() is inactive, all active windows docked into it will lose
+    // their parent and become undocked. We cannot preserve the docking
+    // relationship between an active window and an inactive docking, otherwise
+    // any change of dockspace/settings would lead to windows being stuck in
+    // limbo and never being visible.
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::Begin("DockSpace Demo", nullptr, window_flags);
+    ImGui::PopStyleVar();
+
+    ImGui::PopStyleVar(2);
+
+    // Submit the DockSpace
+    if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
+      ImGuiID dockspace_id = ImGui::GetID("VulkanAppDockspace");
+      ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+    }
+
+    // if (m_MenubarCallback) {
+    //   if (ImGui::BeginMenuBar()) {
+    //     m_MenubarCallback();
+    //     ImGui::EndMenuBar();
+    //   }
+    // }
+
+    // // Call OnUIRender for each layer
+    // for (auto &layer : m_LayerStack) {
+    //   layer->OnUIRender();
+    // }
+
+    ImGui::End();
+  }
+
+  // Rendering
+  ImGui::Render();
+  ImDrawData *main_draw_data = ImGui::GetDrawData();
+  const bool main_is_minimized = (main_draw_data->DisplaySize.x <= 0.0f ||
+                                  main_draw_data->DisplaySize.y <= 0.0f);
+  wd->ClearValue.color.float32[0] = clear_color.x * clear_color.w;
+  wd->ClearValue.color.float32[1] = clear_color.y * clear_color.w;
+  wd->ClearValue.color.float32[2] = clear_color.z * clear_color.w;
+  wd->ClearValue.color.float32[3] = clear_color.w;
+  if (!main_is_minimized) {
+    vk::FrameRender(wd, main_draw_data);
+  }
+
+  // Update and render additional platform windows
+  if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+    ImGui::UpdatePlatformWindows();
+    ImGui::RenderPlatformWindowsDefault();
+  }
+
+  // Present main platform window
+  if (!main_is_minimized) {
+    vk::FramePresent(wd);
+  }
+
+  // Update timers
   int64_t timeNS = GetTimeNS();
   m_FrameTimeNS = timeNS - m_LastFrameTimeNS;
-
   constexpr int64_t MIN_TIMESTEP_FPS = SecondsToNanoseconds(1.0 / 30.0);
-
-  m_TimeStepNS = glm::min<int64_t>(m_FrameTimeNS, MIN_TIMESTEP_FPS);
+  m_TimeStepNS = std::min<int64_t>(m_FrameTimeNS, MIN_TIMESTEP_FPS);
   m_LastFrameTimeNS = timeNS;
 }
 
 void Application::Shutdown() {
-  // TODO
+  // for (auto& layer : m_LayerStack)
+  // {
+  // 	layer->OnDetach();
+  // }
+
+  VkResult err;
+  err = vkDeviceWaitIdle(vk::Device);
+  vk::check_vk_result(err);
+  ImGui_ImplVulkan_Shutdown();
+  ImGui_ImplSDL3_Shutdown();
+  // ImPlot::DestroyContext();
+  ImGui::DestroyContext();
+
+  vk::CleanupVulkanWindow();
+  vk::CleanupVulkan();
+
+  SDL_DestroyWindow(m_WindowHandle);
 }
