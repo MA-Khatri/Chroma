@@ -17,7 +17,7 @@
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
         "CMAKE_TOOLCHAIN_FILE": {
-          "value": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+          "value": "${sourceDir}/external/vcpkg/scripts/buildsystems/vcpkg.cmake",
           "type": "FILEPATH"
         }
       }

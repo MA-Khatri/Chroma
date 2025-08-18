@@ -1,4 +1,4 @@
-![Showcase image 0](./readme_images/MaxDepth16_CBoxDragon.png)
+![Showcase image 0](./res/readme_images/MaxDepth16_CBoxDragon.png)
 
 # Chroma Renderer
 
