@@ -11,34 +11,41 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Add source files
 set(SOURCES
+    # external/optix_utils/vector_math.h
 
-    # src/vulkan/image.hpp
-    # src/vulkan/image.cpp
-    src/vulkan/shader.hpp
-    src/vulkan/shader.cpp
-    src/vulkan/vulkan_utils.hpp
-    src/vulkan/vulkan_utils.cpp
+    # src/vulkan_engine/image.hpp
+    # src/vulkan_engine/image.cpp
+    # src/vulkan_engine/shader.hpp
+    # src/vulkan_engine/shader.cpp
+    src/vulkan_engine/vulkan_utils.hpp
+    src/vulkan_engine/vulkan_utils.cpp
 
-    src/vulkan/shaders/Flat.frag
-    src/vulkan/shaders/Flat.vert
-    src/vulkan/shaders/FlatWithSpecular.frag
-    src/vulkan/shaders/HelloTriangle.frag
-    src/vulkan/shaders/HelloTriangle.vert
-    src/vulkan/shaders/Lines.frag
-    src/vulkan/shaders/Lines.vert
-    src/vulkan/shaders/Normal.frag
-    src/vulkan/shaders/Solid.frag
-    src/vulkan/shaders/Solid.vert
+    src/vulkan_engine/shaders/Flat.frag
+    src/vulkan_engine/shaders/Flat.vert
+    src/vulkan_engine/shaders/FlatWithSpecular.frag
+    src/vulkan_engine/shaders/HelloTriangle.frag
+    src/vulkan_engine/shaders/HelloTriangle.vert
+    src/vulkan_engine/shaders/Lines.frag
+    src/vulkan_engine/shaders/Lines.vert
+    src/vulkan_engine/shaders/Normal.frag
+    src/vulkan_engine/shaders/Solid.frag
+    src/vulkan_engine/shaders/Solid.vert
 
-    src/main.cpp
     src/application.hpp
     src/application.cpp
+    src/layer.cpp
+    src/layer.hpp
+    src/main.cpp
     src/material.hpp
     src/material.cpp
     src/mesh.hpp
     src/mesh.cpp
     src/object.hpp
     src/object.cpp
+    src/raster_view.cpp
+    src/raster_view.hpp
+    src/raytrace_view.cpp
+    src/raytrace_view.hpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -89,11 +96,6 @@ PUBLIC
     Vulkan::Vulkan
 )
 
-target_include_directories(${PROJECT_NAME}
-PRIVATE
-    ${IMGUI_DIR}
-)
-
 target_link_libraries(${PROJECT_NAME} PRIVATE imgui)
 
 # Not part of base ImGui but included here to keep ImGui stuff together
@@ -101,8 +103,8 @@ find_package(implot CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE implot::implot)
 ### End ImGui setup
 
-### Start shaderc setup
-set(SHADERC_SKIP_TESTS ON CACHE BOOL "" FORCE)
-add_subdirectory(external/shaderc)
-target_link_libraries(${PROJECT_NAME} PRIVATE shaderc_combined)
-### End shaderc setup
+target_include_directories(${PROJECT_NAME}
+PRIVATE
+    ${IMGUI_DIR}
+    external/optix_utils
+)

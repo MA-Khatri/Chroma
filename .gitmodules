@@ -5,6 +5,3 @@
 	path = external/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = docking
-[submodule "external/shaderc"]
-	path = external/shaderc
-	url = https://github.com/google/shaderc.git

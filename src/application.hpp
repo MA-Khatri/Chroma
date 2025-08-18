@@ -2,6 +2,7 @@
 
 #include <cstdint> // for int64_t
 #include <functional>
+#include <memory>
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_init.h>
@@ -11,6 +12,12 @@
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_vulkan.h>
+
+#include "layer.hpp"
+
+// Forward declarations
+class Layer;
+// class Scene;
 
 // Singleton
 class Application {
@@ -26,7 +33,17 @@ public:
   void Run();
   void Close();
 
+  void SetMenubarCallback(const std::function<void()> &menubarCallback);
+  std::function<void()> GetMenubarCallback();
+
+  void PushLayer(const std::shared_ptr<Layer> &layer);
+
+  SDL_Window *GetWindowHandle() const { return m_WindowHandle; }
+
   int64_t GetTimeNS(); // Current time in nanoseconds
+
+  enum { RasterizedViewport, RayTracedViewport };
+  int m_FocusedWindow = RasterizedViewport;
 
 private:
   static Application *s_Instance;
@@ -43,12 +60,12 @@ private:
 
   SDL_Window *m_WindowHandle;
   std::function<void()> m_MenubarCallback;
-  // std::vector<std::shared_ptr<Layer>> m_LayerStack;
-
-  bool m_Running;
+  std::vector<std::shared_ptr<Layer>> m_LayerStack;
 
   // std::vector<std::shared_ptr<Scene>> m_Scenes;
   // int m_SceneID = 0;
+
+  bool m_Running;
 
   // Time is stored in nanoseconds
   int64_t m_FrameTimeNS;

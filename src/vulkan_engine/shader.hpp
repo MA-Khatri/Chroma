@@ -1,6 +1,6 @@
 #pragma once
 
-#include <shaderc/shaderc.hpp>
+#include <shaderc/shaderc.h>
 #include <vulkan/vulkan.h>
 
 #include <vector>

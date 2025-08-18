@@ -1,6 +1,6 @@
 #include "object.hpp"
 
-#include "vulkan/vulkan_utils.hpp"
+#include "vulkan_engine/vulkan_utils.hpp"
 
 Object::Object(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material)
     : m_Mesh(mesh), m_Material(material) {

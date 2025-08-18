@@ -1,5 +1,5 @@
 #include "application.hpp"
-#include "vulkan/vulkan_utils.hpp"
+#include "vulkan_engine/vulkan_utils.hpp"
 #include <plog/Log.h>
 
 constexpr uint64_t SecondsToNanoseconds(double seconds) {
@@ -26,6 +26,20 @@ void Application::Run() {
 }
 
 void Application::Close() { m_Running = false; }
+
+void Application::SetMenubarCallback(
+    const std::function<void()> &menubarCallback) {
+  m_MenubarCallback = menubarCallback;
+}
+
+std::function<void()> Application::GetMenubarCallback() {
+  return m_MenubarCallback;
+}
+
+void Application::PushLayer(const std::shared_ptr<Layer> &layer) {
+  m_LayerStack.emplace_back(layer);
+  layer->OnAttach(this);
+}
 
 int64_t Application::GetTimeNS() {
   SDL_Time ns;
@@ -165,7 +179,10 @@ void Application::NextFrame() {
     }
   }
 
-  // TODO: Update layers
+  // Call the update functions for each layer
+  for (auto& layer : m_LayerStack) {
+		layer->OnUpdate();
+	}
 
   // Resize swapchain if window(s) resized
   if (vk::SwapChainRebuild) {
@@ -248,10 +265,10 @@ void Application::NextFrame() {
       }
     }
 
-    // // Call OnUIRender for each layer
-    // for (auto &layer : m_LayerStack) {
-    //   layer->OnUIRender();
-    // }
+    // Call OnUIRender for each layer
+    for (auto &layer : m_LayerStack) {
+      layer->OnUIRender();
+    }
 
     ImGui::End();
   }
@@ -289,10 +306,10 @@ void Application::NextFrame() {
 }
 
 void Application::Shutdown() {
-  // for (auto& layer : m_LayerStack)
-  // {
-  // 	layer->OnDetach();
-  // }
+  for (auto& layer : m_LayerStack)
+  {
+  	layer->OnDetach();
+  }
 
   VkResult err;
   err = vkDeviceWaitIdle(vk::Device);

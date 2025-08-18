@@ -1,4 +1,8 @@
 #include "application.hpp"
+#include "raster_view.hpp"
+#include "raytrace_view.hpp"
+
+#include <imgui.h>
 
 #include <plog/Appenders/ColorConsoleAppender.h>
 #include <plog/Appenders/RollingFileAppender.h>
@@ -16,6 +20,20 @@ int main() {
 
   // Initialize singleton app instance
   Application *app = Application::GetInstance();
+
+  // Create Layers
+  app->PushLayer(std::make_shared<RasterView>());
+  // app->PushLayer(std::make_shared<RayTraceView>());
+
+  // Menubar setup
+  app->SetMenubarCallback([app]() {
+    if (ImGui::BeginMenu("File")) {
+      if (ImGui::MenuItem("Exit")) {
+        app->Close();
+      }
+      ImGui::EndMenu();
+    }
+  });
 
   app->Run();
 

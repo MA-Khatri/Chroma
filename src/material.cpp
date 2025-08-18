@@ -1,5 +1,5 @@
 #include "material.hpp"
-#include "vulkan/vulkan_utils.hpp"
+#include "vulkan_engine/vulkan_utils.hpp"
 
 Material::Material(TexturePaths texturePaths, int vkPipelineType,
                    int rtMaterialType)
