@@ -14,8 +14,8 @@ set(SOURCES
 
     # src/vulkan/image.hpp
     # src/vulkan/image.cpp
-    # src/vulkan/shader.hpp
-    # src/vulkan/shader.cpp
+    src/vulkan/shader.hpp
+    src/vulkan/shader.cpp
     src/vulkan/vulkan_utils.hpp
     src/vulkan/vulkan_utils.cpp
 
@@ -59,14 +59,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3)
 find_package(SDL3_image CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE $<IF:$<TARGET_EXISTS:SDL3_image::SDL3_image-shared>,SDL3_image::SDL3_image-shared,SDL3_image::SDL3_image-static>)
 
-find_package(unofficial-shaderc CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::shaderc::shaderc)
-
 # TODO: Switch to better mesh loader (assimp?)
 find_package(tinyobjloader CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE tinyobjloader::tinyobjloader)
 
-# Start ImGui setup
+### Start ImGui setup
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui)
 set(IMGUI_BACKENDS_DIR ${IMGUI_DIR}/backends)
 set(IMGUI_SOURCES
@@ -98,4 +95,14 @@ PRIVATE
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE imgui)
-# End ImGui setup
+
+# Not part of base ImGui but included here to keep ImGui stuff together
+find_package(implot CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE implot::implot)
+### End ImGui setup
+
+### Start shaderc setup
+set(SHADERC_SKIP_TESTS ON CACHE BOOL "" FORCE)
+add_subdirectory(external/shaderc)
+target_link_libraries(${PROJECT_NAME} PRIVATE shaderc_combined)
+### End shaderc setup

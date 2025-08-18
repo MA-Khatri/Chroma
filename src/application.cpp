@@ -200,9 +200,9 @@ void Application::NextFrame() {
     // window not dockable into, becuase it would be confusing to have two
     // docking targets within each other.
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
-    // if (m_MenubarCallback) {
-    //   window_flags |= ImGuiWindowFlags_MenuBar;
-    // }
+    if (m_MenubarCallback) {
+      window_flags |= ImGuiWindowFlags_MenuBar;
+    }
 
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -241,12 +241,12 @@ void Application::NextFrame() {
       ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
     }
 
-    // if (m_MenubarCallback) {
-    //   if (ImGui::BeginMenuBar()) {
-    //     m_MenubarCallback();
-    //     ImGui::EndMenuBar();
-    //   }
-    // }
+    if (m_MenubarCallback) {
+      if (ImGui::BeginMenuBar()) {
+        m_MenubarCallback();
+        ImGui::EndMenuBar();
+      }
+    }
 
     // // Call OnUIRender for each layer
     // for (auto &layer : m_LayerStack) {

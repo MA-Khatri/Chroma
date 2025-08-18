@@ -4,6 +4,8 @@
 #include <iostream>
 #include <sstream>
 
+#include <plog/Log.h>
+
 #include "vulkan_utils.hpp"
 
 constexpr bool PRINT_GLSL_CODE = false;
@@ -54,9 +56,9 @@ void PreprocessShader(CompilationInfo &info) {
     info.kind = shaderc_compute_shader;
     info.type = VK_SHADER_STAGE_COMPUTE_BIT;
   } else {
-    std::cerr << "File " << info.fileName
-              << " has an unknown shader file extension!" << std::endl;
-    exit(-1);
+    PLOG_ERROR << "File " << info.fileName
+               << " has an unknown shader file extension!";
+    return;
   }
 
   // Do the preprocessing
@@ -65,8 +67,8 @@ void PreprocessShader(CompilationInfo &info) {
       compiler.PreprocessGlsl(info.source.data(), info.source.size(), info.kind,
                               info.fileName.c_str(), info.options);
   if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
-    std::cerr << result.GetErrorMessage() << std::endl;
-    exit(-1);
+    PLOG_ERROR << result.GetErrorMessage();
+    return;
   }
 
   // Copy the result into info for next compilation operation
@@ -80,8 +82,7 @@ void PreprocessShader(CompilationInfo &info) {
   if (PRINT_GLSL_CODE) {
     std::string output = {info.source.data(),
                           info.source.data() + info.source.size()};
-    std::cout << "---- Preprocessed GLSL source code ----" << std::endl
-              << output << std::endl;
+    PLOG_DEBUG << "---- Preprocessed GLSL source code ----\n" << output;
   }
 #endif
 }
@@ -94,8 +95,8 @@ std::vector<uint32_t> CompileShader(CompilationInfo &info) {
       info.source.data(), info.source.size(), info.kind, info.fileName.c_str(),
       info.options);
   if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
-    std::cerr << result.GetErrorMessage() << std::endl;
-    exit(-1);
+    PLOG_ERROR << result.GetErrorMessage();
+    return {};
   }
 
   // Copy the result into info for next compilation operation
@@ -109,8 +110,7 @@ std::vector<uint32_t> CompileShader(CompilationInfo &info) {
   if (PRINT_SPIRV_CODE) {
     std::string prntOut = {info.source.data(),
                            info.source.data() + info.source.size()};
-    std::cout << "---- SPIR-V Assembly code ----" << std::endl
-              << prntOut << std::endl;
+    PLOG_DEBUG << "---- SPIR-V Assembly code ----\n" << prntOut;
   }
 #endif
 
@@ -118,8 +118,8 @@ std::vector<uint32_t> CompileShader(CompilationInfo &info) {
   shaderc::SpvCompilationResult result2 = compiler.AssembleToSpv(
       info.source.data(), info.source.size(), info.options);
   if (result2.GetCompilationStatus() != shaderc_compilation_status_success) {
-    std::cerr << result2.GetErrorMessage() << std::endl;
-    exit(-1);
+    PLOG_ERROR << result2.GetErrorMessage();
+    return {};
   }
 
   // Copy the result into info for next compilation operation
@@ -135,8 +135,8 @@ std::vector<char> ReadShaderFile(const std::string &filename) {
   std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
   if (!file.is_open()) {
-    std::cerr << "Failed to open file: " << filename << std::endl;
-    exit(-1);
+    PLOG_ERROR << "Failed to open file: " << filename;
+    return {};
   }
 
   size_t fileSize = (size_t)file.tellg();
@@ -151,8 +151,6 @@ std::vector<char> ReadShaderFile(const std::string &filename) {
 
 VkShaderModule CreateShaderModule(const std::vector<char> &code) {
   VkResult err;
-
-  // std::cout << code.size() << std::endl;
 
   VkShaderModuleCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -179,8 +177,6 @@ ShaderModule CreateShaderModule(const std::string filename) {
                                     shaderc_env_version_vulkan_1_3);
   PreprocessShader(info);
   std::vector<uint32_t> compiledCode = CompileShader(info);
-
-  // std::cout << compiledCode.size() * sizeof(uint32_t) << std::endl;
 
   VkShaderModuleCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;

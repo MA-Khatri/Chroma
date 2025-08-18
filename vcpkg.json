@@ -12,7 +12,7 @@
             ]
         },
         "sdl3-image",
-        "shaderc",
+        "implot",
         "tinyobjloader"
     ]
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint> // for int64_t
+#include <functional>
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_init.h>
@@ -41,8 +42,13 @@ private:
   void NextFrame();
 
   SDL_Window *m_WindowHandle;
+  std::function<void()> m_MenubarCallback;
+  // std::vector<std::shared_ptr<Layer>> m_LayerStack;
 
   bool m_Running;
+
+  // std::vector<std::shared_ptr<Scene>> m_Scenes;
+  // int m_SceneID = 0;
 
   // Time is stored in nanoseconds
   int64_t m_FrameTimeNS;
