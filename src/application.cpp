@@ -1,6 +1,9 @@
 #include "application.hpp"
+#include "imgui_impl_sdl3.h"
 #include "vulkan_engine/vulkan_utils.hpp"
+
 #include <plog/Log.h>
+#include <string>
 
 constexpr uint64_t SecondsToNanoseconds(double seconds) {
   return seconds * SDL_NS_PER_SECOND;
@@ -149,12 +152,13 @@ void Application::Init() {
   init_info.CheckVkResultFn = vk::check_vk_result;
   ImGui_ImplVulkan_Init(&init_info);
 
-  // Change default font
+  // Change default font (imgui fonts folder is copied to build dir)
+  std::string font_path = "fonts/Roboto-Medium.ttf";
+  float font_size = 16;
   ImFontConfig fontConfig;
   fontConfig.FontDataOwnedByAtlas = false;
-  float font_size = 16;
-  ImFont *default_font = io.Fonts->AddFontFromFileTTF(
-      "external/imgui/misc/fonts/Roboto-Medium.ttf", font_size, &fontConfig);
+  ImFont *default_font =
+      io.Fonts->AddFontFromFileTTF(font_path.c_str(), font_size, &fontConfig);
   io.FontDefault = default_font;
 }
 
@@ -165,6 +169,10 @@ void Application::NextFrame() {
 
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
+
+    ImGui_ImplSDL3_ProcessEvent(&event);
+
+    // TODO: Implement a controller/event handler class
     switch (event.type) {
     case SDL_EVENT_QUIT:
       m_Running = false;
@@ -180,9 +188,9 @@ void Application::NextFrame() {
   }
 
   // Call the update functions for each layer
-  for (auto& layer : m_LayerStack) {
-		layer->OnUpdate();
-	}
+  for (auto &layer : m_LayerStack) {
+    layer->OnUpdate();
+  }
 
   // Resize swapchain if window(s) resized
   if (vk::SwapChainRebuild) {
@@ -306,9 +314,8 @@ void Application::NextFrame() {
 }
 
 void Application::Shutdown() {
-  for (auto& layer : m_LayerStack)
-  {
-  	layer->OnDetach();
+  for (auto &layer : m_LayerStack) {
+    layer->OnDetach();
   }
 
   VkResult err;

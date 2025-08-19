@@ -101,6 +101,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE imgui)
 # Not part of base ImGui but included here to keep ImGui stuff together
 find_package(implot CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE implot::implot)
+
+# Copy fonts folder to build dir
+file(COPY ${IMGUI_DIR}/misc/fonts DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
 ### End ImGui setup
 
 target_include_directories(${PROJECT_NAME}
