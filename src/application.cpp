@@ -40,7 +40,7 @@ std::function<void()> Application::GetMenubarCallback() {
 }
 
 void Application::PushLayer(const std::shared_ptr<Layer> &layer) {
-  m_LayerStack.emplace_back(layer);
+  m_Layers.emplace_back(layer);
   layer->OnAttach(this);
 }
 
@@ -86,12 +86,12 @@ void Application::Init() {
       SDL_Vulkan_GetInstanceExtensions(&sdl_extensions_count);
   for (uint32_t n = 0; n < sdl_extensions_count; n++)
     extensions.push_back(sdl_extensions[n]);
-  vk::SetupVulkan(extensions);
+  vke::SetupVulkan(extensions);
 
   // Create window surface
   VkSurfaceKHR surface;
   VkResult err;
-  if (!SDL_Vulkan_CreateSurface(m_WindowHandle, vk::Instance, vk::Allocator,
+  if (!SDL_Vulkan_CreateSurface(m_WindowHandle, vke::Instance, vke::Allocator,
                                 &surface)) {
     PLOG_FATAL << "Failed to create Vulkan surface!";
     return;
@@ -100,14 +100,14 @@ void Application::Init() {
   // Create framebuffers
   int w, h;
   SDL_GetWindowSize(m_WindowHandle, &w, &h);
-  ImGui_ImplVulkanH_Window *wd = &vk::MainWindowData;
-  vk::SetupVulkanWindow(wd, surface, w, h);
+  ImGui_ImplVulkanH_Window *wd = &vke::MainWindowData;
+  vke::SetupVulkanWindow(wd, surface, w, h);
   SDL_SetWindowPosition(m_WindowHandle, SDL_WINDOWPOS_CENTERED,
                         SDL_WINDOWPOS_CENTERED);
   SDL_ShowWindow(m_WindowHandle);
 
-  vk::AllocatedGraphicsCommandBuffers.resize(wd->ImageCount);
-  vk::ResourceFreeQueue.resize(wd->ImageCount);
+  vke::AllocatedGraphicsCommandBuffers.resize(wd->ImageCount);
+  vke::ResourceFreeQueue.resize(wd->ImageCount);
 
   // Setup Dear Imgui context
   IMGUI_CHECKVERSION();
@@ -136,20 +136,20 @@ void Application::Init() {
   // Setup Platform/Renderer backends
   ImGui_ImplSDL3_InitForVulkan(m_WindowHandle);
   ImGui_ImplVulkan_InitInfo init_info = {};
-  init_info.Instance = vk::Instance;
-  init_info.PhysicalDevice = vk::PhysicalDevice;
-  init_info.Device = vk::Device;
-  init_info.QueueFamily = vk::GraphicsQueueFamily;
-  init_info.Queue = vk::GraphicsQueue;
-  init_info.PipelineCache = vk::PipelineCache;
-  init_info.DescriptorPool = vk::DescriptorPool;
+  init_info.Instance = vke::Instance;
+  init_info.PhysicalDevice = vke::PhysicalDevice;
+  init_info.Device = vke::Device;
+  init_info.QueueFamily = vke::GraphicsQueueFamily;
+  init_info.Queue = vke::GraphicsQueue;
+  init_info.PipelineCache = vke::PipelineCache;
+  init_info.DescriptorPool = vke::DescriptorPool;
   init_info.RenderPass = wd->RenderPass;
   init_info.Subpass = 0;
-  init_info.MinImageCount = vk::MinImageCount;
+  init_info.MinImageCount = vke::MinImageCount;
   init_info.ImageCount = wd->ImageCount;
   init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-  init_info.Allocator = vk::Allocator;
-  init_info.CheckVkResultFn = vk::check_vk_result;
+  init_info.Allocator = vke::Allocator;
+  init_info.CheckVkResultFn = vke::check_vk_result;
   ImGui_ImplVulkan_Init(&init_info);
 
   // Change default font (imgui fonts folder is copied to build dir)
@@ -163,7 +163,7 @@ void Application::Init() {
 }
 
 void Application::NextFrame() {
-  ImGui_ImplVulkanH_Window *wd = &vk::MainWindowData;
+  ImGui_ImplVulkanH_Window *wd = &vke::MainWindowData;
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
   ImGuiIO &io = ImGui::GetIO();
 
@@ -188,27 +188,27 @@ void Application::NextFrame() {
   }
 
   // Call the update functions for each layer
-  for (auto &layer : m_LayerStack) {
+  for (auto &layer : m_Layers) {
     layer->OnUpdate();
   }
 
   // Resize swapchain if window(s) resized
-  if (vk::SwapChainRebuild) {
+  if (vke::SwapChainRebuild) {
     int w, h;
     SDL_GetWindowSize(m_WindowHandle, &w, &h);
     if (w > 0 && h > 0) {
-      ImGui_ImplVulkan_SetMinImageCount(vk::MinImageCount);
+      ImGui_ImplVulkan_SetMinImageCount(vke::MinImageCount);
       ImGui_ImplVulkanH_CreateOrResizeWindow(
-          vk::Instance, vk::PhysicalDevice, vk::Device, &vk::MainWindowData,
-          vk::GraphicsQueueFamily, vk::Allocator, w, h, vk::MinImageCount);
-      vk::MainWindowData.FrameIndex = 0;
+          vke::Instance, vke::PhysicalDevice, vke::Device, &vke::MainWindowData,
+          vke::GraphicsQueueFamily, vke::Allocator, w, h, vke::MinImageCount);
+      vke::MainWindowData.FrameIndex = 0;
 
       // Clear allocated command buffers from here since entire pool is
       // destroyed
-      vk::AllocatedGraphicsCommandBuffers.clear();
-      vk::AllocatedGraphicsCommandBuffers.resize(vk::MainWindowData.ImageCount);
+      vke::AllocatedGraphicsCommandBuffers.clear();
+      vke::AllocatedGraphicsCommandBuffers.resize(vke::MainWindowData.ImageCount);
 
-      vk::SwapChainRebuild = false;
+      vke::SwapChainRebuild = false;
     }
   }
 
@@ -274,7 +274,7 @@ void Application::NextFrame() {
     }
 
     // Call OnUIRender for each layer
-    for (auto &layer : m_LayerStack) {
+    for (auto &layer : m_Layers) {
       layer->OnUIRender();
     }
 
@@ -291,7 +291,7 @@ void Application::NextFrame() {
   wd->ClearValue.color.float32[2] = clear_color.z * clear_color.w;
   wd->ClearValue.color.float32[3] = clear_color.w;
   if (!main_is_minimized) {
-    vk::FrameRender(wd, main_draw_data);
+    vke::FrameRender(wd, main_draw_data);
   }
 
   // Update and render additional platform windows
@@ -302,7 +302,7 @@ void Application::NextFrame() {
 
   // Present main platform window
   if (!main_is_minimized) {
-    vk::FramePresent(wd);
+    vke::FramePresent(wd);
   }
 
   // Update timers
@@ -314,20 +314,20 @@ void Application::NextFrame() {
 }
 
 void Application::Shutdown() {
-  for (auto &layer : m_LayerStack) {
+  for (auto &layer : m_Layers) {
     layer->OnDetach();
   }
 
   VkResult err;
-  err = vkDeviceWaitIdle(vk::Device);
-  vk::check_vk_result(err);
+  err = vkDeviceWaitIdle(vke::Device);
+  vke::check_vk_result(err);
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL3_Shutdown();
   // ImPlot::DestroyContext();
   ImGui::DestroyContext();
 
-  vk::CleanupVulkanWindow();
-  vk::CleanupVulkan();
+  vke::CleanupVulkanWindow();
+  vke::CleanupVulkan();
 
   SDL_DestroyWindow(m_WindowHandle);
 }

@@ -14,10 +14,11 @@
 #include <imgui_impl_vulkan.h>
 
 #include "layer.hpp"
+#include "scene.hpp"
 
 // Forward declarations
 class Layer;
-// class Scene;
+class Scene;
 
 // Singleton
 class Application {
@@ -60,10 +61,7 @@ private:
 
   SDL_Window *m_WindowHandle;
   std::function<void()> m_MenubarCallback;
-  std::vector<std::shared_ptr<Layer>> m_LayerStack;
-
-  // std::vector<std::shared_ptr<Scene>> m_Scenes;
-  // int m_SceneID = 0;
+  std::vector<std::shared_ptr<Layer>> m_Layers;
 
   bool m_Running;
 

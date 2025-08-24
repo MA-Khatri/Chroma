@@ -9,7 +9,7 @@
 
 // Much of the code in this file is based on: https://vulkan-tutorial.com/
 
-namespace vk {
+namespace vke {
 // === Namespace Globals ===
 VkInstance Instance = VK_NULL_HANDLE;
 VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
@@ -862,6 +862,7 @@ void CreateRenderPass(VkSampleCountFlagBits msaaSamples,
   check_vk_result(err);
 }
 
+/*
 void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
                             VkSampleCountFlagBits msaaSamples,
                             VkPrimitiveTopology topology,
@@ -1070,6 +1071,7 @@ CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
                          descriptorSetLayout, layout, pipeline);
   return pipeline;
 }
+*/
 
 void CreateFrameBuffer(std::vector<VkImageView> attachments,
                        VkRenderPass &renderPass, ImVec2 extent,
@@ -1204,6 +1206,7 @@ void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
   vkBindBufferMemory(Device, buffer, bufferMemory, 0);
 }
 
+/*
 void CreateVertexBuffer(const std::vector<Vertex> vertices,
                         VkBuffer &vertexBuffer,
                         VkDeviceMemory &vertexBufferMemory) {
@@ -1265,6 +1268,7 @@ void CreateIndexBuffer(const std::vector<uint32_t> indices,
   vkDestroyBuffer(Device, stagingBuffer, nullptr);
   vkFreeMemory(Device, stagingBufferMemory, nullptr);
 }
+*/
 
 void CreateDescriptorSetLayout(
     std::vector<VkDescriptorSetLayoutBinding> &layoutBindings,
@@ -1417,6 +1421,7 @@ void CreateImage(uint32_t width, uint32_t height, uint32_t mipLevels,
   vkBindImageMemory(Device, image, imageMemory, 0);
 }
 
+/*
 void CreateTextureImage(const Texture<uint8_t> &tex, uint32_t &mipLevels,
                         VkImage &textureImage,
                         VkDeviceMemory &textureImageMemory) {
@@ -1478,6 +1483,7 @@ void CreateTextureImage(const Texture<uint8_t> &tex, uint32_t &mipLevels,
   vkDestroyBuffer(Device, stagingBuffer, nullptr);
   vkFreeMemory(Device, stagingBufferMemory, nullptr);
 }
+*/
 
 void TransitionImageLayout(VkCommandBuffer &commandBuffer, VkImage image,
                            VkFormat format, VkImageLayout oldLayout,
@@ -1766,4 +1772,4 @@ void GenerateMipMaps(VkImage image, VkFormat imageFormat, int32_t texWidth,
 
   FlushGraphicsCommandBuffer(commandBuffer);
 }
-} // namespace vk
+} // namespace vke

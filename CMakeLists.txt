@@ -11,12 +11,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Add source files
 set(SOURCES
-    # external/optix_utils/vector_math.h
-
-    # src/vulkan_engine/image.hpp
-    # src/vulkan_engine/image.cpp
-    # src/vulkan_engine/shader.hpp
-    # src/vulkan_engine/shader.cpp
     src/vulkan_engine/vulkan_utils.hpp
     src/vulkan_engine/vulkan_utils.cpp
 
@@ -31,21 +25,27 @@ set(SOURCES
     src/vulkan_engine/shaders/Solid.frag
     src/vulkan_engine/shaders/Solid.vert
 
-    src/application.hpp
     src/application.cpp
+    src/application.hpp
+    src/camera.cpp
+    src/camera.hpp
     src/layer.cpp
     src/layer.hpp
     src/main.cpp
-    src/material.hpp
     src/material.cpp
-    src/mesh.hpp
+    src/material.hpp
     src/mesh.cpp
-    src/object.hpp
+    src/mesh.hpp
     src/object.cpp
+    src/object.hpp
     src/raster_view.cpp
     src/raster_view.hpp
     src/raytrace_view.cpp
     src/raytrace_view.hpp
+    src/scene.cpp
+    src/scene.hpp
+    src/transform.cpp
+    src/transform.hpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})

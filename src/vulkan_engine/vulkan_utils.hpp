@@ -8,15 +8,15 @@
 
 #include <vulkan/vulkan.h>
 
-#include "../material.hpp"
-#include "../mesh.hpp"
+// #include "../material.hpp"
+// #include "../mesh.hpp"
 
 // #define APP_USE_UNLIMITED_FRAME_RATE
 #ifdef _DEBUG
 #define APP_USE_VULKAN_DEBUG_REPORT
 #endif
 
-namespace vk {
+namespace vke {
 // === Namespace Globals ===
 
 extern VkInstance Instance;
@@ -128,17 +128,17 @@ void CreateViewportImageViews(std::vector<VkImage> &images,
 void CreateRenderPass(VkSampleCountFlagBits msaaSamples,
                       VkRenderPass &renderPass);
 
-void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
-                            VkSampleCountFlagBits msaaSamples,
-                            VkPrimitiveTopology topology,
-                            const VkRenderPass &renderPass,
-                            const VkDescriptorSetLayout &descriptorSetLayout,
-                            VkPipelineLayout &layout, VkPipeline &pipeline);
-VkPipeline CreateGraphicsPipeline(
-    std::vector<std::string> shaderFiles, ImVec2 extent,
-    VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology,
-    const VkRenderPass &renderPass,
-    const VkDescriptorSetLayout &descriptorSetLayout, VkPipelineLayout &layout);
+// void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
+//                             VkSampleCountFlagBits msaaSamples,
+//                             VkPrimitiveTopology topology,
+//                             const VkRenderPass &renderPass,
+//                             const VkDescriptorSetLayout &descriptorSetLayout,
+//                             VkPipelineLayout &layout, VkPipeline &pipeline);
+// VkPipeline CreateGraphicsPipeline(
+//     std::vector<std::string> shaderFiles, ImVec2 extent,
+//     VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology,
+//     const VkRenderPass &renderPass,
+//     const VkDescriptorSetLayout &descriptorSetLayout, VkPipelineLayout &layout);
 
 void CreateFrameBuffer(std::vector<VkImageView> attachments,
                        VkRenderPass &renderPass, ImVec2 extent,
@@ -169,9 +169,9 @@ void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                   VkMemoryPropertyFlags properties, VkBuffer &buffer,
                   VkDeviceMemory &bufferMemory);
 
-void CreateVertexBuffer(const std::vector<Vertex> vertices,
-                        VkBuffer &vertexBuffer,
-                        VkDeviceMemory &vertexBufferMemory);
+// void CreateVertexBuffer(const std::vector<Vertex> vertices,
+//                         VkBuffer &vertexBuffer,
+//                         VkDeviceMemory &vertexBufferMemory);
 void CreateIndexBuffer(const std::vector<uint32_t> indices,
                        VkBuffer &indexBuffer,
                        VkDeviceMemory &indexBufferMemory);
@@ -218,13 +218,13 @@ void CopyImageToImage(VkCommandBuffer &commandBuffer, const ImVec2 &extent,
 void CopyImageToImage(const ImVec2 &extent, VkImage &srcImage,
                       VkImage &dstImage);
 
-void CreateTextureImage(const Texture<uint8_t> &tex, uint32_t &mipLevels,
-                        VkImage &textureImage,
-                        VkDeviceMemory &textureImageMemory);
+// void CreateTextureImage(const Texture<uint8_t> &tex, uint32_t &mipLevels,
+//                         VkImage &textureImage,
+//                         VkDeviceMemory &textureImageMemory);
 void CreateTextureImageView(uint32_t mipLevels, VkImage &textureImage,
                             VkImageView &textureImageView);
 void CreateTextureSampler(uint32_t mipLevels, VkSampler &textureSampler);
 
 void GenerateMipMaps(VkImage image, VkFormat imageFormat, int32_t texWidth,
                      int32_t texHeight, uint32_t mipLevels);
-} // namespace vk
+} // namespace vke

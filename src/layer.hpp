@@ -4,6 +4,15 @@
 #include <string>
 #include <vector>
 
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_pixels.h>
+#include <SDL3/SDL_surface.h>
+#include <SDL3_image/SDL_image.h>
+
+#include <plog/Log.h>
+
+#include "application.hpp"
+
 // Forward Declaration
 class Application;
 
@@ -68,13 +77,58 @@ std::string GetDateTimeStr();
 
 // As the name suggests, used for flipping screenshots s.t. the origin is top
 // left, not bottom left
-std::vector<uint32_t> FlipImageVertically(const std::vector<uint32_t> &in,
-                                          uint32_t width, uint32_t height);
+template <typename T>
+std::vector<T> FlipImageVertically(const std::vector<T> &in, int width,
+                                   int height) {
+  std::vector<T> out(in.size());
 
-// Use stb to write image data to provided filename. Returns saved image
-// filepath or error message.
-std::string WriteImageToFile(std::string filename, int width, int height,
-                             int channels, const void *data, int stride);
+  for (int j = 0; j < height; j++) {
+    for (int i = 0; i < width; i++) {
+      out[(j * width) + i] = in[(height - j - 1) * width + i];
+    }
+  }
+
+  return out;
+}
+
+// Use SDL_image to write image data to provided filename. Returns a string with
+// the generated saved image filepath or an error message so it can be displayed
+// in ImGui.
+template <typename T>
+void WriteImageToFile(std::string filename, int width, int height,
+                      SDL_PixelFormat format, std::vector<T> &pixelData) {
+  // Check if the pixel data size is correct
+  size_t bytesPerPixel = SDL_BYTESPERPIXEL(format);
+  size_t pixelDataSize =
+      pixelData.size() * sizeof(typename std::vector<T>::value_type);
+  size_t providedSize = static_cast<size_t>(width * height) * bytesPerPixel;
+  if (pixelDataSize != providedSize) {
+    PLOG_ERROR << "Error! Pixel data size (" << pixelDataSize
+               << ") does not match assumed size from given params: "
+               << providedSize;
+    return;
+  }
+
+  // Create an SDL surface from image data
+  SDL_Surface *surface = SDL_CreateSurfaceFrom(
+      width, height, format, static_cast<void *>(pixelData.data()),
+      /*pitch=*/width * bytesPerPixel);
+
+  if (!surface) {
+
+    PLOG_ERROR << "Error! SDL_CreateSurfaceFrom failed: " << SDL_GetError();
+    return;
+  }
+
+  // Save the surface to file as a PNG
+  if (!IMG_SavePNG(surface, filename.c_str())) {
+    PLOG_ERROR << "Error! IMG_SavePNG failed: " << SDL_GetError();
+    return;
+  }
+
+  // Clean up the surface
+  SDL_DestroySurface(surface);
+}
 
 class Layer {
 public:
@@ -86,24 +140,15 @@ public:
   virtual void OnUpdate() {}
   virtual void OnUIRender() {}
 
-  virtual std::string TakeScreenshot() { return ""; }
+  virtual void TakeScreenshot() {}
 
 protected:
-  // Called by each layer's OnAttach() to set up debug info 
-  void SetupDebug(Application *app);
-
-  // void CommonDebug(Application *app, ImVec2 viewport_size, Camera &camera);
-
-  int m_FrameStorageCount = 1001;
-  SlidingBuffer<float> m_FrameTimes = SlidingBuffer<float>(m_FrameStorageCount);
-  SlidingBuffer<float> m_FrameRates = SlidingBuffer<float>(m_FrameStorageCount);
+  // Frame rate/time graph buffers
+  int m_FrameGraphStorageCount = 1001;
+  SlidingBuffer<float> m_FrameTimes =
+      SlidingBuffer<float>(m_FrameGraphStorageCount);
+  SlidingBuffer<float> m_FrameRates =
+      SlidingBuffer<float>(m_FrameGraphStorageCount);
   std::vector<float> m_FrameGraphX =
-      arange<float>(0, (float)m_FrameStorageCount, 1);
-  std::string m_ScreenshotString = "";
-
-  std::vector<std::string> m_SceneNames;
-  int m_SceneID = 0;
-
-  std::vector<std::string> m_ControlModeNames;
-  std::vector<std::string> m_ProjectionModeNames;
+      arange<float>(0, (float)m_FrameGraphStorageCount, 1);
 };

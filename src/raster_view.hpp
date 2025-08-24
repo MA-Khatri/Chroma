@@ -17,7 +17,7 @@ public:
 	virtual void OnUpdate();
 	virtual void OnUIRender();
 
-	virtual std::string TakeScreenshot();
+	virtual void TakeScreenshot();
 
 private:
 
@@ -37,9 +37,7 @@ private:
 
 private:
 	Application* m_AppHandle;
-	// GLFWwindow* m_WindowHandle;
-	
-	// Camera* m_Camera;
+	SDL_Window* m_WindowHandle;
 	
 	bool m_ViewportFocused = false;
 	bool m_ViewportHovered = false;
@@ -63,7 +61,4 @@ private:
 	VkImage m_DepthImage;
 	VkDeviceMemory m_DepthImageMemory;
 	VkImageView m_DepthImageView;
-	
-	// std::vector<std::shared_ptr<Scene>> m_Scenes;
-	// std::shared_ptr<Scene> m_Scene; /* Current scene */
 };
