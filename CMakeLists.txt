@@ -14,16 +14,16 @@ set(SOURCES
     src/vulkan_engine/vulkan_utils.hpp
     src/vulkan_engine/vulkan_utils.cpp
 
-    src/vulkan_engine/shaders/Flat.frag
-    src/vulkan_engine/shaders/Flat.vert
-    src/vulkan_engine/shaders/FlatWithSpecular.frag
-    src/vulkan_engine/shaders/HelloTriangle.frag
-    src/vulkan_engine/shaders/HelloTriangle.vert
-    src/vulkan_engine/shaders/Lines.frag
-    src/vulkan_engine/shaders/Lines.vert
-    src/vulkan_engine/shaders/Normal.frag
-    src/vulkan_engine/shaders/Solid.frag
-    src/vulkan_engine/shaders/Solid.vert
+    src/vulkan_shaders/Flat.frag
+    src/vulkan_shaders/Flat.vert
+    src/vulkan_shaders/FlatWithSpecular.frag
+    src/vulkan_shaders/HelloTriangle.frag
+    src/vulkan_shaders/HelloTriangle.vert
+    src/vulkan_shaders/Lines.frag
+    src/vulkan_shaders/Lines.vert
+    src/vulkan_shaders/Normal.frag
+    src/vulkan_shaders/Solid.frag
+    src/vulkan_shaders/Solid.vert
 
     src/application.cpp
     src/application.hpp

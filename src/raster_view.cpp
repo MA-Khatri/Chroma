@@ -199,7 +199,7 @@ void RasterView::CleanupVulkan() {
   vkDestroyRenderPass(vke::Device, m_ViewportRenderPass, nullptr);
 }
 
-void RasterView::OnResize(ImVec2 newSize) {
+void RasterView::OnResize(ImVec2 newSize) { 
   m_ViewportSize = newSize;
 
   ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
