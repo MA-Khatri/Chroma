@@ -46,6 +46,8 @@ Application::Application() { Init(); }
 Application::~Application() { Shutdown(); }
 
 void Application::Init() {
+  PLOG_DEBUG << "Initializing application...";
+
   // Setup SDL
   if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
     PLOG_FATAL << "Failed to initialize SDL: " << SDL_GetError();
@@ -142,6 +144,8 @@ void Application::Init() {
 
   // Setup controller
   m_Controller = Controller::GetInstance();
+
+  PLOG_DEBUG << "Application initialized successfully.";
 }
 
 void Application::NextFrame() {
@@ -295,4 +299,5 @@ void Application::Shutdown() {
   vke::CleanupVulkan();
 
   SDL_DestroyWindow(m_WindowHandle);
+  SDL_Quit();
 }

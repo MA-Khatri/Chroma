@@ -14,6 +14,8 @@ int main() {
   static plog::RollingFileAppender<plog::TxtFormatter> fileAppender("log.txt", 10 * 1024 * 1024, 3);
   plog::init(plog::debug, &fileAppender).addAppender(&consoleAppender);
 
+  PLOG_INFO << "========== Starting Chroma ==========";
+
   // Initialize singleton app instance
   Application *app = Application::GetInstance();
 
@@ -24,6 +26,8 @@ int main() {
   // app->PushLayer(std::make_shared<RayTraceView>());
 
   app->Run();
+
+  PLOG_INFO << "========== Exiting Chroma ===========";
 
   return 0;
 }

@@ -17,13 +17,12 @@ RasterView::~RasterView() {
 // === Standard layer methods ===
 // ==============================
 void RasterView::OnAttach(Application *app) {
+  PLOG_DEBUG << "Attaching RasterView layer";
   m_AppHandle = app;
   m_VulkanEngine = new VulkanEngine();
 }
 
-void RasterView::OnDetach() {
-  delete m_VulkanEngine;
-}
+void RasterView::OnDetach() { delete m_VulkanEngine; }
 
 void RasterView::OnUpdate() {}
 
@@ -44,17 +43,17 @@ void RasterView::OnUIRender() {
           OnResize(newSize);
         }
 
-        // // m_Scene->VkDraw(*m_Camera);
+        // m_Scene->VkDraw(*m_Camera);
 
-        // // Wait until the descriptor set for the viewport image is created
-        // // This could be a source of latency later on -- might be better to
-        // // add multiple images here as well to allow simultaneous
-        // // rendering/displaying
-        // vkDeviceWaitIdle(vke::Device);
+        // Wait until the descriptor set for the viewport image is created
+        // This could be a source of latency later on -- might be better to
+        // add multiple images here as well to allow simultaneous
+        // rendering/displaying
+        vkDeviceWaitIdle(vke::Device);
 
-        // // Note: we flip the image vertically to match Vulkan convention!
-        // ImGui::Image(m_VulkanEngine.GetImageDescriptorSets()[vke::MainWindowData.FrameIndex],
-        //              m_ViewportSize, ImVec2(0, 1), ImVec2(1, 0));
+        // Note: we flip the image vertically to match Vulkan convention!
+        ImGui::Image(m_VulkanEngine->GetImageDescriptorSets()[vke::MainWindowData.FrameIndex],
+                     m_ViewportSize, ImVec2(0, 1), ImVec2(1, 0));
       }
       ImGui::EndChild();
     }
@@ -89,9 +88,9 @@ void RasterView::TakeScreenshot() {
 // ===================================
 
 void RasterView::OnResize(ImVec2 newSize) {
+  PLOG_DEBUG << "Resizing raster viewport to " << newSize.x << " x " << newSize.y;
+
   m_ViewportSize = newSize;
-  PLOG_INFO << "Resizing raster viewport to " << m_ViewportSize.x << " x "
-             << m_ViewportSize.y;
   m_VulkanEngine->OnResize(m_ViewportSize);
 
   ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;

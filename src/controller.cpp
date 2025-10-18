@@ -13,6 +13,7 @@ Controller::Controller() {
   SetMenubarCallback([this]() {
     if (ImGui::BeginMenu("File")) {
       if (ImGui::MenuItem("Exit")) {
+        PLOG_DEBUG << "Exit menu item clicked, closing application.";
         this->Close();
       }
       ImGui::EndMenu();
@@ -28,10 +29,12 @@ void Controller::ProcessEvents() {
 
     switch (event.type) {
     case SDL_EVENT_QUIT:
+      PLOG_VERBOSE << "Received QUIT event";
       m_Running = false;
       break;
 
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
+      PLOG_VERBOSE << "Recieved MOUSE_BUTTON_DOWN event";
       break;
 
     default:

@@ -97,6 +97,8 @@ std::vector<T> FlipImageVertically(const std::vector<T> &in, int width,
 template <typename T>
 void WriteImageToFile(std::string filename, int width, int height,
                       SDL_PixelFormat format, std::vector<T> &pixelData) {
+  PLOG_INFO << "Saving image to " << filename;
+
   // Check if the pixel data size is correct
   size_t bytesPerPixel = SDL_BYTESPERPIXEL(format);
   size_t pixelDataSize =
