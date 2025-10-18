@@ -4,6 +4,8 @@ set(SOURCES
     application.hpp
     camera.cpp
     camera.hpp
+    controller.cpp
+    controller.hpp
     layer.cpp
     layer.hpp
     main.cpp

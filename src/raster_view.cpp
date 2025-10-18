@@ -30,8 +30,7 @@ void RasterView::OnUIRender() {
   {
     ImGui::Begin("Rasterized Viewport");
     {
-      m_ViewportFocused =
-          ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
+      m_ViewportFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
 
       ImGui::BeginChild("Rasterized");
       {
@@ -51,9 +50,8 @@ void RasterView::OnUIRender() {
         vkDeviceWaitIdle(vke::Device);
 
         // Note: we flip the image vertically to match Vulkan convention!
-        ImGui::Image(
-            m_ViewportImageDescriptorSets[vke::MainWindowData.FrameIndex],
-            m_ViewportSize, ImVec2(0, 1), ImVec2(1, 0));
+        ImGui::Image(m_ViewportImageDescriptorSets[vke::MainWindowData.FrameIndex], m_ViewportSize,
+                     ImVec2(0, 1), ImVec2(1, 0));
       }
       ImGui::EndChild();
     }
@@ -78,40 +76,37 @@ void RasterView::TakeScreenshot() {
   // Create a temporary (capture) image to store screenshot data
   VkImage cptImage;
   VkDeviceMemory cptImageMemory;
-  vke::CreateImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT,
-                  VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_LINEAR,
-                  VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                      VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                  cptImage, cptImageMemory);
+  vke::CreateImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM,
+                   VK_IMAGE_TILING_LINEAR,
+                   VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                   cptImage, cptImageMemory);
 
   // Get the current viewport image
   VkImage &srcImage = m_ViewportImages[vke::MainWindowData.FrameIndex];
 
   // Transition viewport image to transfer src optimal
   vke::TransitionImageLayout(srcImage, vke::MainWindowData.SurfaceFormat.format,
-                            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
 
   // Copy viewport image to cpt image
   vke::CopyImageToImage(m_ViewportSize, srcImage, cptImage);
 
   // Transition viewport image back to color attachment optimal
   vke::TransitionImageLayout(srcImage, vke::MainWindowData.SurfaceFormat.format,
-                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1);
+                             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1);
 
   // Transition cpt image to transfer src optimal
   vke::TransitionImageLayout(cptImage, VK_FORMAT_R8G8B8A8_UNORM,
-                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
 
   // Get layout of the image (including row pitch)
   VkImageSubresource subResource{VK_IMAGE_ASPECT_COLOR_BIT, 0, 0};
   VkSubresourceLayout subResourceLayout;
-  vkGetImageSubresourceLayout(vke::Device, cptImage, &subResource,
-                              &subResourceLayout);
+  vkGetImageSubresourceLayout(vke::Device, cptImage, &subResource, &subResourceLayout);
 
   // Copy cpt image to host
   const char *data;
@@ -119,12 +114,10 @@ void RasterView::TakeScreenshot() {
   data += subResourceLayout.offset;
 
   // Determine if we need to swizzle
-  std::vector<VkFormat> formatsBGR = {VK_FORMAT_B8G8R8A8_SRGB,
-                                      VK_FORMAT_B8G8R8A8_UNORM,
+  std::vector<VkFormat> formatsBGR = {VK_FORMAT_B8G8R8A8_SRGB, VK_FORMAT_B8G8R8A8_UNORM,
                                       VK_FORMAT_B8G8R8A8_SNORM};
-  bool swizzle =
-      (std::find(formatsBGR.begin(), formatsBGR.end(),
-                 vke::MainWindowData.SurfaceFormat.format) != formatsBGR.end());
+  bool swizzle = (std::find(formatsBGR.begin(), formatsBGR.end(),
+                            vke::MainWindowData.SurfaceFormat.format) != formatsBGR.end());
 
   // Save image to vector with proper format
   std::vector<uint32_t> pixels;
@@ -176,13 +169,11 @@ void RasterView::InitVulkan() {
   vke::CreateViewportSampler(&m_ViewportSampler);
 
   vke::CreateColorResources(static_cast<uint32_t>(m_ViewportSize.x),
-                           static_cast<uint32_t>(m_ViewportSize.y),
-                           m_MSAASampleCount, m_ColorImage, m_ColorImageMemory,
-                           m_ColorImageView);
+                            static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount,
+                            m_ColorImage, m_ColorImageMemory, m_ColorImageView);
   vke::CreateDepthResources(static_cast<uint32_t>(m_ViewportSize.x),
-                           static_cast<uint32_t>(m_ViewportSize.y),
-                           m_MSAASampleCount, m_DepthImage, m_DepthImageMemory,
-                           m_DepthImageView);
+                            static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount,
+                            m_DepthImage, m_DepthImageMemory, m_DepthImageView);
   CreateViewportImagesAndFramebuffers();
   CreateViewportImageDescriptorSets();
 }
@@ -199,13 +190,12 @@ void RasterView::CleanupVulkan() {
   vkDestroyRenderPass(vke::Device, m_ViewportRenderPass, nullptr);
 }
 
-void RasterView::OnResize(ImVec2 newSize) { 
+void RasterView::OnResize(ImVec2 newSize) {
   m_ViewportSize = newSize;
 
   ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
   ImVec2 viewportPos = ImGui::GetWindowPos();
-  ImVec2 rPos =
-      ImVec2(viewportPos.x - mainWindowPos.x, viewportPos.y - mainWindowPos.y);
+  ImVec2 rPos = ImVec2(viewportPos.x - mainWindowPos.x, viewportPos.y - mainWindowPos.y);
   ImVec2 minR = ImGui::GetWindowContentRegionMin();
   ImVec2 maxR = ImGui::GetWindowContentRegionMax();
   // m_Camera->m_ViewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
@@ -224,13 +214,11 @@ void RasterView::OnResize(ImVec2 newSize) {
 
   // Recreate new
   vke::CreateColorResources(static_cast<uint32_t>(m_ViewportSize.x),
-                           static_cast<uint32_t>(m_ViewportSize.y),
-                           m_MSAASampleCount, m_ColorImage, m_ColorImageMemory,
-                           m_ColorImageView);
+                            static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount,
+                            m_ColorImage, m_ColorImageMemory, m_ColorImageView);
   vke::CreateDepthResources(static_cast<uint32_t>(m_ViewportSize.x),
-                           static_cast<uint32_t>(m_ViewportSize.y),
-                           m_MSAASampleCount, m_DepthImage, m_DepthImageMemory,
-                           m_DepthImageView);
+                            static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount,
+                            m_DepthImage, m_DepthImageMemory, m_DepthImageView);
   CreateViewportImagesAndFramebuffers();
   CreateViewportImageDescriptorSets();
 
@@ -239,13 +227,12 @@ void RasterView::OnResize(ImVec2 newSize) {
 
 void RasterView::CreateViewportImagesAndFramebuffers() {
   vke::CreateViewportImages(vke::ImageCount, m_ViewportSize, m_ViewportImages,
-                           m_ViewportImagesDeviceMemory);
+                            m_ViewportImagesDeviceMemory);
   vke::CreateViewportImageViews(m_ViewportImages, m_ViewportImageViews);
   m_ViewportFramebuffers.resize(vke::ImageCount);
   for (uint32_t i = 0; i < vke::ImageCount; i++) {
     vke::CreateFrameBuffer(
-        std::vector<VkImageView>{m_ColorImageView, m_DepthImageView,
-                                 m_ViewportImageViews[i]},
+        std::vector<VkImageView>{m_ColorImageView, m_DepthImageView, m_ViewportImageViews[i]},
         m_ViewportRenderPass, m_ViewportSize, m_ViewportFramebuffers[i]);
   }
 }
@@ -268,10 +255,8 @@ void RasterView::DestroyViewportImagesAndFramebuffers() {
 
 void RasterView::CreateViewportImageDescriptorSets() {
   for (uint32_t i = 0; i < vke::ImageCount; i++) {
-    m_ViewportImageDescriptorSets.push_back(
-        (VkDescriptorSet)ImGui_ImplVulkan_AddTexture(
-            m_ViewportSampler, m_ViewportImageViews[i],
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+    m_ViewportImageDescriptorSets.push_back((VkDescriptorSet)ImGui_ImplVulkan_AddTexture(
+        m_ViewportSampler, m_ViewportImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
   }
 }
 

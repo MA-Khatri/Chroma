@@ -57,10 +57,11 @@ void check_vk_result(VkResult err) {
 }
 
 #ifdef APP_USE_VULKAN_DEBUG_REPORT
-VKAPI_ATTR VkBool32 VKAPI_CALL
-debug_report(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType,
-             uint64_t object, size_t location, int32_t messageCode,
-             const char *pLayerPrefix, const char *pMessage, void *pUserData) {
+VKAPI_ATTR VkBool32 VKAPI_CALL debug_report(VkDebugReportFlagsEXT flags,
+                                            VkDebugReportObjectTypeEXT objectType, uint64_t object,
+                                            size_t location, int32_t messageCode,
+                                            const char *pLayerPrefix, const char *pMessage,
+                                            void *pUserData) {
   (void)flags;
   (void)object;
   (void)location;
@@ -68,8 +69,7 @@ debug_report(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType,
   (void)pUserData;
   (void)pLayerPrefix; // Unused arguments
 
-  PLOG_ERROR << "[Vulkan] Debug report from ObjectType: " << objectType
-             << " Message: " << pMessage;
+  PLOG_ERROR << "[Vulkan] Debug report from ObjectType: " << objectType << " Message: " << pMessage;
 
   return VK_FALSE;
 }
@@ -181,13 +181,11 @@ void SubmitResourceFree(std::function<void()> &&func) {
   ResourceFreeQueue[CurrentFrameIndex].emplace_back(func);
 }
 
-uint32_t GetVulkanMemoryType(VkMemoryPropertyFlags properties,
-                             uint32_t type_bits) {
+uint32_t GetVulkanMemoryType(VkMemoryPropertyFlags properties, uint32_t type_bits) {
   VkPhysicalDeviceMemoryProperties prop;
   vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &prop);
   for (uint32_t i = 0; i < prop.memoryTypeCount; i++) {
-    if ((prop.memoryTypes[i].propertyFlags & properties) == properties &&
-        type_bits & (1 << i)) {
+    if ((prop.memoryTypes[i].propertyFlags & properties) == properties && type_bits & (1 << i)) {
       return i;
     }
   }
@@ -195,15 +193,13 @@ uint32_t GetVulkanMemoryType(VkMemoryPropertyFlags properties,
   return 0xffffffff;
 }
 
-VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates,
-                             VkImageTiling tiling,
+VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling,
                              VkFormatFeatureFlags features) {
   for (VkFormat format : candidates) {
     VkFormatProperties props;
     vkGetPhysicalDeviceFormatProperties(PhysicalDevice, format, &props);
 
-    if (tiling == VK_IMAGE_TILING_LINEAR &&
-        (props.linearTilingFeatures & features) == features) {
+    if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
       return format;
     } else if (tiling == VK_IMAGE_TILING_OPTIMAL &&
                (props.optimalTilingFeatures & features) == features) {
@@ -211,21 +207,18 @@ VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates,
     }
   }
 
-  PLOG_ERROR
-      << "FindSupportedFormat(): Error! Failed to find supported format!";
+  PLOG_ERROR << "FindSupportedFormat(): Error! Failed to find supported format!";
   return VK_FORMAT_UNDEFINED;
 }
 
 VkFormat FindDepthFormat() {
   return FindSupportedFormat(
-      {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
-       VK_FORMAT_D24_UNORM_S8_UINT},
+      {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
       VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
 bool HasStencilComponent(VkFormat format) {
-  return format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
-         format == VK_FORMAT_D24_UNORM_S8_UINT ||
+  return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT ||
          format == VK_FORMAT_D16_UNORM_S8_UINT;
 }
 
@@ -243,14 +236,12 @@ void SetupVulkan(ImVector<const char *> instance_extensions) {
   CreateTransientCommandPool(GraphicsQueueFamily, GraphicsCommandPool);
 }
 
-void SetupVulkanWindow(ImGui_ImplVulkanH_Window *wd, VkSurfaceKHR surface,
-                       int width, int height) {
+void SetupVulkanWindow(ImGui_ImplVulkanH_Window *wd, VkSurfaceKHR surface, int width, int height) {
   wd->Surface = surface;
 
   // Check for window system integration (WSI) support
   VkBool32 res;
-  vkGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, GraphicsQueueFamily,
-                                       wd->Surface, &res);
+  vkGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, GraphicsQueueFamily, wd->Surface, &res);
   if (res != VK_TRUE) {
     PLOG_FATAL << "SetupVulkanWindow(): Fatal error! No WSI support on "
                   "selected physical device";
@@ -258,33 +249,27 @@ void SetupVulkanWindow(ImGui_ImplVulkanH_Window *wd, VkSurfaceKHR surface,
   }
 
   // Select surface format
-  const VkFormat requestSurfaceImageFormat[] = {
-      VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM,
-      VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM};
-  const VkColorSpaceKHR requestSurfaceColorSpace =
-      VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+  const VkFormat requestSurfaceImageFormat[] = {VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM,
+                                                VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM};
+  const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
   wd->SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(
       PhysicalDevice, wd->Surface, requestSurfaceImageFormat,
-      (size_t)IM_ARRAYSIZE(requestSurfaceImageFormat),
-      requestSurfaceColorSpace);
+      (size_t)IM_ARRAYSIZE(requestSurfaceImageFormat), requestSurfaceColorSpace);
 
   // Select present mode
 #ifdef APP_USE_UNLIMITED_FRAME_RATE
-  VkPresentModeKHR present_modes[] = {VK_PRESENT_MODE_MAILBOX_KHR,
-                                      VK_PRESENT_MODE_IMMEDIATE_KHR,
+  VkPresentModeKHR present_modes[] = {VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR,
                                       VK_PRESENT_MODE_FIFO_KHR};
 #else
   VkPresentModeKHR present_modes[] = {VK_PRESENT_MODE_FIFO_KHR};
 #endif
   wd->PresentMode = ImGui_ImplVulkanH_SelectPresentMode(
-      PhysicalDevice, wd->Surface, &present_modes[0],
-      IM_ARRAYSIZE(present_modes));
+      PhysicalDevice, wd->Surface, &present_modes[0], IM_ARRAYSIZE(present_modes));
 
   // Create SwapChain, RenderPass, Framebuffer, etc.
   IM_ASSERT(MinImageCount >= 2);
-  ImGui_ImplVulkanH_CreateOrResizeWindow(Instance, PhysicalDevice, Device, wd,
-                                         GraphicsQueueFamily, Allocator, width,
-                                         height, MinImageCount);
+  ImGui_ImplVulkanH_CreateOrResizeWindow(Instance, PhysicalDevice, Device, wd, GraphicsQueueFamily,
+                                         Allocator, width, height, MinImageCount);
 
   // Update ImageCount in case its different...
   ImageCount = wd->ImageCount;
@@ -311,15 +296,12 @@ void CreateInstance(ImVector<const char *> instance_extensions) {
   ImVector<VkExtensionProperties> properties;
   vkEnumerateInstanceExtensionProperties(nullptr, &properties_count, nullptr);
   properties.resize(properties_count);
-  err = vkEnumerateInstanceExtensionProperties(nullptr, &properties_count,
-                                               properties.Data);
+  err = vkEnumerateInstanceExtensionProperties(nullptr, &properties_count, properties.Data);
   check_vk_result(err);
 
   // Enable required extensions
-  if (IsExtensionAvailable(
-          properties, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME)) {
-    instance_extensions.push_back(
-        VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+  if (IsExtensionAvailable(properties, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME)) {
+    instance_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
   }
 
   // Enable validation layers (if in debug mode)
@@ -338,20 +320,16 @@ void CreateInstance(ImVector<const char *> instance_extensions) {
 
   // Setup the debug report callback
 #ifdef APP_USE_VULKAN_DEBUG_REPORT
-  auto f_vkCreateDebugReportCallbackEXT =
-      (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(
-          Instance, "vkCreateDebugReportCallbackEXT");
+  auto f_vkCreateDebugReportCallbackEXT = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(
+      Instance, "vkCreateDebugReportCallbackEXT");
   IM_ASSERT(f_vkCreateDebugReportCallbackEXT != nullptr);
   VkDebugReportCallbackCreateInfoEXT debug_report_ci = {};
-  debug_report_ci.sType =
-      VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-  debug_report_ci.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT |
-                          VK_DEBUG_REPORT_WARNING_BIT_EXT |
+  debug_report_ci.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+  debug_report_ci.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT |
                           VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
   debug_report_ci.pfnCallback = debug_report;
   debug_report_ci.pUserData = nullptr;
-  err = f_vkCreateDebugReportCallbackEXT(Instance, &debug_report_ci, Allocator,
-                                         &DebugReport);
+  err = f_vkCreateDebugReportCallbackEXT(Instance, &debug_report_ci, Allocator, &DebugReport);
   check_vk_result(err);
 #endif
 }
@@ -396,12 +374,10 @@ void SelectPhysicalDevice() {
 
 void GetQueueFamilies() {
   uint32_t queueFamilyCount = 0;
-  vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueFamilyCount,
-                                           nullptr);
+  vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueFamilyCount, nullptr);
 
   std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-  vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueFamilyCount,
-                                           queueFamilies.data());
+  vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueFamilyCount, queueFamilies.data());
 
   int i = 0;
   for (const auto &queueFamily : queueFamilies) {
@@ -439,11 +415,9 @@ void CreateLogicalDevice() {
   // Enumerate physical device extension properties
   uint32_t properties_count;
   ImVector<VkExtensionProperties> properties;
-  vkEnumerateDeviceExtensionProperties(PhysicalDevice, nullptr,
-                                       &properties_count, nullptr);
+  vkEnumerateDeviceExtensionProperties(PhysicalDevice, nullptr, &properties_count, nullptr);
   properties.resize(properties_count);
-  vkEnumerateDeviceExtensionProperties(PhysicalDevice, nullptr,
-                                       &properties_count, properties.Data);
+  vkEnumerateDeviceExtensionProperties(PhysicalDevice, nullptr, &properties_count, properties.Data);
 
   // Create one queue of each queue family with the same queue_priority
   const float queue_priority[] = {1.0f};
@@ -474,8 +448,7 @@ void CreateLogicalDevice() {
   create_info.pQueueCreateInfos = queue_info;
   create_info.enabledExtensionCount = (uint32_t)device_extensions.Size;
   create_info.ppEnabledExtensionNames = device_extensions.Data;
-  create_info.pEnabledFeatures =
-      &deviceFeatures; // I.e., enable all device features
+  create_info.pEnabledFeatures = &deviceFeatures; // I.e., enable all device features
   err = vkCreateDevice(PhysicalDevice, &create_info, Allocator, &Device);
   check_vk_result(err);
 
@@ -491,18 +464,17 @@ void CreateDescriptorPool() {
   // NOTE: for now, we're just making a bunch so we don't need to think about
   // it. Maybe better to make this dynamic in the future? Or somehow better
   // allocation.
-  VkDescriptorPoolSize pool_sizes[] = {
-      {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
-      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
-      {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
-      {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
-      {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
-      {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
-      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
-      {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
-      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
-      {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
-      {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
+  VkDescriptorPoolSize pool_sizes[] = {{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
+                                       {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+                                       {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
+                                       {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
+                                       {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
+                                       {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
+                                       {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
+                                       {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
+                                       {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
+                                       {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
+                                       {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
   VkDescriptorPoolCreateInfo pool_info = {};
   pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
   pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
@@ -513,8 +485,7 @@ void CreateDescriptorPool() {
   check_vk_result(err);
 }
 
-void CreateTransientCommandPool(uint32_t queueFamily,
-                                VkCommandPool &commandPool) {
+void CreateTransientCommandPool(uint32_t queueFamily, VkCommandPool &commandPool) {
   // Create a transient command pool
   VkCommandPoolCreateInfo poolInfo{};
   poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -529,9 +500,8 @@ VkSampleCountFlagBits GetMaxUsableSampleCount() {
   VkPhysicalDeviceProperties physicalDeviceProperties;
   vkGetPhysicalDeviceProperties(PhysicalDevice, &physicalDeviceProperties);
 
-  VkSampleCountFlags counts =
-      physicalDeviceProperties.limits.framebufferColorSampleCounts &
-      physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+  VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts &
+                              physicalDeviceProperties.limits.framebufferDepthSampleCounts;
   if (counts & VK_SAMPLE_COUNT_64_BIT) {
     return VK_SAMPLE_COUNT_64_BIT;
   }
@@ -561,8 +531,8 @@ void CleanupVulkan() {
 #ifdef APP_USE_VULKAN_DEBUG_REPORT
   // Remove the debug report callback
   auto f_vkDestroyDebugReportCallbackEXT =
-      (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(
-          Instance, "vkDestroyDebugReportCallbackEXT");
+      (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(Instance,
+                                                                 "vkDestroyDebugReportCallbackEXT");
   f_vkDestroyDebugReportCallbackEXT(Instance, DebugReport, Allocator);
 #endif // APP_USE_VULKAN_DEBUG_REPORT
 
@@ -585,9 +555,8 @@ void FrameRender(ImGui_ImplVulkanH_Window *wd, ImDrawData *draw_data) {
       wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
   VkSemaphore render_complete_semaphore =
       wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
-  err = vkAcquireNextImageKHR(Device, wd->Swapchain, UINT64_MAX,
-                              image_acquired_semaphore, VK_NULL_HANDLE,
-                              &wd->FrameIndex);
+  err = vkAcquireNextImageKHR(Device, wd->Swapchain, UINT64_MAX, image_acquired_semaphore,
+                              VK_NULL_HANDLE, &wd->FrameIndex);
   if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) {
     SwapChainRebuild = true;
     return;
@@ -616,11 +585,9 @@ void FrameRender(ImGui_ImplVulkanH_Window *wd, ImDrawData *draw_data) {
     // Free command buffers allocated by Application::GetCommandBuffer. These
     // use MainWindowData.FrameIndex and not CurrentFrameIndex because they're
     // tied to the swapchain image index.
-    auto &allocatedCommandBuffers =
-        AllocatedGraphicsCommandBuffers[wd->FrameIndex];
+    auto &allocatedCommandBuffers = AllocatedGraphicsCommandBuffers[wd->FrameIndex];
     if (allocatedCommandBuffers.size() > 0) {
-      vkFreeCommandBuffers(Device, fd->CommandPool,
-                           (uint32_t)allocatedCommandBuffers.size(),
+      vkFreeCommandBuffers(Device, fd->CommandPool, (uint32_t)allocatedCommandBuffers.size(),
                            allocatedCommandBuffers.data());
       allocatedCommandBuffers.clear();
     }
@@ -651,8 +618,7 @@ void FrameRender(ImGui_ImplVulkanH_Window *wd, ImDrawData *draw_data) {
   // Submit command buffer
   vkCmdEndRenderPass(fd->CommandBuffer);
   {
-    VkPipelineStageFlags wait_stage =
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     VkSubmitInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     info.waitSemaphoreCount = 1;
@@ -698,8 +664,7 @@ void FramePresent(ImGui_ImplVulkanH_Window *wd) {
 // === Layer Utility Functions ===
 // ===============================
 
-void CreateViewportImage(ImVec2 extent, VkImage &image,
-                         VkDeviceMemory &memory) {
+void CreateViewportImage(ImVec2 extent, VkImage &image, VkDeviceMemory &memory) {
   VkResult err;
 
   // Create the image
@@ -715,8 +680,7 @@ void CreateViewportImage(ImVec2 extent, VkImage &image,
   imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
   imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-  imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                          VK_IMAGE_USAGE_SAMPLED_BIT |
+  imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
                           VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
   err = vkCreateImage(Device, &imageCreateInfo, nullptr, &image);
   check_vk_result(err);
@@ -731,8 +695,8 @@ void CreateViewportImage(ImVec2 extent, VkImage &image,
   VkMemoryAllocateInfo memAllocInfo{};
   memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   memAllocInfo.allocationSize = memRequirements.size;
-  memAllocInfo.memoryTypeIndex = GetVulkanMemoryType(
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memRequirements.memoryTypeBits);
+  memAllocInfo.memoryTypeIndex =
+      GetVulkanMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memRequirements.memoryTypeBits);
   err = vkAllocateMemory(Device, &memAllocInfo, nullptr, &memory);
   check_vk_result(err);
 
@@ -741,8 +705,7 @@ void CreateViewportImage(ImVec2 extent, VkImage &image,
   check_vk_result(err);
 }
 
-void CreateViewportImages(uint32_t count, ImVec2 extent,
-                          std::vector<VkImage> &images,
+void CreateViewportImages(uint32_t count, ImVec2 extent, std::vector<VkImage> &images,
                           std::vector<VkDeviceMemory> &memory) {
   images.resize(count);
   memory.resize(count);
@@ -752,9 +715,8 @@ void CreateViewportImages(uint32_t count, ImVec2 extent,
   }
 }
 
-void CreateImageView(VkFormat format, VkImageAspectFlags aspectFlags,
-                     uint32_t mipLevels, VkImage &image,
-                     VkImageView &imageView) {
+void CreateImageView(VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels,
+                     VkImage &image, VkImageView &imageView) {
   VkImageViewCreateInfo imageViewCreateInfo{};
   imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   imageViewCreateInfo.image = image;
@@ -765,23 +727,20 @@ void CreateImageView(VkFormat format, VkImageAspectFlags aspectFlags,
   imageViewCreateInfo.subresourceRange.levelCount = mipLevels;
   imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
   imageViewCreateInfo.subresourceRange.layerCount = 1;
-  VkResult err =
-      vkCreateImageView(Device, &imageViewCreateInfo, nullptr, &imageView);
+  VkResult err = vkCreateImageView(Device, &imageViewCreateInfo, nullptr, &imageView);
   check_vk_result(err);
 }
 
-void CreateViewportImageViews(std::vector<VkImage> &images,
-                              std::vector<VkImageView> &views) {
+void CreateViewportImageViews(std::vector<VkImage> &images, std::vector<VkImageView> &views) {
   views.resize(images.size());
 
   for (uint32_t i = 0; i < images.size(); i++) {
-    CreateImageView(MainWindowData.SurfaceFormat.format,
-                    VK_IMAGE_ASPECT_COLOR_BIT, 1, images[i], views[i]);
+    CreateImageView(MainWindowData.SurfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1, images[i],
+                    views[i]);
   }
 }
 
-void CreateRenderPass(VkSampleCountFlagBits msaaSamples,
-                      VkRenderPass &renderPass) {
+void CreateRenderPass(VkSampleCountFlagBits msaaSamples, VkRenderPass &renderPass) {
   VkAttachmentDescription colorAttachment{};
   colorAttachment.format = MainWindowData.SurfaceFormat.format;
   colorAttachment.samples = msaaSamples;
@@ -808,8 +767,7 @@ void CreateRenderPass(VkSampleCountFlagBits msaaSamples,
   depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
   depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
   depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  depthAttachment.finalLayout =
-      VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
   VkAttachmentReference depthAttachmentRef{};
   depthAttachmentRef.attachment = 1;
@@ -838,16 +796,16 @@ void CreateRenderPass(VkSampleCountFlagBits msaaSamples,
   subpass.pResolveAttachments = &colorAttachmentResolveRef;
 
   VkSubpassDependency dependency{};
-  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+  dependency.srcStageMask =
+      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  dependency.dstStageMask =
+      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  dependency.dstAccessMask =
+      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
   dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-  std::array<VkAttachmentDescription, 3> attachments = {
-      colorAttachment, depthAttachment, colorAttachmentResolve};
+  std::array<VkAttachmentDescription, 3> attachments = {colorAttachment, depthAttachment,
+                                                        colorAttachmentResolve};
   VkRenderPassCreateInfo renderPassInfo{};
   renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
   renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
@@ -857,8 +815,7 @@ void CreateRenderPass(VkSampleCountFlagBits msaaSamples,
   renderPassInfo.dependencyCount = 1;
   renderPassInfo.pDependencies = &dependency;
 
-  VkResult err =
-      vkCreateRenderPass(Device, &renderPassInfo, nullptr, &renderPass);
+  VkResult err = vkCreateRenderPass(Device, &renderPassInfo, nullptr, &renderPass);
   check_vk_result(err);
 }
 
@@ -1073,9 +1030,8 @@ CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
 }
 */
 
-void CreateFrameBuffer(std::vector<VkImageView> attachments,
-                       VkRenderPass &renderPass, ImVec2 extent,
-                       VkFramebuffer &framebuffer) {
+void CreateFrameBuffer(std::vector<VkImageView> attachments, VkRenderPass &renderPass,
+                       ImVec2 extent, VkFramebuffer &framebuffer) {
   VkFramebufferCreateInfo framebufferInfo{};
   framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
   framebufferInfo.renderPass = renderPass;
@@ -1084,14 +1040,12 @@ void CreateFrameBuffer(std::vector<VkImageView> attachments,
   framebufferInfo.width = (uint32_t)extent.x;
   framebufferInfo.height = (uint32_t)extent.y;
   framebufferInfo.layers = 1;
-  VkResult err =
-      vkCreateFramebuffer(Device, &framebufferInfo, nullptr, &framebuffer);
+  VkResult err = vkCreateFramebuffer(Device, &framebufferInfo, nullptr, &framebuffer);
   check_vk_result(err);
 }
 
-void CreateFrameBuffers(std::vector<VkImageView> attachments,
-                        VkRenderPass &renderPass, ImVec2 extent, uint32_t count,
-                        std::vector<VkFramebuffer> &framebuffers) {
+void CreateFrameBuffers(std::vector<VkImageView> attachments, VkRenderPass &renderPass,
+                        ImVec2 extent, uint32_t count, std::vector<VkFramebuffer> &framebuffers) {
   framebuffers.resize(count);
 
   for (uint32_t i = 0; i < count; i++) {
@@ -1115,32 +1069,25 @@ void CreateViewportSampler(VkSampler *sampler) {
   check_vk_result(err);
 }
 
-void CreateColorResources(uint32_t width, uint32_t height,
-                          VkSampleCountFlagBits msaaSamples,
+void CreateColorResources(uint32_t width, uint32_t height, VkSampleCountFlagBits msaaSamples,
                           VkImage &colorImage, VkDeviceMemory &colorImageMemory,
                           VkImageView &colorImageView) {
   VkFormat colorFormat = MainWindowData.SurfaceFormat.format;
 
-  CreateImage(
-      width, height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL,
-      VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
-          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage, colorImageMemory);
-  CreateImageView(colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1, colorImage,
-                  colorImageView);
+  CreateImage(width, height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL,
+              VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage, colorImageMemory);
+  CreateImageView(colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1, colorImage, colorImageView);
 }
 
-void CreateDepthResources(uint32_t width, uint32_t height,
-                          VkSampleCountFlagBits msaaSamples,
+void CreateDepthResources(uint32_t width, uint32_t height, VkSampleCountFlagBits msaaSamples,
                           VkImage &depthImage, VkDeviceMemory &depthImageMemory,
                           VkImageView &depthImageView) {
   VkFormat depthFormat = FindDepthFormat();
-  CreateImage(
-      width, height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL,
-      VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
-  CreateImageView(depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1, depthImage,
-                  depthImageView);
+  CreateImage(width, height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+              VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+              depthImage, depthImageMemory);
+  CreateImageView(depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1, depthImage, depthImageView);
   TransitionImageLayout(depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED,
                         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 }
@@ -1154,8 +1101,8 @@ uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
   vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &memProperties);
 
   for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-    if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags &
-                                    properties) == properties) {
+    if ((typeFilter & (1 << i)) &&
+        (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
       return i;
     }
   }
@@ -1176,9 +1123,8 @@ void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
   FlushTransferCommandBuffer(commandBuffer);
 }
 
-void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
-                  VkMemoryPropertyFlags properties, VkBuffer &buffer,
-                  VkDeviceMemory &bufferMemory) {
+void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
+                  VkBuffer &buffer, VkDeviceMemory &bufferMemory) {
   // Buffer creation
   VkBufferCreateInfo bufferInfo{};
   bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -1197,9 +1143,9 @@ void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
   VkMemoryAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   allocInfo.allocationSize = memRequirements.size;
-  allocInfo.memoryTypeIndex = FindMemoryType(
-      memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  allocInfo.memoryTypeIndex =
+      FindMemoryType(memRequirements.memoryTypeBits,
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
   err = vkAllocateMemory(Device, &allocInfo, nullptr, &bufferMemory);
   check_vk_result(err);
 
@@ -1270,32 +1216,26 @@ void CreateIndexBuffer(const std::vector<uint32_t> indices,
 }
 */
 
-void CreateDescriptorSetLayout(
-    std::vector<VkDescriptorSetLayoutBinding> &layoutBindings,
-    VkDescriptorSetLayout &descriptorSetLayout) {
+void CreateDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> &layoutBindings,
+                               VkDescriptorSetLayout &descriptorSetLayout) {
   VkDescriptorSetLayoutCreateInfo layoutInfo{};
   layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
   layoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
   layoutInfo.pBindings = layoutBindings.data();
 
-  VkResult err = vkCreateDescriptorSetLayout(Device, &layoutInfo, nullptr,
-                                             &descriptorSetLayout);
+  VkResult err = vkCreateDescriptorSetLayout(Device, &layoutInfo, nullptr, &descriptorSetLayout);
   check_vk_result(err);
 }
 
 void CreateUniformBuffer(VkDeviceSize bufferSize, VkBuffer &uniformBuffer,
-                         VkDeviceMemory &uniformBufferMemory,
-                         void *&uniformBufferMapped) {
+                         VkDeviceMemory &uniformBufferMemory, void *&uniformBufferMapped) {
   CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                uniformBuffer, uniformBufferMemory);
-  vkMapMemory(Device, uniformBufferMemory, 0, bufferSize, 0,
-              &uniformBufferMapped);
+  vkMapMemory(Device, uniformBufferMemory, 0, bufferSize, 0, &uniformBufferMapped);
 }
 
-void CreateUniformBuffers(VkDeviceSize bufferSize,
-                          std::vector<VkBuffer> &uniformBuffers,
+void CreateUniformBuffers(VkDeviceSize bufferSize, std::vector<VkBuffer> &uniformBuffers,
                           std::vector<VkDeviceMemory> &uniformBuffersMemory,
                           std::vector<void *> &uniformBuffersMapped) {
   uniformBuffers.resize(ImageCount);
@@ -1320,20 +1260,17 @@ void CreateDescriptorPool(uint32_t nSets, VkDescriptorPool &descriptorPool) {
   // Texture samplers (diffuse, specular, normal)
   VkDescriptorPoolSize diffuseSamplerPoolSize{};
   diffuseSamplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  diffuseSamplerPoolSize.descriptorCount =
-      nSets * static_cast<uint32_t>(ImageCount);
+  diffuseSamplerPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
   poolSizes[1] = diffuseSamplerPoolSize;
 
   VkDescriptorPoolSize specularSamplerPoolSize{};
   specularSamplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  specularSamplerPoolSize.descriptorCount =
-      nSets * static_cast<uint32_t>(ImageCount);
+  specularSamplerPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
   poolSizes[2] = specularSamplerPoolSize;
 
   VkDescriptorPoolSize normalSamplerPoolSize{};
   normalSamplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  normalSamplerPoolSize.descriptorCount =
-      nSets * static_cast<uint32_t>(ImageCount);
+  normalSamplerPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
   poolSizes[3] = normalSamplerPoolSize;
 
   // Descriptor pool create info
@@ -1343,14 +1280,12 @@ void CreateDescriptorPool(uint32_t nSets, VkDescriptorPool &descriptorPool) {
   poolInfo.pPoolSizes = poolSizes.data();
   poolInfo.maxSets = nSets * static_cast<uint32_t>(ImageCount);
 
-  VkResult err =
-      vkCreateDescriptorPool(Device, &poolInfo, nullptr, &descriptorPool);
+  VkResult err = vkCreateDescriptorPool(Device, &poolInfo, nullptr, &descriptorPool);
   check_vk_result(err);
 }
 
 void CreateDescriptorSet(VkDescriptorSetLayout &descriptorSetLayout,
-                         VkDescriptorPool &descriptorPool,
-                         VkDescriptorSet &descriptorSet) {
+                         VkDescriptorPool &descriptorPool, VkDescriptorSet &descriptorSet) {
   VkDescriptorSetAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   allocInfo.descriptorPool = descriptorPool;
@@ -1373,8 +1308,7 @@ void CreateDescriptorSets(VkDescriptorSetLayout &descriptorSetLayout,
   allocInfo.pSetLayouts = layouts.data();
 
   descriptorSets.resize(ImageCount);
-  VkResult err =
-      vkAllocateDescriptorSets(Device, &allocInfo, descriptorSets.data());
+  VkResult err = vkAllocateDescriptorSets(Device, &allocInfo, descriptorSets.data());
   check_vk_result(err);
 }
 
@@ -1383,9 +1317,8 @@ void CreateDescriptorSets(VkDescriptorSetLayout &descriptorSetLayout,
 // ================
 
 void CreateImage(uint32_t width, uint32_t height, uint32_t mipLevels,
-                 VkSampleCountFlagBits numSample, VkFormat format,
-                 VkImageTiling tiling, VkImageUsageFlags usage,
-                 VkMemoryPropertyFlags properties, VkImage &image,
+                 VkSampleCountFlagBits numSample, VkFormat format, VkImageTiling tiling,
+                 VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage &image,
                  VkDeviceMemory &imageMemory) {
   VkImageCreateInfo imageInfo{};
   imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1413,8 +1346,7 @@ void CreateImage(uint32_t width, uint32_t height, uint32_t mipLevels,
   VkMemoryAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   allocInfo.allocationSize = memRequirements.size;
-  allocInfo.memoryTypeIndex =
-      FindMemoryType(memRequirements.memoryTypeBits, properties);
+  allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
   err = vkAllocateMemory(Device, &allocInfo, nullptr, &imageMemory);
   check_vk_result(err);
 
@@ -1485,9 +1417,8 @@ void CreateTextureImage(const Texture<uint8_t> &tex, uint32_t &mipLevels,
 }
 */
 
-void TransitionImageLayout(VkCommandBuffer &commandBuffer, VkImage image,
-                           VkFormat format, VkImageLayout oldLayout,
-                           VkImageLayout newLayout, uint32_t mipLevels) {
+void TransitionImageLayout(VkCommandBuffer &commandBuffer, VkImage image, VkFormat format,
+                           VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
   // Create a barrier
   VkImageMemoryBarrier barrier{};
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1517,8 +1448,7 @@ void TransitionImageLayout(VkCommandBuffer &commandBuffer, VkImage image,
   VkPipelineStageFlags destinationStage;
 
   // Undefined -> transfer: transfer writes that don't need to wait on anything
-  if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
-      newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+  if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
     barrier.srcAccessMask = 0;
     barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
@@ -1540,8 +1470,8 @@ void TransitionImageLayout(VkCommandBuffer &commandBuffer, VkImage image,
   } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
              newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
     barrier.srcAccessMask = 0;
-    barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-                            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    barrier.dstAccessMask =
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
     sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
     destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
@@ -1575,21 +1505,19 @@ void TransitionImageLayout(VkCommandBuffer &commandBuffer, VkImage image,
                << oldLayout << ", new layout: " << newLayout;
   }
 
-  vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0,
-                       nullptr, 0, nullptr, 1, &barrier);
+  vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1,
+                       &barrier);
 }
 
-void TransitionImageLayout(VkImage image, VkFormat format,
-                           VkImageLayout oldLayout, VkImageLayout newLayout,
-                           uint32_t mipLevels) {
+void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout,
+                           VkImageLayout newLayout, uint32_t mipLevels) {
   VkCommandBuffer commandBuffer = GetGraphicsCommandBuffer();
-  TransitionImageLayout(commandBuffer, image, format, oldLayout, newLayout,
-                        mipLevels);
+  TransitionImageLayout(commandBuffer, image, format, oldLayout, newLayout, mipLevels);
   FlushGraphicsCommandBuffer(commandBuffer);
 }
 
-void CopyBufferToImage(VkCommandBuffer &commandBuffer, VkBuffer buffer,
-                       VkImage image, uint32_t width, uint32_t height) {
+void CopyBufferToImage(VkCommandBuffer &commandBuffer, VkBuffer buffer, VkImage image,
+                       uint32_t width, uint32_t height) {
   // Specify which part of buffer is going to be copied to which part of image
   VkBufferImageCopy region{};
 
@@ -1610,19 +1538,18 @@ void CopyBufferToImage(VkCommandBuffer &commandBuffer, VkBuffer buffer,
   region.imageOffset = {0, 0, 0};
   region.imageExtent = {width, height, 1};
 
-  vkCmdCopyBufferToImage(commandBuffer, buffer, image,
-                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+  vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+                         &region);
 }
 
-void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
-                       uint32_t height) {
+void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
   VkCommandBuffer commandBuffer = GetTransferCommandBuffer();
   CopyBufferToImage(commandBuffer, buffer, image, width, height);
   FlushTransferCommandBuffer(commandBuffer);
 }
 
-void CopyImageToImage(VkCommandBuffer &commandBuffer, const ImVec2 &extent,
-                      VkImage &srcImage, VkImage &dstImage) {
+void CopyImageToImage(VkCommandBuffer &commandBuffer, const ImVec2 &extent, VkImage &srcImage,
+                      VkImage &dstImage) {
   VkImageCopy imageCopyRegion{};
   imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   imageCopyRegion.srcSubresource.layerCount = 1;
@@ -1632,13 +1559,11 @@ void CopyImageToImage(VkCommandBuffer &commandBuffer, const ImVec2 &extent,
   imageCopyRegion.extent.height = static_cast<uint32_t>(extent.y);
   imageCopyRegion.extent.depth = 1;
 
-  vkCmdCopyImage(commandBuffer, srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                 dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
-                 &imageCopyRegion);
+  vkCmdCopyImage(commandBuffer, srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstImage,
+                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopyRegion);
 }
 
-void CopyImageToImage(const ImVec2 &extent, VkImage &srcImage,
-                      VkImage &dstImage) {
+void CopyImageToImage(const ImVec2 &extent, VkImage &srcImage, VkImage &dstImage) {
   VkCommandBuffer commandBuffer = GetTransferCommandBuffer();
   CopyImageToImage(commandBuffer, extent, srcImage, dstImage);
   FlushTransferCommandBuffer(commandBuffer);
@@ -1646,8 +1571,8 @@ void CopyImageToImage(const ImVec2 &extent, VkImage &srcImage,
 
 void CreateTextureImageView(uint32_t mipLevels, VkImage &textureImage,
                             VkImageView &textureImageView) {
-  CreateImageView(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT,
-                  mipLevels, textureImage, textureImageView);
+  CreateImageView(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, textureImage,
+                  textureImageView);
 }
 
 void CreateTextureSampler(uint32_t mipLevels, VkSampler &textureSampler) {
@@ -1676,17 +1601,15 @@ void CreateTextureSampler(uint32_t mipLevels, VkSampler &textureSampler) {
   samplerInfo.maxLod = static_cast<float>(mipLevels);
   samplerInfo.mipLodBias = 0.0f;
 
-  VkResult err =
-      vkCreateSampler(Device, &samplerInfo, nullptr, &textureSampler);
+  VkResult err = vkCreateSampler(Device, &samplerInfo, nullptr, &textureSampler);
   check_vk_result(err);
 }
 
-void GenerateMipMaps(VkImage image, VkFormat imageFormat, int32_t texWidth,
-                     int32_t texHeight, uint32_t mipLevels) {
+void GenerateMipMaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight,
+                     uint32_t mipLevels) {
   // Check if image format supports linear blitting
   VkFormatProperties formatProperties;
-  vkGetPhysicalDeviceFormatProperties(PhysicalDevice, imageFormat,
-                                      &formatProperties);
+  vkGetPhysicalDeviceFormatProperties(PhysicalDevice, imageFormat, &formatProperties);
   if (!(formatProperties.optimalTilingFeatures &
         VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
     PLOG_ERROR << "GenerateMipMaps(): Texture image format does not support "
@@ -1720,8 +1643,7 @@ void GenerateMipMaps(VkImage image, VkFormat imageFormat, int32_t texWidth,
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
     vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0,
-                         nullptr, 1, &barrier);
+                         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
     // Blit from mip level i-1 to i
     VkImageBlit blit{};
@@ -1732,15 +1654,13 @@ void GenerateMipMaps(VkImage image, VkFormat imageFormat, int32_t texWidth,
     blit.srcSubresource.baseArrayLayer = 0;
     blit.srcSubresource.layerCount = 1;
     blit.dstOffsets[0] = {0, 0, 0};
-    blit.dstOffsets[1] = {mipWidth > 1 ? mipWidth / 2 : 1,
-                          mipHeight > 1 ? mipHeight / 2 : 1, 1};
+    blit.dstOffsets[1] = {mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1};
     blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     blit.dstSubresource.mipLevel = i;
     blit.dstSubresource.baseArrayLayer = 0;
     blit.dstSubresource.layerCount = 1;
-    vkCmdBlitImage(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                   image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
-                   VK_FILTER_LINEAR);
+    vkCmdBlitImage(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image,
+                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
 
     // Add a barrier for level i-1 to transition to SHADER_READ_ONLY_OPTIMAL --
     // fragment shaders will wait on this
@@ -1749,8 +1669,8 @@ void GenerateMipMaps(VkImage image, VkFormat imageFormat, int32_t texWidth,
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
     barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
     vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr,
-                         0, nullptr, 1, &barrier);
+                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
+                         &barrier);
 
     // Divide mip dimensions by 2
     if (mipWidth > 1)
@@ -1767,8 +1687,8 @@ void GenerateMipMaps(VkImage image, VkFormat imageFormat, int32_t texWidth,
   barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
   barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
   vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0,
-                       nullptr, 1, &barrier);
+                       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
+                       &barrier);
 
   FlushGraphicsCommandBuffer(commandBuffer);
 }

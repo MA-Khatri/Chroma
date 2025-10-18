@@ -11,11 +11,9 @@
 #include <plog/Log.h>
 
 int main() {
-
   // Initialize logger with up to 3, 10 MB files (stored in build dir)
   static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
-  static plog::RollingFileAppender<plog::TxtFormatter> fileAppender(
-      "log.txt", 10 * 1024 * 1024, 3);
+  static plog::RollingFileAppender<plog::TxtFormatter> fileAppender("log.txt", 10 * 1024 * 1024, 3);
   plog::init(plog::debug, &fileAppender).addAppender(&consoleAppender);
 
   // Initialize singleton app instance
@@ -26,16 +24,6 @@ int main() {
   // Create Layers
   app->PushLayer(std::make_shared<RasterView>());
   // app->PushLayer(std::make_shared<RayTraceView>());
-
-  // Menubar setup
-  app->SetMenubarCallback([app]() {
-    if (ImGui::BeginMenu("File")) {
-      if (ImGui::MenuItem("Exit")) {
-        app->Close();
-      }
-      ImGui::EndMenu();
-    }
-  });
 
   app->Run();
 

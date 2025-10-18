@@ -1,13 +1,10 @@
 #include "application.hpp"
-#include "imgui_impl_sdl3.h"
 #include "vulkan_engine/vulkan_utils.hpp"
 
 #include <plog/Log.h>
 #include <string>
 
-constexpr uint64_t SecondsToNanoseconds(double seconds) {
-  return seconds * SDL_NS_PER_SECOND;
-}
+constexpr uint64_t SecondsToNanoseconds(double seconds) { return seconds * SDL_NS_PER_SECOND; }
 
 constexpr double NanosecondsToSeconds(uint64_t nanoseconds) {
   return nanoseconds / static_cast<double>(SDL_NS_PER_SECOND);
@@ -21,22 +18,9 @@ constexpr double NanosecondsToSeconds(uint64_t nanoseconds) {
 Application *Application::s_Instance = nullptr;
 
 void Application::Run() {
-  m_Running = true;
-
-  while (m_Running) {
+  while (m_Controller->Running()) {
     NextFrame();
   }
-}
-
-void Application::Close() { m_Running = false; }
-
-void Application::SetMenubarCallback(
-    const std::function<void()> &menubarCallback) {
-  m_MenubarCallback = menubarCallback;
-}
-
-std::function<void()> Application::GetMenubarCallback() {
-  return m_MenubarCallback;
 }
 
 void Application::PushLayer(const std::shared_ptr<Layer> &layer) {
@@ -61,7 +45,6 @@ Application::Application() { Init(); }
 Application::~Application() { Shutdown(); }
 
 void Application::Init() {
-
   // Setup SDL
   if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
     PLOG_FATAL << "Failed to initialize SDL: " << SDL_GetError();
@@ -70,11 +53,10 @@ void Application::Init() {
 
   // Create SDL window with Vulkan graphics context
   float main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
-  SDL_WindowFlags window_flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE |
-                                 SDL_WINDOW_HIDDEN |
-                                 SDL_WINDOW_HIGH_PIXEL_DENSITY;
-  m_WindowHandle = SDL_CreateWindow("Chroma", (int)(1280 * main_scale),
-                                    (int)(720 * main_scale), window_flags);
+  SDL_WindowFlags window_flags =
+      SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+  m_WindowHandle =
+      SDL_CreateWindow("Chroma", (int)(1280 * main_scale), (int)(720 * main_scale), window_flags);
   if (!m_WindowHandle) {
     PLOG_FATAL << "Failed to create SDL window: " << SDL_GetError();
     return;
@@ -82,8 +64,7 @@ void Application::Init() {
 
   ImVector<const char *> extensions;
   uint32_t sdl_extensions_count = 0;
-  const char *const *sdl_extensions =
-      SDL_Vulkan_GetInstanceExtensions(&sdl_extensions_count);
+  const char *const *sdl_extensions = SDL_Vulkan_GetInstanceExtensions(&sdl_extensions_count);
   for (uint32_t n = 0; n < sdl_extensions_count; n++)
     extensions.push_back(sdl_extensions[n]);
   vke::SetupVulkan(extensions);
@@ -91,8 +72,7 @@ void Application::Init() {
   // Create window surface
   VkSurfaceKHR surface;
   VkResult err;
-  if (!SDL_Vulkan_CreateSurface(m_WindowHandle, vke::Instance, vke::Allocator,
-                                &surface)) {
+  if (!SDL_Vulkan_CreateSurface(m_WindowHandle, vke::Instance, vke::Allocator, &surface)) {
     PLOG_FATAL << "Failed to create Vulkan surface!";
     return;
   }
@@ -102,8 +82,7 @@ void Application::Init() {
   SDL_GetWindowSize(m_WindowHandle, &w, &h);
   ImGui_ImplVulkanH_Window *wd = &vke::MainWindowData;
   vke::SetupVulkanWindow(wd, surface, w, h);
-  SDL_SetWindowPosition(m_WindowHandle, SDL_WINDOWPOS_CENTERED,
-                        SDL_WINDOWPOS_CENTERED);
+  SDL_SetWindowPosition(m_WindowHandle, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
   SDL_ShowWindow(m_WindowHandle);
 
   vke::AllocatedGraphicsCommandBuffers.resize(wd->ImageCount);
@@ -157,9 +136,11 @@ void Application::Init() {
   float font_size = 16;
   ImFontConfig fontConfig;
   fontConfig.FontDataOwnedByAtlas = false;
-  ImFont *default_font =
-      io.Fonts->AddFontFromFileTTF(font_path.c_str(), font_size, &fontConfig);
+  ImFont *default_font = io.Fonts->AddFontFromFileTTF(font_path.c_str(), font_size, &fontConfig);
   io.FontDefault = default_font;
+
+  // Setup controller
+  m_Controller = Controller::GetInstance();
 }
 
 void Application::NextFrame() {
@@ -167,25 +148,8 @@ void Application::NextFrame() {
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
   ImGuiIO &io = ImGui::GetIO();
 
-  SDL_Event event;
-  while (SDL_PollEvent(&event)) {
-
-    ImGui_ImplSDL3_ProcessEvent(&event);
-
-    // TODO: Implement a controller/event handler class
-    switch (event.type) {
-    case SDL_EVENT_QUIT:
-      m_Running = false;
-      break;
-
-    case SDL_EVENT_MOUSE_BUTTON_DOWN:
-      PLOG_INFO << "Mouse key pressed!";
-      break;
-
-    default:
-      break;
-    }
-  }
+  // Poll and handle SDL events (inputs, window resize, etc.)
+  m_Controller->ProcessEvents();
 
   // Call the update functions for each layer
   for (auto &layer : m_Layers) {
@@ -198,9 +162,9 @@ void Application::NextFrame() {
     SDL_GetWindowSize(m_WindowHandle, &w, &h);
     if (w > 0 && h > 0) {
       ImGui_ImplVulkan_SetMinImageCount(vke::MinImageCount);
-      ImGui_ImplVulkanH_CreateOrResizeWindow(
-          vke::Instance, vke::PhysicalDevice, vke::Device, &vke::MainWindowData,
-          vke::GraphicsQueueFamily, vke::Allocator, w, h, vke::MinImageCount);
+      ImGui_ImplVulkanH_CreateOrResizeWindow(vke::Instance, vke::PhysicalDevice, vke::Device,
+                                             &vke::MainWindowData, vke::GraphicsQueueFamily,
+                                             vke::Allocator, w, h, vke::MinImageCount);
       vke::MainWindowData.FrameIndex = 0;
 
       // Clear allocated command buffers from here since entire pool is
@@ -225,7 +189,8 @@ void Application::NextFrame() {
     // window not dockable into, becuase it would be confusing to have two
     // docking targets within each other.
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
-    if (m_MenubarCallback) {
+    auto menubar_callback = m_Controller->GetMenubarCallback();
+    if (menubar_callback) {
       window_flags |= ImGuiWindowFlags_MenuBar;
     }
 
@@ -237,8 +202,7 @@ void Application::NextFrame() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
                     ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-    window_flags |=
-        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+    window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
     // When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will
     // render our background and handle the pass-thru hole, so we ask Begin() to
@@ -266,9 +230,9 @@ void Application::NextFrame() {
       ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
     }
 
-    if (m_MenubarCallback) {
+    if (menubar_callback) {
       if (ImGui::BeginMenuBar()) {
-        m_MenubarCallback();
+        menubar_callback();
         ImGui::EndMenuBar();
       }
     }
@@ -284,8 +248,8 @@ void Application::NextFrame() {
   // Rendering
   ImGui::Render();
   ImDrawData *main_draw_data = ImGui::GetDrawData();
-  const bool main_is_minimized = (main_draw_data->DisplaySize.x <= 0.0f ||
-                                  main_draw_data->DisplaySize.y <= 0.0f);
+  const bool main_is_minimized =
+      (main_draw_data->DisplaySize.x <= 0.0f || main_draw_data->DisplaySize.y <= 0.0f);
   wd->ClearValue.color.float32[0] = clear_color.x * clear_color.w;
   wd->ClearValue.color.float32[1] = clear_color.y * clear_color.w;
   wd->ClearValue.color.float32[2] = clear_color.z * clear_color.w;

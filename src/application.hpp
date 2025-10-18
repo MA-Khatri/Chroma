@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint> // for int64_t
-#include <functional>
 #include <memory>
 
 #include <SDL3/SDL.h>
@@ -13,6 +12,7 @@
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_vulkan.h>
 
+#include "controller.hpp"
 #include "layer.hpp"
 #include "scene.hpp"
 
@@ -32,10 +32,6 @@ public:
   }
 
   void Run();
-  void Close();
-
-  void SetMenubarCallback(const std::function<void()> &menubarCallback);
-  std::function<void()> GetMenubarCallback();
 
   void PushLayer(const std::shared_ptr<Layer> &layer);
 
@@ -60,7 +56,7 @@ private:
   void NextFrame();
 
   SDL_Window *m_WindowHandle;
-  std::function<void()> m_MenubarCallback;
+  Controller *m_Controller;
   std::vector<std::shared_ptr<Layer>> m_Layers;
 
   bool m_Running;
