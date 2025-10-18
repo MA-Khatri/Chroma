@@ -1,4 +1,5 @@
 #include "application.hpp"
+#include "imgui.h"
 #include "vulkan_engine/vulkan_utils.hpp"
 
 #include <plog/Log.h>
@@ -219,7 +220,7 @@ void Application::NextFrame() {
     // any change of dockspace/settings would lead to windows being stuck in
     // limbo and never being visible.
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    ImGui::Begin("DockSpace Demo", nullptr, window_flags);
+    ImGui::Begin("DockSpace", nullptr, window_flags);
     ImGui::PopStyleVar();
 
     ImGui::PopStyleVar(2);

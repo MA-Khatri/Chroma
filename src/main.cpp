@@ -2,8 +2,6 @@
 #include "raster_view.hpp"
 #include "raytrace_view.hpp"
 
-#include <imgui.h>
-
 #include <plog/Appenders/ColorConsoleAppender.h>
 #include <plog/Appenders/RollingFileAppender.h>
 #include <plog/Formatters/TxtFormatter.h>

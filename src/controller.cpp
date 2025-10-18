@@ -32,7 +32,6 @@ void Controller::ProcessEvents() {
       break;
 
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
-      PLOG_INFO << "Mouse key pressed!";
       break;
 
     default:

@@ -1,5 +1,7 @@
 
 set(VULKAN_ENGINE_SRC
+    vulkan_engine.cpp
+    vulkan_engine.hpp
     vulkan_utils.cpp
     vulkan_utils.hpp
 )
