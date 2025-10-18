@@ -145,7 +145,7 @@ void Application::Init() {
   // Setup controller
   m_Controller = Controller::GetInstance();
 
-  PLOG_DEBUG << "Application initialized successfully.";
+  PLOG_DEBUG << "Application initialized successfully";
 }
 
 void Application::NextFrame() {

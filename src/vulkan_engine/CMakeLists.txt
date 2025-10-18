@@ -8,3 +8,5 @@ set(VULKAN_ENGINE_SRC
 
 # Add files to the global SOURCES variable
 target_sources(${PROJECT_NAME} PRIVATE ${VULKAN_ENGINE_SRC})
+
+add_subdirectory(vulkan_shaders)

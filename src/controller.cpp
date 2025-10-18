@@ -13,7 +13,7 @@ Controller::Controller() {
   SetMenubarCallback([this]() {
     if (ImGui::BeginMenu("File")) {
       if (ImGui::MenuItem("Exit")) {
-        PLOG_DEBUG << "Exit menu item clicked, closing application.";
+        PLOG_DEBUG << "Exit menu item clicked, closing application";
         this->Close();
       }
       ImGui::EndMenu();

@@ -30,7 +30,7 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Add subdirectories
 add_subdirectory(vulkan_engine)
-add_subdirectory(vulkan_shaders)
+# add_subdirectory(optix_engine)
 
 # Link dependencies from the top level
 target_link_libraries(${PROJECT_NAME}
