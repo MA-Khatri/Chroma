@@ -21,6 +21,7 @@ set(SOURCES
     raytrace_view.hpp
     scene.cpp
     scene.hpp
+    texture.hpp
     transform.cpp
     transform.hpp
 )
