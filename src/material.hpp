@@ -7,43 +7,43 @@ enum class MaterialType { Lambertian, Conductor, Dielectric, Principled, Emissiv
 class Material {
 public:
   Material(TexturePaths texturePaths, MaterialType type);
-  Material() : type(MaterialType::Lambertian) {}
-  ~Material();
+  Material() : m_Type(MaterialType::Lambertian) {}
+  ~Material() {};
 
-  MaterialType type;
+  MaterialType m_Type;
 
   // Base material properties
-  glm::vec3 albedo = glm::vec3(1.0f);
-  glm::vec3 emissive = glm::vec3(0.0f);
+  glm::vec3 m_Albedo = glm::vec3(1.0f);
+  glm::vec3 m_Emissive = glm::vec3(0.0f);
 
-  float ao = 1.0f; // Ambient occlusion
+  float m_AO = 1.0f; // Ambient occlusion
 
   // Dielectric / Conductor properties
-  glm::vec3 reflection_color = glm::vec3(1.0f);
-  glm::vec3 refraction_color = glm::vec3(1.0f);
-  glm::vec3 extinction = glm::vec3(0.0f);
+  glm::vec3 m_ReflectionColor = glm::vec3(1.0f);
+  glm::vec3 m_RefractionColor = glm::vec3(1.0f);
+  glm::vec3 m_Extinction = glm::vec3(0.0f);
 
-  float eta_in = 1.0f;  // Index of refraction inside the material
-  float eta_out = 1.0f; // Index of refraction outside the material
+  float m_EtaIn = 1.0f;  // Index of refraction inside the material
+  float m_EtaOut = 1.0f; // Index of refraction outside the material
 
   // Principled BSDF material properties
-  float specularTransmission = 0.0f;
-  float metallic = 0.0f;
-  float subsurface = 0.0f;
-  float specular = 0.5f;
-  float roughness = 0.5f;
-  float specularTint = 0.0f;
-  float anisotropic = 0.0f;
-  float sheen = 0.0f;
-  float sheenTint = 0.5f;
-  float clearcoat = 0.0f;
-  float clearcoatGloss = 1.0f;
+  float m_SpecularTransmission = 0.0f;
+  float m_Metallic = 0.0f;
+  float m_Subsurface = 0.0f;
+  float m_Specular = 0.5f;
+  float m_Roughness = 0.5f;
+  float m_SpecularTint = 0.0f;
+  float m_Anisotropic = 0.0f;
+  float m_Sheen = 0.0f;
+  float m_SheenTint = 0.5f;
+  float m_Clearcoat = 0.0f;
+  float m_ClearcoatGloss = 1.0f;
 
   // Textures
-  Texture<uint8_t> albedoTexture;
-  Texture<uint8_t> normalTexture;
-  Texture<uint8_t> metallicTexture;
-  Texture<uint8_t> roughnessTexture;
-  Texture<uint8_t> heightTexture;
-  Texture<uint8_t> aoTexture;
+  Texture<uint8_t> m_AlbedoTexture;
+  Texture<uint8_t> m_NormalTexture;
+  Texture<uint8_t> m_MetallicTexture;
+  Texture<uint8_t> m_RoughnessTexture;
+  Texture<uint8_t> m_HeightTexture;
+  Texture<uint8_t> m_AOTexture;
 };

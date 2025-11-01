@@ -19,7 +19,8 @@ int main() {
   // Initialize singleton app instance
   Application *app = Application::GetInstance();
 
-  // TODO: Scenes
+  // Create Scenes
+  app->PushScene(std::make_shared<Scene>(CreateTestScene()));
 
   // Create Layers
   app->PushLayer(std::make_shared<RasterView>());

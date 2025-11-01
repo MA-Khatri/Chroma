@@ -21,11 +21,11 @@ struct TexturePaths {
 template <typename T> struct Texture {
 public:
   Texture() = default;
-  Texture(const std::string &path, TextureType type) : path(path), type(type) {
+  Texture(const std::string &path, TextureType type) : m_FilePath(path), m_Type(type) {
     SDL_Surface *surface = IMG_Load(path.c_str());
     if (!surface) {
-      PLOG_ERROR << "Failed to load texture: " << path << " SDL_image Error: " << IMG_GetError();
-      size = glm::ivec3(0, 0, 0);
+      PLOG_ERROR << "Failed to load texture: " << path << " SDL_image Error: " << SDL_GetError();
+      m_Size = glm::ivec3(0, 0, 0);
       return;
     }
 
@@ -35,22 +35,22 @@ public:
                  << " Expected bytes per pixel: " << sizeof(T)
                  << " Actual bytes per pixel: " << bytesPerPixel;
       SDL_DestroySurface(surface);
-      size = glm::ivec3(0, 0, 0);
+      m_Size = glm::ivec3(0, 0, 0);
       return;
     }
-    size = glm::ivec3(surface->w, surface->h, bytesPerPixel);
+    m_Size = glm::ivec3(surface->w, surface->h, bytesPerPixel);
 
     // Copy pixel data
-    pixels.resize(surface->w * surface->h * bytesPerPixel);
-    std::memcpy(pixels.data(), surface->pixels, pixels.size() * sizeof(T));
+    m_Pixels.resize(surface->w * surface->h * bytesPerPixel);
+    std::memcpy(m_Pixels.data(), surface->pixels, m_Pixels.size() * sizeof(T));
 
     SDL_DestroySurface(surface);
   }
   ~Texture() = default;
 
-  std::string path;
-  TextureType type;
+  std::string m_FilePath;
+  TextureType m_Type;
 
-  std::vector<T> pixels;
-  glm::ivec3 size; // width, height, channels
+  std::vector<T> m_Pixels;
+  glm::ivec3 m_Size; // width, height, channels
 };

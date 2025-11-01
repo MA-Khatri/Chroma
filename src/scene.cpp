@@ -1,11 +1,13 @@
 #include "scene.hpp"
+#include "camera.hpp"
 
-Scene::Scene(std::string filePath) {
+Scene::Scene(std::filesystem::path filePath) {
   // TODO: Load scene from file
 }
 
 Scene CreateTestScene() {
   Scene scene;
+  scene.SetSceneName("Test Scene");
 
   // Create a simple test scene with a cube and a camera
   auto cubeMesh = std::make_shared<Mesh>(CreateCubeMesh());
@@ -14,7 +16,9 @@ Scene CreateTestScene() {
   Object cubeObject(cubeMesh, cubeMaterial, cubeTransform);
   scene.AddObject(cubeObject);
 
-  auto camera = std::make_shared<Camera>();
+  auto camera =
+      std::make_shared<PerspectiveCamera>(45.0f, 16.0f / 9.0f, glm::vec3(5.0f, 5.0f, 5.0f),
+                                          glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
   scene.SetCamera(camera);
 
   return scene;
