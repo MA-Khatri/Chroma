@@ -4,11 +4,15 @@
 
 enum class MaterialType { Lambertian, Conductor, Dielectric, Principled, Emissive };
 
+static int MaterialCounter = 0;
+
 class Material {
 public:
   Material(TexturePaths texturePaths, MaterialType type);
-  Material() : m_Type(MaterialType::Lambertian) {}
+  Material() : m_Type(MaterialType::Lambertian) {};
   ~Material() {};
+
+  int m_MaterialID = MaterialCounter++;
 
   MaterialType m_Type;
 
@@ -43,7 +47,7 @@ public:
   Texture<uint8_t> m_AlbedoTexture;
   Texture<uint8_t> m_NormalTexture;
   Texture<uint8_t> m_MetallicTexture;
-  Texture<uint8_t> m_RoughnessTexture;
+  Texture<uint8_t> m_RoughnessTexture; // Aka "specular" map
   Texture<uint8_t> m_HeightTexture;
   Texture<uint8_t> m_AOTexture;
 };

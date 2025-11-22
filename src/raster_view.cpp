@@ -1,5 +1,6 @@
 #include "raster_view.hpp"
 
+#include "vulkan_engine/vulkan_engine.hpp"
 #include "vulkan_engine/vulkan_utils.hpp"
 
 #include <SDL3/SDL_pixels.h>
@@ -24,7 +25,19 @@ void RasterView::OnAttach(Application *app) {
 
 void RasterView::OnDetach() { delete m_VulkanEngine; }
 
-void RasterView::OnUpdate() {}
+void RasterView::OnUpdate() 
+{
+  // Check if scene has changed
+  auto scene = m_AppHandle->GetActiveScene();
+  if(scene->m_SceneID != m_CurrentSceneIndex) 
+  {
+    PLOG_DEBUG << "Active scene changed in RasterView to Scene ID: " << scene->m_SceneID;
+    m_CurrentSceneIndex = scene->m_SceneID;
+
+    // Update VulkanEngine with new scene
+    m_VulkanEngine->SetScene(scene);
+  }
+}
 
 void RasterView::OnUIRender() {
   // No padding on viewports
@@ -43,7 +56,7 @@ void RasterView::OnUIRender() {
           OnResize(newSize);
         }
 
-        // m_Scene->VkDraw(*m_Camera);
+        m_VulkanEngine->DrawFrame();
 
         // Wait until the descriptor set for the viewport image is created
         // This could be a source of latency later on -- might be better to

@@ -2,6 +2,7 @@
 #include "vulkan_utils.hpp"
 
 #include <plog/Log.h>
+#include <vulkan/vulkan_core.h>
 
 /// =============================
 /// ====== Public Methods =======
@@ -116,6 +117,62 @@ std::vector<uint32_t> VulkanEngine::SaveFramebuffer() {
   vkDestroyImage(vke::Device, cptImage, nullptr);
 
   return pixels;
+}
+
+void VulkanEngine::SetScene(std::shared_ptr<Scene> scene) {
+  // Check if we already have a VkScene for this Scene
+  // TODO: What happens if the Scene is modified?
+  if (m_VkScenes.find(scene->m_SceneID) != m_VkScenes.end()) {
+    m_VkScene = m_VkScenes[scene->m_SceneID];
+    return;
+  }
+
+  m_VkScene =
+      std::make_shared<VkScene>(scene, m_ViewportSize, m_MSAASampleCount, m_ViewportRenderPass);
+  m_VkScenes.insert({scene->m_SceneID, m_VkScene});
+}
+
+void VulkanEngine::DrawFrame() {
+  VkCommandBuffer commandBuffer = vke::GetGraphicsCommandBuffer();
+
+  VkRenderPassBeginInfo renderPassInfo{};
+  renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  renderPassInfo.renderPass = m_ViewportRenderPass;
+  renderPassInfo.framebuffer = m_ViewportFramebuffers[vke::MainWindowData.FrameIndex];
+  renderPassInfo.renderArea.offset = {0, 0};
+  renderPassInfo.renderArea.extent = {static_cast<uint32_t>(m_ViewportSize.x),
+                                      static_cast<uint32_t>(m_ViewportSize.y)};
+
+  std::array<VkClearValue, 2> clearValues{};
+  auto cc = m_VkScene->GetBaseScene()->GetClearColor();
+  clearValues[0].color = {{cc.x, cc.y, cc.z, 1.0f}};
+  clearValues[1].depthStencil = {1.0f, 0};
+  renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+  renderPassInfo.pClearValues = clearValues.data();
+
+  vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+  // Need to set the viewport and scissor since they are dynamic
+  VkViewport viewport{};
+  viewport.x = 0.0f;
+  viewport.y = 0.0f;
+  viewport.width = m_ViewportSize.x;
+  viewport.height = m_ViewportSize.y;
+  viewport.minDepth = 0.0f;
+  viewport.maxDepth = 1.0f;
+  vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+  VkRect2D scissor{};
+  scissor.offset = {0, 0};
+  scissor.extent = {static_cast<uint32_t>(m_ViewportSize.x),
+                    static_cast<uint32_t>(m_ViewportSize.y)};
+  vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+  m_VkScene->Draw(commandBuffer);
+
+  vkCmdEndRenderPass(commandBuffer);
+
+  vke::FlushGraphicsCommandBuffer(commandBuffer);
 }
 
 /// =============================

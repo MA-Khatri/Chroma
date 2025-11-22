@@ -2,9 +2,9 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 
+#include "glm/gtx/quaternion.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "glm/gtx/quaternion.hpp"
 
 class Transform {
 public:
@@ -13,9 +13,41 @@ public:
       : m_Position(position), m_Rotation(rotation), m_Scale(scale) {}
   ~Transform() = default;
 
-  void SetPosition(const glm::vec3 &position) { m_Position = position; };
-  void SetRotation(const glm::vec3 &rotation) { m_Rotation = rotation; };
-  void SetScale(const glm::vec3 &scale) { m_Scale = scale; };
+  void SetPosition(const glm::vec3 &position) {
+    m_Position = position;
+    UpdateMatrix();
+  };
+  void SetRotation(const glm::vec3 &rotation) {
+    m_Rotation = rotation;
+    UpdateMatrix();
+  };
+  void SetScale(const glm::vec3 &scale) {
+    m_Scale = scale;
+    UpdateMatrix();
+  };
+
+  void Translate(const glm::vec3 &delta) {
+    m_Position += delta;
+    UpdateMatrix();
+  };
+  void Rotate(const glm::vec3 &delta) {
+    m_Rotation *= glm::quat(delta);
+    UpdateMatrix();
+  };
+  void Scale(const glm::vec3 &factor) {
+    m_Scale *= factor;
+    UpdateMatrix();
+  };
+
+  // TODO: should these return const references?
+  const glm::vec3 &GetPosition() { return m_Position; }
+  const glm::quat &GetRotation() { return m_Rotation; }
+  const glm::vec3 &GetScale() { return m_Scale; }
+
+  const glm::mat4 &GetModelMatrix() { return m_ModelMatrix; }
+  const glm::mat3 GetNormalMatrix() {
+    return m_NormalMatrix;
+  }
 
 private:
   glm::vec3 m_Position = glm::vec3(0.0f);
@@ -23,12 +55,15 @@ private:
   glm::vec3 m_Scale = glm::vec3(1.0f);
 
   glm::mat4 m_ModelMatrix = glm::mat4(1.0f);
+  glm::mat3 m_NormalMatrix = glm::mat3(1.0f);
 
-  glm::mat4 UpdateMatrix() const {
+  void UpdateMatrix() {
+    // TODO: is there a glm function that does this directly?
     glm::mat4 translationMat = glm::translate(glm::mat4(1.0f), m_Position);
     glm::mat4 rotationMat = glm::toMat4(m_Rotation);
     glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), m_Scale);
 
-    return translationMat * rotationMat * scaleMat;
+    m_ModelMatrix = translationMat * rotationMat * scaleMat;
+    m_NormalMatrix = glm::mat3(glm::transpose(glm::inverse(m_ModelMatrix)));
   }
 };

@@ -39,8 +39,6 @@ void Application::SetActiveScene(int sceneIndex) {
   }
 }
 
-std::shared_ptr<Scene> Application::GetActiveScene() { return m_Scenes[m_ActiveSceneIndex]; }
-
 int64_t Application::GetTimeNS() {
   SDL_Time ns;
   if (SDL_GetCurrentTime(&ns))
@@ -161,6 +159,7 @@ void Application::Init() {
 }
 
 void Application::NextFrame() {
+  PLOG_VERBOSE << "=== Starting new frame...";
   ImGui_ImplVulkanH_Window *wd = &vke::MainWindowData;
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
   ImGuiIO &io = ImGui::GetIO();

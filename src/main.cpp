@@ -20,11 +20,23 @@ int main() {
   Application *app = Application::GetInstance();
 
   // Create Scenes
+  PLOG_DEBUG << "Creating scenes...";
   app->PushScene(std::make_shared<Scene>(CreateTestScene()));
+  PLOG_DEBUG << "Done creating scenes.";
+
+  auto& scenes = app->GetAllScenes();
+  if (scenes.size() > 0) {
+    PLOG_DEBUG << "Setting active scene to Scene ID: " << scenes[0]->m_SceneID;
+    app->SetActiveScene(scenes[0]->m_SceneID);
+  } else {
+    PLOG_ERROR << "No scenes available to set as active!";
+  }
 
   // Create Layers
+  PLOG_DEBUG << "Creating layers...";
   app->PushLayer(std::make_shared<RasterView>());
   // app->PushLayer(std::make_shared<RayTraceView>());
+  PLOG_DEBUG << "Done creating layers.";
 
   app->Run();
 

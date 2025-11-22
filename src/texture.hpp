@@ -9,7 +9,7 @@
 
 enum class TextureType { Albedo, Normal, Metallic, Roughness, Height, AO };
 
-struct TexturePaths {
+struct TexturePaths { // TODO: should these be stored as std::filesystem::path?
   std::string albedo;
   std::string normal;
   std::string metallic;

@@ -8,11 +8,11 @@
 
 class Object {
 public:
-  Object(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, Transform transform)
+  Object(std::shared_ptr<Mesh> mesh, std::shared_ptr<Material> material, std::shared_ptr<Transform> transform)
       : m_Mesh(mesh), m_Material(material), m_Transform(transform) {}
   ~Object() = default;
 
   std::shared_ptr<Mesh> m_Mesh;
   std::shared_ptr<Material> m_Material;
-  Transform m_Transform;
+  std::shared_ptr<Transform> m_Transform;
 };
