@@ -24,9 +24,10 @@ int main() {
   app->PushScene(std::make_shared<Scene>(CreateTestScene()));
   PLOG_DEBUG << "Done creating scenes.";
 
-  auto& scenes = app->GetAllScenes();
+  auto &scenes = app->GetAllScenes();
   if (scenes.size() > 0) {
-    PLOG_DEBUG << "Setting active scene to Scene ID: " << scenes[0]->m_SceneID;
+    PLOG_DEBUG << "Setting active scene to \"" << scenes[0]->GetSceneName()
+               << "\" (Scene ID: " << scenes[0]->m_SceneID << ")";
     app->SetActiveScene(scenes[0]->m_SceneID);
   } else {
     PLOG_ERROR << "No scenes available to set as active!";

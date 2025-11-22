@@ -44,7 +44,7 @@ private:
   std::vector<VkImageView> m_ViewportImageViews;
   std::vector<VkDescriptorSet> m_ViewportImageDescriptorSets;
 
-  VkSampleCountFlagBits m_MSAASampleCount = VK_SAMPLE_COUNT_1_BIT;
+  VkSampleCountFlagBits m_MSAASampleCount = VK_SAMPLE_COUNT_4_BIT;
   VkImage m_ColorImage; // for MSAA
   VkDeviceMemory m_ColorImageMemory;
   VkImageView m_ColorImageView;

@@ -1,5 +1,6 @@
 #include "scene.hpp"
 #include "camera.hpp"
+#include "texture.hpp"
 
 Scene::Scene(std::filesystem::path filePath) {
   // TODO: Load scene from file
@@ -11,14 +12,16 @@ Scene CreateTestScene() {
 
   // Create a simple test scene with a cube and a camera
   auto cubeMesh = std::make_shared<Mesh>(CreateCubeMesh());
-  auto cubeMaterial = std::make_shared<Material>();
+  TexturePaths cubeTextures;
+  cubeTextures.albedo = "C:/Users/mmrsk/Repos/Chroma/res/textures/checker.png";
+  auto cubeMaterial = std::make_shared<Material>(cubeTextures, MaterialType::Lambertian);
   auto cubeTransform = std::make_shared<Transform>();
   auto cubeObject = std::make_shared<Object>(cubeMesh, cubeMaterial, cubeTransform);
   scene.AddObject(cubeObject);
 
-  auto camera =
-      std::make_shared<PerspectiveCamera>(45.0f, 16.0f / 9.0f, glm::vec3(5.0f, 5.0f, 5.0f),
-                                          glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+  auto camera = std::make_shared<PerspectiveCamera>(
+      45.0f, 16.0f / 9.0f, glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+      glm::vec3(0.0f, 0.0f, 1.0f), 0.1f, 1000.0f);
   scene.SetCamera(camera);
 
   return scene;

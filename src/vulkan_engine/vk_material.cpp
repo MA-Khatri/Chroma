@@ -52,11 +52,17 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
   vke::CreateDescriptorSetLayout(layoutBindings, m_PipelineInfo.descriptorSetLayout);
 
   // Create graphics pipeline
-  std::vector<std::string> shaderFiles = {
-      // TODO: these should be provided by the material
-      "C:/Users/mmrsk/Repos/Chroma/build/ninja-vcpkg-release/vulkan_shaders/Solid.vert.spv",
-      "C:/Users/mmrsk/Repos/Chroma/build/ninja-vcpkg-release/vulkan_shaders/Solid.frag.spv",
-  };
+  std::vector<std::string> shaderFiles;
+  switch (material->m_Type) {
+    // TODO: add shader paths for different material types
+  default:
+    shaderFiles = {
+        "vulkan_shaders/Solid.vert.spv",
+        "vulkan_shaders/Solid.frag.spv",
+    };
+    break;
+  }
+
   m_PipelineInfo.pipeline = vke::CreateGraphicsPipeline(
       shaderFiles, viewportSize, msaaCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, renderPass,
       m_PipelineInfo.descriptorSetLayout, m_PipelineInfo.pipelineLayout);

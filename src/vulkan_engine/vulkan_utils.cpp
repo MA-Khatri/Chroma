@@ -79,16 +79,18 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debug_report(VkDebugReportFlagsEXT flags,
   (void)pUserData;
   (void)pLayerPrefix; // Unused arguments
 
-  if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
+  if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) {
+
     PLOG_ERROR << "[Vulkan] Debug report from ObjectType: " << objectType
                << " Message: " << pMessage;
-  else if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT ||
-           flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
+  } else if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT ||
+             flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT) {
     PLOG_WARNING << "[Vulkan] Debug report from ObjectType: " << objectType
                  << " Message: " << pMessage;
-  else
+  } else {
     PLOG_INFO << "[Vulkan] Debug report from ObjectType: " << objectType
               << " Message: " << pMessage;
+  }
 
   return VK_FALSE;
 }

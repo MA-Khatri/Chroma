@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL_pixels.h>
 #include <SDL3_image/SDL_image.h>
+#include <glm/fwd.hpp>
 #include <glm/glm.hpp>
 #include <plog/Log.h>
 #include <string>
@@ -22,6 +23,13 @@ template <typename T> struct Texture {
 public:
   Texture() = default;
   Texture(const std::string &path, TextureType type) : m_FilePath(path), m_Type(type) {
+    if (path.empty()) {
+      PLOG_VERBOSE << "No texture path provided for texture type " << static_cast<int>(type)
+                   << ", skipping load.";
+      m_Size = glm::ivec3(0, 0, 0);
+      return;
+    }
+
     SDL_Surface *surface = IMG_Load(path.c_str());
     if (!surface) {
       PLOG_ERROR << "Failed to load texture: " << path << " SDL_image Error: " << SDL_GetError();

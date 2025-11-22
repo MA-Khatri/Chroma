@@ -25,13 +25,12 @@ void RasterView::OnAttach(Application *app) {
 
 void RasterView::OnDetach() { delete m_VulkanEngine; }
 
-void RasterView::OnUpdate() 
-{
+void RasterView::OnUpdate() {
   // Check if scene has changed
   auto scene = m_AppHandle->GetActiveScene();
-  if(scene->m_SceneID != m_CurrentSceneIndex) 
-  {
-    PLOG_DEBUG << "Active scene changed in RasterView to Scene ID: " << scene->m_SceneID;
+  if (scene->m_SceneID != m_CurrentSceneIndex) {
+    PLOG_VERBOSE << "Active scene changed in RasterView to \"" << scene->GetSceneName()
+               << "\" (Scene ID: " << scene->m_SceneID << ")";
     m_CurrentSceneIndex = scene->m_SceneID;
 
     // Update VulkanEngine with new scene
