@@ -40,6 +40,8 @@ PRIVATE
     glm::glm
     Vulkan::Vulkan
     SDL3::SDL3
+    JPEG::JPEG
+    PNG::PNG
     $<IF:$<TARGET_EXISTS:SDL3_image::SDL3_image-shared>,SDL3_image::SDL3_image-shared,SDL3_image::SDL3_image-static>
     tinyobjloader::tinyobjloader
     imgui

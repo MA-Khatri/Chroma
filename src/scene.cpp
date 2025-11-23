@@ -13,7 +13,7 @@ Scene CreateTestScene() {
   // Create a simple test scene with a cube and a camera
   auto cubeMesh = std::make_shared<Mesh>(CreateCubeMesh());
   TexturePaths cubeTextures;
-  cubeTextures.albedo = "C:/Users/mmrsk/Repos/Chroma/res/textures/checker.png";
+  cubeTextures.albedo = "C:/Users/mmrsk/Repos/Chroma/res/textures/texture.jpg";
   auto cubeMaterial = std::make_shared<Material>(cubeTextures, MaterialType::Lambertian);
   auto cubeTransform = std::make_shared<Transform>();
   auto cubeObject = std::make_shared<Object>(cubeMesh, cubeMaterial, cubeTransform);

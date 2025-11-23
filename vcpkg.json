@@ -11,6 +11,8 @@
                 "vulkan"
             ]
         },
+        "libjpeg-turbo",
+        "libpng",
         "sdl3-image",
         "implot",
         "tinyobjloader"
