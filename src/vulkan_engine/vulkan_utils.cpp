@@ -1694,6 +1694,29 @@ void GenerateMipMaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int3
       mipHeight /= 2;
   }
 
+  // Transition ALL mip levels to SHADER_READ_ONLY_OPTIMAL
+  {
+    VkImageMemoryBarrier barrierAll{};
+    barrierAll.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrierAll.image = image;
+    barrierAll.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrierAll.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrierAll.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrierAll.subresourceRange.baseMipLevel = 0;
+    barrierAll.subresourceRange.levelCount = mipLevels;
+    barrierAll.subresourceRange.baseArrayLayer = 0;
+    barrierAll.subresourceRange.layerCount = 1;
+
+    barrierAll.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrierAll.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrierAll.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrierAll.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
+                         &barrierAll);
+  }
+
   // Add barrier for the last mip level to transition to
   // SHADER_READ_ONLY_OPTIMAL
   barrier.subresourceRange.baseMipLevel = mipLevels - 1;

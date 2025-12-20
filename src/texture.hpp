@@ -38,10 +38,9 @@ public:
     }
 
     int bytesPerPixel = SDL_BYTESPERPIXEL(surface->format);
-    if (bytesPerPixel != sizeof(T)) {
+    if (bytesPerPixel % sizeof(T) != 0) {
       PLOG_ERROR << "Unexpected pixel format in texture: " << path
-                 << " Expected bytes per pixel: " << sizeof(T)
-                 << " Actual bytes per pixel: " << bytesPerPixel;
+                 << " Bytes per pixel: " << bytesPerPixel << ", sizeof(T): " << sizeof(T);
       SDL_DestroySurface(surface);
       m_Size = glm::ivec3(0, 0, 0);
       return;

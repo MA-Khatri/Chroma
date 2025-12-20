@@ -11,9 +11,10 @@
                 "vulkan"
             ]
         },
-        "libjpeg-turbo",
-        "libpng",
-        "sdl3-image",
+        {
+            "name": "sdl3-image",
+            "features": ["jpeg", "png"]
+        },
         "implot",
         "tinyobjloader"
     ]

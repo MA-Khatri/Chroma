@@ -404,3 +404,5 @@ output/*
 /src/optix/shaders/compiled
 
 build/
+
+vcpkg_installed/*
