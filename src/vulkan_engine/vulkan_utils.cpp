@@ -1382,8 +1382,7 @@ void CreateTextureImage(const Texture<uint8_t> &tex, uint32_t &mipLevels, VkImag
                         VkDeviceMemory &textureImageMemory) {
   int texWidth = tex.m_Size.x;
   int texHeight = tex.m_Size.y;
-  // Should be 4 for RGBA, 3 for RGB, etc. (we assume 4 for now)
-  int texChannels = tex.m_Size.z;
+  int texChannels = 4; // tex.m_Size.z;
 
   VkDeviceSize imageSize = texWidth * texHeight * texChannels;
 
@@ -1409,8 +1408,7 @@ void CreateTextureImage(const Texture<uint8_t> &tex, uint32_t &mipLevels, VkImag
                   VK_IMAGE_USAGE_SAMPLED_BIT,
               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
 
-  // Copy the staging buffer to the texture image, adjusting the layouts as we
-  // go
+  // Copy the staging buffer to the texture image, adjusting the layouts as we go
   VkCommandBuffer commandBuffer = GetGraphicsCommandBuffer();
   {
     TransitionImageLayout(commandBuffer, textureImage, VK_FORMAT_R8G8B8A8_UNORM,
@@ -1418,13 +1416,11 @@ void CreateTextureImage(const Texture<uint8_t> &tex, uint32_t &mipLevels, VkImag
                           mipLevels);
     CopyBufferToImage(commandBuffer, stagingBuffer, textureImage, static_cast<uint32_t>(texWidth),
                       static_cast<uint32_t>(texHeight));
-    // At this point all mip levels are in format
-    // VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+    // At this point all mip levels are in format VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
   }
   FlushGraphicsCommandBuffer(commandBuffer);
 
-  // Note: we transition to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL during
-  // mip-map generation
+  // Note: we transition to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL during mip-map generation
   GenerateMipMaps(textureImage, VK_FORMAT_R8G8B8A8_UNORM, texWidth, texHeight, mipLevels);
 
   // Clean up staging buffer
@@ -1694,31 +1690,8 @@ void GenerateMipMaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int3
       mipHeight /= 2;
   }
 
-  // Transition ALL mip levels to SHADER_READ_ONLY_OPTIMAL
-  {
-    VkImageMemoryBarrier barrierAll{};
-    barrierAll.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrierAll.image = image;
-    barrierAll.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrierAll.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrierAll.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrierAll.subresourceRange.baseMipLevel = 0;
-    barrierAll.subresourceRange.levelCount = mipLevels;
-    barrierAll.subresourceRange.baseArrayLayer = 0;
-    barrierAll.subresourceRange.layerCount = 1;
-
-    barrierAll.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    barrierAll.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    barrierAll.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    barrierAll.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
-                         &barrierAll);
-  }
-
-  // Add barrier for the last mip level to transition to
-  // SHADER_READ_ONLY_OPTIMAL
+  // Transition the last mip level to SHADER_READ_ONLY_OPTIMAL
+  // (earlier mip levels were already transitioned in the loop)
   barrier.subresourceRange.baseMipLevel = mipLevels - 1;
   barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
   barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
