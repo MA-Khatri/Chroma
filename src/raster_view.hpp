@@ -31,6 +31,7 @@ private:
   Application *m_AppHandle;
   SDL_Window *m_WindowHandle;
   VulkanEngine *m_VulkanEngine;
+
   int m_CurrentSceneIndex = -1; // To track scene changes
 
   bool m_ViewportFocused = false;

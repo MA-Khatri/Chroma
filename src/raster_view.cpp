@@ -30,7 +30,7 @@ void RasterView::OnUpdate() {
   auto scene = m_AppHandle->GetActiveScene();
   if (scene->m_SceneID != m_CurrentSceneIndex) {
     PLOG_VERBOSE << "Active scene changed in RasterView to \"" << scene->GetSceneName()
-               << "\" (Scene ID: " << scene->m_SceneID << ")";
+                 << "\" (Scene ID: " << scene->m_SceneID << ")";
     m_CurrentSceneIndex = scene->m_SceneID;
 
     // Update VulkanEngine with new scene
@@ -81,8 +81,6 @@ void RasterView::OnUIRender() {
   ImGui::End();
 }
 
-// Screenshot function for Vulkan based partially on:
-// https://github.com/SaschaWillems/Vulkan/blob/master/examples/screenshot/screenshot.cpp
 void RasterView::TakeScreenshot() {
   uint32_t width = static_cast<int>(m_ViewportSize.x);
   uint32_t height = static_cast<int>(m_ViewportSize.y);
@@ -90,7 +88,7 @@ void RasterView::TakeScreenshot() {
   auto pixels = m_VulkanEngine->SaveFramebuffer();
   std::vector<uint32_t> out = FlipImageVertically(pixels, width, height);
 
-  // Save cpt image to file
+  // Save screenshot image to file
   WriteImageToFile("output/" + GetDateTimeStr() + "_raster.png", width, height,
                    SDL_PIXELFORMAT_RGBA32, out);
 }
@@ -110,6 +108,7 @@ void RasterView::OnResize(ImVec2 newSize) {
   ImVec2 rPos = ImVec2(viewportPos.x - mainWindowPos.x, viewportPos.y - mainWindowPos.y);
   ImVec2 minR = ImGui::GetWindowContentRegionMin();
   ImVec2 maxR = ImGui::GetWindowContentRegionMax();
+
   // m_Camera->m_ViewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
   // m_Camera->m_ViewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
   // m_Camera->UpdateProjectionMatrix(static_cast<int>(m_ViewportSize.x),

@@ -8,27 +8,27 @@ public:
   Camera(glm::vec3 position, glm::vec3 lookAt, glm::vec3 up, float nearClip = 0.1f,
          float farClip = 1000.0f)
       : m_Position(position), m_LookAt(lookAt), m_Up(up), m_NearClip(nearClip), m_FarClip(farClip) {
-    UpdateMatrices();
+    UpdateViewMatrix();
   }
   ~Camera() = default;
 
   void SetPosition(const glm::vec3 &position) {
     m_Position = position;
-    UpdateMatrices();
+    UpdateViewMatrix();
   };
   void SetLookAt(const glm::vec3 &lookAt) {
     m_LookAt = lookAt;
-    UpdateMatrices();
+    UpdateViewMatrix();
   };
   void SetUp(const glm::vec3 &up) {
     m_Up = up;
-    UpdateMatrices();
+    UpdateViewMatrix();
   };
   void SetOrientation(const glm::vec3 &position, const glm::vec3 &lookAt, const glm::vec3 &up) {
     m_Position = position;
     m_LookAt = lookAt;
     m_Up = up;
-    UpdateMatrices();
+    UpdateViewMatrix();
   };
 
   void SetClippingPlanes(float nearClip, float farClip) {
@@ -45,10 +45,16 @@ public:
   const glm::mat4 &GetProjectionMatrix() { return m_ProjectionMatrix; };
   const glm::mat4 &GetViewProjectionMatrix() { return m_ViewProjectionMatrix; };
 
+  virtual void ResizeViewport(float width, float height) = 0;
+
 protected:
-  void UpdateMatrices() {
+  // This does not update the ViewProjectionMatrix, so derived classes should call
+  // UpdateViewMatrix() after updating projection!
+  virtual void UpdateProjectionMatrix() = 0;
+
+  void UpdateViewMatrix() {
     m_ViewMatrix = glm::lookAt(m_Position, m_LookAt, m_Up);
-    // Note: projectionMatrix should be set in derived classes
+    // Note: m_ProjectionMatrix should be set in derived classes
     m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
   };
 
@@ -74,10 +80,21 @@ public:
     m_VFOV = vfov;
     m_AspectRatio = aspectRatio;
     m_ProjectionMatrix = glm::perspective(glm::radians(vfov), aspectRatio, m_NearClip, m_FarClip);
-    UpdateMatrices();
+    UpdateViewMatrix();
   };
 
-private:
+  void ResizeViewport(float width, float height) override {
+    m_AspectRatio = width / height;
+    UpdateProjectionMatrix();
+    UpdateViewMatrix();
+  };
+
+protected:
+  void UpdateProjectionMatrix() override {
+    m_ProjectionMatrix =
+        glm::perspective(glm::radians(m_VFOV), m_AspectRatio, m_NearClip, m_FarClip);
+  };
+
   float m_VFOV = 45.0f; // vertical in degrees
   float m_AspectRatio = 16.0f / 9.0f;
 };
@@ -113,10 +130,26 @@ public:
     m_Bottom = bottom;
     m_Top = top;
     m_ProjectionMatrix = glm::ortho(m_Left, m_Right, m_Bottom, m_Top, m_NearClip, m_FarClip);
-    UpdateMatrices();
+    UpdateViewMatrix();
+  };
+
+  void ResizeViewport(float width, float height) override {
+    float aspectRatio = width / height;
+    float orthoWidth = (m_Right - m_Left) * aspectRatio;
+    float orthoHeight = (m_Top - m_Bottom) * aspectRatio;
+    m_Left = -orthoWidth / 2.0f;
+    m_Right = orthoWidth / 2.0f;
+    m_Bottom = -orthoHeight / 2.0f;
+    m_Top = orthoHeight / 2.0f;
+    UpdateProjectionMatrix();
+    UpdateViewMatrix();
   };
 
 private:
+  void UpdateProjectionMatrix() override {
+    m_ProjectionMatrix = glm::ortho(m_Left, m_Right, m_Bottom, m_Top, m_NearClip, m_FarClip);
+  };
+
   float m_Left = -1.0f;
   float m_Right = 1.0f;
   float m_Bottom = -1.0f;

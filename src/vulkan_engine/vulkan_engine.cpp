@@ -35,6 +35,8 @@ void VulkanEngine::OnResize(ImVec2 newSize) {
   CreateViewportImageDescriptorSets();
 }
 
+// Screenshot functionality for Vulkan based partially on:
+// https://github.com/SaschaWillems/Vulkan/blob/master/examples/screenshot/screenshot.cpp
 std::vector<uint32_t> VulkanEngine::SaveFramebuffer() {
   uint32_t width = static_cast<int>(m_ViewportSize.x);
   uint32_t height = static_cast<int>(m_ViewportSize.y);
