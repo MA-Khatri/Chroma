@@ -29,13 +29,17 @@ void RasterView::OnDetach() { delete m_VulkanEngine; }
 void RasterView::OnUpdate() {
   // Check if scene has changed
   auto scene = m_AppHandle->GetActiveScene();
-  if (scene->m_SceneID != m_CurrentSceneIndex) {
+  if (scene &&
+      (!m_CurrentScene || (m_CurrentScene && scene->m_SceneID != m_CurrentScene->m_SceneID))) {
     PLOG_VERBOSE << "Active scene changed in RasterView to \"" << scene->GetSceneName()
                  << "\" (Scene ID: " << scene->m_SceneID << ")";
-    m_CurrentSceneIndex = scene->m_SceneID;
+    m_CurrentScene = scene;
 
     // Update VulkanEngine with new scene
     m_VulkanEngine->SetScene(scene);
+
+    // Update controller with new scene's camera
+    Controller::GetInstance()->SetActiveCamera(scene->GetCamera());
   }
 }
 
@@ -48,7 +52,6 @@ void RasterView::OnUIRender() {
       m_ViewportFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
       if (m_ViewportFocused) {
         m_AppHandle->m_FocusedWindow = Application::RasterizedViewport;
-        Controller::GetInstance()->SetActiveCamera(m_AppHandle->GetActiveScene()->GetCamera());
       }
 
       ImGui::BeginChild("Rasterized");

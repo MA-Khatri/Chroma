@@ -110,10 +110,12 @@ protected:
 
 class FreeFlyController : public CameraController {
 public:
-  FreeFlyController(glm::vec3 position, glm::vec3 lookAt, glm::vec3 up) {
+  FreeFlyController(glm::vec3 position, float yaw, float pitch) {
     m_Position = position;
-    m_LookAt = lookAt;
-    m_Up = up;
+    m_Yaw = yaw;
+    m_Pitch = pitch;
+    m_Up = glm::vec3(0.0f, 0.0f, 1.0f);
+    UpdateLookAt();
   }
 
   void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override {
@@ -121,7 +123,7 @@ public:
     switch (event->type) {
     case SDL_EVENT_MOUSE_MOTION: {
       if (event->motion.state & SDL_BUTTON_LMASK) { // Only rotate when left mouse button is pressed
-        m_Yaw += event->motion.xrel * m_Sensitivity;
+        m_Yaw -= event->motion.xrel * m_Sensitivity;
         m_Pitch -= event->motion.yrel * m_Sensitivity;
 
         // Clamp pitch to avoid gimbal lock
@@ -130,29 +132,35 @@ public:
         if (m_Pitch < -89.0f)
           m_Pitch = -89.0f;
 
-        // Update lookAt based on yaw and pitch
-        glm::vec3 direction;
-        direction.x = cos(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch));
-        direction.y = sin(glm::radians(m_Pitch));
-        direction.z = sin(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch));
-        m_LookAt = m_Position + glm::normalize(direction);
+        UpdateLookAt();
       }
       break;
     }
     case SDL_EVENT_KEY_DOWN: {
       // Handle keyboard input for camera movement
-      float velocity = m_Speed * (deltaTime / 1e9f); // Convert nanoseconds to seconds
+      float velocity = m_Speed * deltaTime / 1e9f; // Convert nanoseconds to seconds
+
       glm::vec3 view_dir = glm::normalize(m_LookAt - m_Position);
       glm::vec3 right_dir = glm::normalize(glm::cross(view_dir, m_Up));
-      if (event->key.key == SDLK_W) {
-        m_Position += velocity * m_LookAt; // Move forward
-      } else if (event->key.key == SDLK_S) {
-        m_Position -= velocity * m_LookAt; // Move backward
-      } else if (event->key.key == SDLK_A) {
-        m_Position -= right_dir * velocity; // Move left
-      } else if (event->key.key == SDLK_D) {
-        m_Position += right_dir * velocity; // Move right
+      glm::vec3 up_dir = glm::normalize(glm::cross(right_dir, view_dir));
+
+      glm::vec3 delta = glm::vec3(0.0f);
+      if (event->key.key == SDLK_W) { // Move forward along view direction
+        delta = velocity * view_dir;
+      } else if (event->key.key == SDLK_S) { // Move backward along view direction
+        delta = -velocity * view_dir;
+      } else if (event->key.key == SDLK_A) { // Move left along right direction
+        delta = -velocity * right_dir;
+      } else if (event->key.key == SDLK_D) { // Move right along right direction
+        delta = velocity * right_dir;
+      } else if (event->key.key == SDLK_Q) { // Move up along up direction
+        delta = velocity * up_dir;
+      } else if (event->key.key == SDLK_E) { // Move down along up direction
+        delta = -velocity * up_dir;
       }
+
+      m_Position += delta;
+      m_LookAt += delta;
       break;
     }
     }
@@ -161,10 +169,18 @@ public:
   glm::mat4 GetMatrix() const override { return glm::lookAt(m_Position, m_LookAt, m_Up); }
 
 private:
-  float m_Yaw = -180.0f;      // Yaw in degrees from +x axis, initialized to look along -x axis
+  void UpdateLookAt() {
+    glm::vec3 direction;
+    direction.x = cos(glm::radians(m_Pitch)) * cos(glm::radians(m_Yaw));
+    direction.y = cos(glm::radians(m_Pitch)) * sin(glm::radians(m_Yaw));
+    direction.z = sin(glm::radians(m_Pitch));
+    m_LookAt = m_Position + glm::normalize(direction);
+  }
+
+  float m_Yaw = 0.0f;         // Yaw in degrees from +x axis
   float m_Pitch = 0.0f;       // Pitch in degrees from xy-plane
-  float m_Speed = 5.0f;       // Movement speed
-  float m_Sensitivity = 0.001f; // Mouse sensitivity
+  float m_Speed = 50.0f;      // Movement speed
+  float m_Sensitivity = 0.1f; // Mouse sensitivity
 };
 
 class OrbitController : public CameraController {

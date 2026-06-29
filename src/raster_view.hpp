@@ -1,6 +1,7 @@
 #pragma once
 
 #include <imgui.h>
+#include <memory>
 #include <vulkan/vulkan.h>
 
 #include "layer.hpp"
@@ -32,7 +33,7 @@ private:
   SDL_Window *m_WindowHandle;
   VulkanEngine *m_VulkanEngine;
 
-  int m_CurrentSceneIndex = -1; // To track scene changes
+  std::shared_ptr<Scene> m_CurrentScene;
 
   bool m_ViewportFocused = false;
   bool m_ViewportHovered = false;
