@@ -45,6 +45,12 @@ void Controller::ProcessEvents() {
       break;
     }
   }
+
+  // Also call a per-frame camera update with no specific event so
+  // continuous actions (held keys) are applied smoothly each frame.
+  if (m_Camera) {
+    m_Camera->Update(deltaTime, nullptr);
+  }
 }
 
 void Controller::SetMenubarCallback(const std::function<void()> &menubarCallback) {
