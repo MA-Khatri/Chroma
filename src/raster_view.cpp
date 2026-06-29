@@ -1,5 +1,6 @@
 #include "raster_view.hpp"
 
+#include "controller.hpp"
 #include "vulkan_engine/vulkan_engine.hpp"
 #include "vulkan_engine/vulkan_utils.hpp"
 
@@ -45,6 +46,10 @@ void RasterView::OnUIRender() {
     ImGui::Begin("Rasterized Viewport");
     {
       m_ViewportFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
+      if (m_ViewportFocused) {
+        m_AppHandle->m_FocusedWindow = Application::RasterizedViewport;
+        Controller::GetInstance()->SetActiveCamera(m_AppHandle->GetActiveScene()->GetCamera());
+      }
 
       ImGui::BeginChild("Rasterized");
       {

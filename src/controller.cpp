@@ -3,10 +3,11 @@
 #include <SDL3/SDL.h>
 #include <plog/Log.h>
 
+#include "application.hpp"
 #include "imgui_impl_sdl3.h"
 
 // Singleton instance
-Controller* Controller::s_Instance = nullptr;
+Controller *Controller::s_Instance = nullptr;
 
 Controller::Controller() {
   // Menubar setup
@@ -22,10 +23,15 @@ Controller::Controller() {
 }
 
 void Controller::ProcessEvents() {
+  int64_t deltaTime = Application::GetInstance()->GetTimestepNS();
+
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
-
     ImGui_ImplSDL3_ProcessEvent(&event);
+
+    if (m_Camera) {
+      m_Camera->Update(deltaTime, &event);
+    }
 
     switch (event.type) {
     case SDL_EVENT_QUIT:
@@ -33,9 +39,7 @@ void Controller::ProcessEvents() {
       m_Running = false;
       break;
 
-    case SDL_EVENT_MOUSE_BUTTON_DOWN:
-      PLOG_VERBOSE << "Recieved MOUSE_BUTTON_DOWN event";
-      break;
+      // TODO: Handle other SDL events
 
     default:
       break;

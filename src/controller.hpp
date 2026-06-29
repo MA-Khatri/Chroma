@@ -1,6 +1,9 @@
 #pragma once
 
 #include <functional>
+#include <memory>
+
+#include "camera.hpp"
 
 // Singleton; Handles application state and user inputs
 class Controller {
@@ -21,6 +24,8 @@ public:
   void SetMenubarCallback(const std::function<void()> &menubarCallback);
   std::function<void()> GetMenubarCallback();
 
+  void SetActiveCamera(std::shared_ptr<Camera> camera) { m_Camera = camera; }
+
 private:
   static Controller *s_Instance;
   Controller();
@@ -33,4 +38,7 @@ private:
   bool m_Running = true;
 
   std::function<void()> m_MenubarCallback;
+
+  // The currently active camera instance
+  std::shared_ptr<Camera> m_Camera;
 };

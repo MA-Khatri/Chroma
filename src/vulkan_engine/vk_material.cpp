@@ -54,7 +54,13 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
   // Create graphics pipeline
   std::vector<std::string> shaderFiles;
   switch (material->m_Type) {
-    // TODO: add shader paths for different material types
+  case MaterialType::Lambertian:
+    shaderFiles = {
+        "vulkan_shaders/Solid.vert.spv",
+        "vulkan_shaders/Solid.frag.spv",
+    };
+    break;
+  // TODO: add other material types as needed
   default:
     shaderFiles = {
         "vulkan_shaders/Solid.vert.spv",

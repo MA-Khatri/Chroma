@@ -44,6 +44,8 @@ public:
 
   int64_t GetTimeNS(); // Current time in nanoseconds
 
+  int64_t GetTimestepNS() const { return m_TimeStepNS; }
+
   enum { RasterizedViewport, RayTracedViewport };
   int m_FocusedWindow = RasterizedViewport;
 
