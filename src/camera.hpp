@@ -34,6 +34,9 @@ public:
   float GetNearClip() const { return m_NearClip; }
   float GetFarClip() const { return m_FarClip; }
 
+  float GetAspectRatio() const { return m_AspectRatio; }
+  void SetAspectRatio(float aspectRatio) { m_AspectRatio = aspectRatio; }
+
 protected:
   float m_NearClip = 0.1f;
   float m_FarClip = 1000.0f;
@@ -266,7 +269,7 @@ public:
     if (m_Projection) {
       m_Projection->Update(*this, deltaTime, event);
     }
-    if (m_Controller) {
+    if (m_Controller && m_ControllerActive) {
       m_Controller->Update(*this, deltaTime, event);
     }
   }
@@ -281,7 +284,18 @@ public:
 
   glm::mat4 GetViewProjectionMatrix() const { return GetProjectionMatrix() * GetViewMatrix(); }
 
+  void SetAspectRatio(float aspectRatio) {
+    if (m_Projection) {
+      m_Projection->SetAspectRatio(aspectRatio);
+    }
+  }
+
+  void SetControllerActive(bool active) { m_ControllerActive = active; }
+  bool IsControllerActive() const { return m_ControllerActive; }
+
 private:
   std::shared_ptr<Projection> m_Projection;
   std::shared_ptr<CameraController> m_Controller;
+
+  bool m_ControllerActive = false;
 };

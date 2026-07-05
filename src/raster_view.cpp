@@ -31,8 +31,8 @@ void RasterView::OnUpdate() {
   auto scene = m_AppHandle->GetActiveScene();
   if (scene &&
       (!m_CurrentScene || (m_CurrentScene && scene->m_SceneID != m_CurrentScene->m_SceneID))) {
-    PLOG_VERBOSE << "Active scene changed in RasterView to \"" << scene->GetSceneName()
-                 << "\" (Scene ID: " << scene->m_SceneID << ")";
+    PLOG_DEBUG << "Active scene changed in RasterView to \"" << scene->GetSceneName()
+               << "\" (Scene ID: " << scene->m_SceneID << ")";
     m_CurrentScene = scene;
 
     // Update VulkanEngine with new scene
@@ -52,6 +52,11 @@ void RasterView::OnUIRender() {
       m_ViewportFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
       if (m_ViewportFocused) {
         m_AppHandle->m_FocusedWindow = Application::RasterizedViewport;
+        m_CurrentScene->GetCamera()->SetControllerActive(true);
+      }
+      else
+      {
+        m_CurrentScene->GetCamera()->SetControllerActive(false);
       }
 
       ImGui::BeginChild("Rasterized");
@@ -111,16 +116,5 @@ void RasterView::OnResize(ImVec2 newSize) {
   m_ViewportSize = newSize;
   m_VulkanEngine->OnResize(m_ViewportSize);
 
-  ImVec2 mainWindowPos = ImGui::GetMainViewport()->Pos;
-  ImVec2 viewportPos = ImGui::GetWindowPos();
-  ImVec2 rPos = ImVec2(viewportPos.x - mainWindowPos.x, viewportPos.y - mainWindowPos.y);
-  ImVec2 minR = ImGui::GetWindowContentRegionMin();
-  ImVec2 maxR = ImGui::GetWindowContentRegionMax();
-
-  // m_Camera->m_ViewportContentMin = ImVec2(rPos.x + minR.x, rPos.y + minR.y);
-  // m_Camera->m_ViewportContentMax = ImVec2(rPos.x + maxR.x, rPos.y + maxR.y);
-  // m_Camera->UpdateProjectionMatrix(static_cast<int>(m_ViewportSize.x),
-  //                                  static_cast<int>(m_ViewportSize.y));
-
-  // m_Scene->VkResize(m_ViewportSize, m_ViewportFramebuffers);
+  m_CurrentScene->GetCamera()->SetAspectRatio(m_ViewportSize.x / m_ViewportSize.y);
 }
