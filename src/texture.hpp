@@ -59,5 +59,5 @@ public:
   TextureType m_Type;
 
   std::vector<T> m_Pixels;
-  glm::ivec3 m_Size; // width, height, channels
+  glm::ivec3 m_Size; // width, height, bytes per pixel (e.g. 3 for RGB, 4 for RGBA)
 };

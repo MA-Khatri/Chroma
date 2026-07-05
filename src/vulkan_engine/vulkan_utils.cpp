@@ -1,5 +1,6 @@
 #include "vulkan_utils.hpp"
 
+#include <algorithm>
 #include <fstream>
 #include <plog/Log.h>
 #include <stdlib.h>
@@ -1380,11 +1381,30 @@ void CreateImage(uint32_t width, uint32_t height, uint32_t mipLevels,
 
 void CreateTextureImage(const Texture<uint8_t> &tex, uint32_t &mipLevels, VkImage &textureImage,
                         VkDeviceMemory &textureImageMemory) {
-  int texWidth = tex.m_Size.x;
-  int texHeight = tex.m_Size.y;
-  int texChannels = 4; // tex.m_Size.z;
+  const int texWidth = tex.m_Size.x;
+  const int texHeight = tex.m_Size.y;
+  const uint32_t srcChannels = std::max(1, tex.m_Size.z);
+  const uint32_t dstChannels = (srcChannels == 3) ? 4u : srcChannels;
 
-  VkDeviceSize imageSize = texWidth * texHeight * texChannels;
+  std::vector<uint8_t> uploadPixels(static_cast<size_t>(texWidth) * texHeight * dstChannels, 0u);
+  for (int i = 0; i < texWidth * texHeight; ++i) {
+    const uint8_t *src = tex.m_Pixels.data() + i * srcChannels;
+    uint8_t *dst = uploadPixels.data() + i * dstChannels;
+
+    if (srcChannels == 3) {
+      memcpy(dst, src, 3);
+      dst[3] = 255;
+    } else if (srcChannels == 4) {
+      memcpy(dst, src, 4);
+    } else if (srcChannels == 1) {
+      dst[0] = src[0];
+      dst[1] = src[0];
+      dst[2] = src[0];
+      dst[3] = 255;
+    }
+  }
+
+  const VkDeviceSize imageSize = uploadPixels.size();
 
   mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
@@ -1398,7 +1418,7 @@ void CreateTextureImage(const Texture<uint8_t> &tex, uint32_t &mipLevels, VkImag
   // Copy pixel data to the staging buffer
   void *data;
   vkMapMemory(Device, stagingBufferMemory, 0, imageSize, 0, &data);
-  memcpy(data, tex.m_Pixels.data(), static_cast<size_t>(imageSize));
+  memcpy(data, uploadPixels.data(), static_cast<size_t>(imageSize));
   vkUnmapMemory(Device, stagingBufferMemory);
 
   // Create the texture image

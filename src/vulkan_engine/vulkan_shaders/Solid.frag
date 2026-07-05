@@ -2,13 +2,17 @@
 
 layout(location = 0) in vec3 v_Position;
 layout(location = 1) in vec3 v_Normal;
-layout(location = 2) in vec3 v_CameraPosn;
-layout(location = 3) in vec3 v_Color;
+layout(location = 2) in vec3 v_Color;
+layout(location = 3) in vec2 v_TexCoord;
+layout(location = 4) in vec3 v_CameraPosn;
+
+layout(binding = 1) uniform sampler2D diffuseSampler;
+layout(binding = 2) uniform sampler2D specularSampler;
+layout(binding = 3) uniform sampler2D normalSampler;
 
 layout(location = 0) out vec4 outColor;
 
-void main() 
-{
+void main() {
 	float ambient = 0.2;
 	float diffuse = 0.5;
 	float specular = 0.1;
@@ -21,5 +25,12 @@ void main()
 	float specularContrib = pow(max(dot(lightDir, reflectDir), 0.0), exponent);
 
 	float lc = ambient + diffuse * diffuseContrib + specular * specularContrib;
-	outColor = vec4(v_Color * vec3(lc), 1);
+
+	vec3 diffuseColor = texture(diffuseSampler, v_TexCoord).rgb;
+	// vec3 specularColor = texture(specularSampler, v_TexCoord).rgb;
+	// vec3 normalColor = texture(normalSampler, v_TexCoord).rgb;
+
+	outColor = vec4(diffuseColor * vec3(lc), 1);
+
+	// outColor = vec4(v_Color * vec3(lc), 1);
 }

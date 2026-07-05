@@ -8,15 +8,27 @@ Scene::Scene(std::filesystem::path filePath) {
 }
 
 Scene CreateTestScene() {
+  // Create a simple test scene with a few objects and a camera
   Scene scene;
   scene.SetSceneName("Test Scene");
 
-  // Create a simple test scene with a cube and a camera
+  // TODO: Add ground grid
+
+  auto planeMesh = std::make_shared<Mesh>(CreatePlaneMesh(10.0f, 10.0f, 10, 10));
+  TexturePaths planeTextures;
+  planeTextures.albedo = "C:/Users/mmrsk/Repos/Chroma/res/textures/texture.jpg";
+  auto planeMaterial = std::make_shared<Material>(planeTextures, MaterialType::Lambertian);
+  auto planeTransform = std::make_shared<Transform>();
+  auto planeObject = std::make_shared<Object>(planeMesh, planeMaterial, planeTransform);
+  scene.AddObject(planeObject);
+
   auto cubeMesh = std::make_shared<Mesh>(CreateCubeMesh());
   TexturePaths cubeTextures;
   cubeTextures.albedo = "C:/Users/mmrsk/Repos/Chroma/res/textures/texture.jpg";
   auto cubeMaterial = std::make_shared<Material>(cubeTextures, MaterialType::Lambertian);
   auto cubeTransform = std::make_shared<Transform>();
+  cubeTransform->SetPosition(
+      glm::vec3(0.0f, 0.0f, 0.5f + 1e-4f)); // Position the cube above the plane
   auto cubeObject = std::make_shared<Object>(cubeMesh, cubeMaterial, cubeTransform);
   scene.AddObject(cubeObject);
 

@@ -160,9 +160,11 @@ public:
           m_MoveRight = pressed;
           break;
         case SDLK_Q:
+        case SDLK_SPACE:
           m_MoveUp = pressed;
           break;
         case SDLK_E:
+        case SDLK_LSHIFT:
           m_MoveDown = pressed;
           break;
         default:
