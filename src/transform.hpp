@@ -39,7 +39,19 @@ public:
     UpdateMatrix();
   };
 
-  // TODO: should these return const references?
+  void SetModelMatrix(const glm::mat4 &modelMatrix) {
+    m_ModelMatrix = modelMatrix;
+    m_NormalMatrix = glm::mat3(glm::transpose(glm::inverse(m_ModelMatrix)));
+  }
+
+  void SetNormalMatrix(const glm::mat4 &normalMatrix) {
+    m_NormalMatrix = glm::mat3(normalMatrix);
+  }
+
+  void SetNormalMatrix(const glm::mat3 &normalMatrix) {
+    m_NormalMatrix = normalMatrix;
+  }
+
   const glm::vec3 &GetPosition() { return m_Position; }
   const glm::quat &GetRotation() { return m_Rotation; }
   const glm::vec3 &GetScale() { return m_Scale; }

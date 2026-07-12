@@ -7,8 +7,8 @@ set(VULKAN_SHADERS
     FlatWithSpecular.frag
     HelloTriangle.frag
     HelloTriangle.vert
-    Lines.frag
-    Lines.vert
+    GroundGrid.frag
+    GroundGrid.vert
     Normal.frag
     Solid.frag
     Solid.vert

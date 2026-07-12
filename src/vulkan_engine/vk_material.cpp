@@ -53,58 +53,59 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
 
   // Create graphics pipeline
   std::vector<std::string> shaderFiles;
+  VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
   switch (material->m_Type) {
   case MaterialType::Lambertian:
+  case MaterialType::Conductor:
+  case MaterialType::Dielectric:
+  case MaterialType::Principled:
+  case MaterialType::Emissive:
     shaderFiles = {
         "vulkan_shaders/Solid.vert.spv",
         "vulkan_shaders/Solid.frag.spv",
     };
+    topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    break;
+
+  case MaterialType::Point:
+    // TODO: write point shaders
+    shaderFiles = {
+        "vulkan_shaders/Solid.vert.spv",
+        "vulkan_shaders/Solid.frag.spv",
+    };
+    topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
     break;
 
   case MaterialType::Lines:
+    // TODO: write line shaders
     shaderFiles = {
-        "vulkan_shaders/Lines.vert.spv",
-        "vulkan_shaders/Lines.frag.spv",
+        "vulkan_shaders/Solid.vert.spv",
+        "vulkan_shaders/Solid.frag.spv",
     };
+    topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
     break;
 
-  // TODO: add other material types as needed
+  case MaterialType::GroundGrid:
+    shaderFiles = {
+        "vulkan_shaders/GroundGrid.vert.spv",
+        "vulkan_shaders/GroundGrid.frag.spv",
+    };
+    topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    break;
+
   default:
     shaderFiles = {
         "vulkan_shaders/Solid.vert.spv",
         "vulkan_shaders/Solid.frag.spv",
     };
+    topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     break;
   }
 
-  if (material->m_Type < MaterialType::Point) {
-    m_PipelineInfo.pipeline = vke::CreateGraphicsPipeline(
-        shaderFiles, viewportSize, msaaCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, renderPass,
-        m_PipelineInfo.descriptorSetLayout, m_PipelineInfo.pipelineLayout);
-  } else {
-    switch (material->m_Type) {
-    case MaterialType::Point:
-      m_PipelineInfo.pipeline = vke::CreateGraphicsPipeline(
-          shaderFiles, viewportSize, msaaCount, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, renderPass,
-          m_PipelineInfo.descriptorSetLayout, m_PipelineInfo.pipelineLayout);
-      break;
-
-    case MaterialType::Lines:
-      m_PipelineInfo.pipeline = vke::CreateGraphicsPipeline(
-          shaderFiles, viewportSize, msaaCount, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, renderPass,
-          m_PipelineInfo.descriptorSetLayout, m_PipelineInfo.pipelineLayout);
-      break;
-
-    // TODO: special handling for other non-surface materials (e.g. volume rendering)
-    default:
-      PLOG_ERROR << "Unsupported material type for pipeline creation: "
-                 << static_cast<int>(material->m_Type);
-      m_PipelineInfo.pipeline = vke::CreateGraphicsPipeline(
-          shaderFiles, viewportSize, msaaCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, renderPass,
-          m_PipelineInfo.descriptorSetLayout, m_PipelineInfo.pipelineLayout);
-      break;
-    }
-  }
+  m_PipelineInfo.pipeline = vke::CreateGraphicsPipeline(
+      shaderFiles, viewportSize, msaaCount, topology, renderPass,
+      m_PipelineInfo.descriptorSetLayout, m_PipelineInfo.pipelineLayout);
 
   // Store texture writes for later binding on the per-object descriptor set.
   m_PipelineInfo.descriptorPool = descriptorPool;

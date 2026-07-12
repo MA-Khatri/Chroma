@@ -12,26 +12,33 @@ Scene CreateTestScene() {
   Scene scene;
   scene.SetSceneName("Test Scene");
 
+  auto clearColor = glm::vec3(0.2470588f, 0.2470588f, 0.2470588f); // Dark gray
+  scene.SetClearColor(clearColor);
+
+  // Note: Store the clear color in the normal matrix for the ground grid shader
   auto groundGridMesh = std::make_shared<Mesh>(CreateGroundGridMesh());
-  auto groundGridMaterial = std::make_shared<Material>(MaterialType::Lines);
+  auto groundGridMaterial = std::make_shared<Material>(MaterialType::GroundGrid);
   auto groundGridTransform = std::make_shared<Transform>();
-  auto groundGridObject = std::make_shared<Object>(groundGridMesh, groundGridMaterial, groundGridTransform);
+  groundGridTransform->SetNormalMatrix(glm::mat3(clearColor, clearColor, clearColor));
+  auto groundGridObject =
+      std::make_shared<Object>(groundGridMesh, groundGridMaterial, groundGridTransform);
   scene.AddObject(groundGridObject);
 
   auto axesMesh = std::make_shared<Mesh>(CreateXYAxesMesh());
-  auto axesMaterial = std::make_shared<Material>(MaterialType::Lines);
+  auto axesMaterial = std::make_shared<Material>(MaterialType::GroundGrid);
   axesMaterial->m_LineWidth = 2.0f; // Set thicker line width for axes
   auto axesTransform = std::make_shared<Transform>();
+  axesTransform->SetNormalMatrix(glm::mat3(clearColor, clearColor, clearColor));
   auto axesObject = std::make_shared<Object>(axesMesh, axesMaterial, axesTransform);
   scene.AddObject(axesObject);
 
-  auto planeMesh = std::make_shared<Mesh>(CreatePlaneMesh(10.0f, 10.0f, 10, 10));
-  TexturePaths planeTextures;
-  planeTextures.albedo = "C:/Users/mmrsk/Repos/Chroma/res/textures/texture.jpg";
-  auto planeMaterial = std::make_shared<Material>(planeTextures, MaterialType::Lambertian);
-  auto planeTransform = std::make_shared<Transform>();
-  auto planeObject = std::make_shared<Object>(planeMesh, planeMaterial, planeTransform);
-  scene.AddObject(planeObject);
+  // auto planeMesh = std::make_shared<Mesh>(CreatePlaneMesh(10.0f, 10.0f, 10, 10));
+  // TexturePaths planeTextures;
+  // planeTextures.albedo = "C:/Users/mmrsk/Repos/Chroma/res/textures/texture.jpg";
+  // auto planeMaterial = std::make_shared<Material>(planeTextures, MaterialType::Lambertian);
+  // auto planeTransform = std::make_shared<Transform>();
+  // auto planeObject = std::make_shared<Object>(planeMesh, planeMaterial, planeTransform);
+  // scene.AddObject(planeObject);
 
   auto cubeMesh = std::make_shared<Mesh>(CreateCubeMesh());
   TexturePaths cubeTextures;

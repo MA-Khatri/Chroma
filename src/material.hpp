@@ -13,7 +13,7 @@ enum class MaterialType {
   // Special non-surface materials
   Point,
   Lines, 
-  Volume
+  GroundGrid, // Special material with custom shaders for the ground grid
 };
 
 static int MaterialCounter = 0;
