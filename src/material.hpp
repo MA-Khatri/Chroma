@@ -2,13 +2,26 @@
 
 #include "texture.hpp"
 
-enum class MaterialType { Lambertian, Conductor, Dielectric, Principled, Emissive };
+enum class MaterialType { 
+  // Surface materials
+  Lambertian, 
+  Conductor, 
+  Dielectric, 
+  Principled, 
+  Emissive, 
+  
+  // Special non-surface materials
+  Point,
+  Lines, 
+  Volume
+};
 
 static int MaterialCounter = 0;
 
 class Material {
 public:
   Material(TexturePaths texturePaths, MaterialType type);
+  Material(MaterialType type) : m_Type(type) {};
   Material() : m_Type(MaterialType::Lambertian) {};
   ~Material() {};
 
@@ -50,4 +63,8 @@ public:
   Texture<uint8_t> m_RoughnessTexture; // Aka "specular" map
   Texture<uint8_t> m_HeightTexture;
   Texture<uint8_t> m_AOTexture;
+
+  // Special non-surface material properties
+  float m_PointSize = 1.0f; // For point materials
+  float m_LineWidth = 1.0f; // For line materials
 };

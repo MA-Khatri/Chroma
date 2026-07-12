@@ -56,9 +56,7 @@ public:
     return glm::perspective(glm::radians(m_VFOV), m_AspectRatio, m_NearClip, m_FarClip);
   }
 
-  void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override {
-    // TODO: Update vfov, clipping planes, etc. based on user input
-  }
+  void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
 
 protected:
   float m_VFOV = 45.0f; // vertical field of view in degrees
@@ -82,9 +80,7 @@ public:
                       m_FarClip);
   }
 
-  void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override {
-    // TODO: Update orthographic projection parameters based on user input
-  }
+  void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
 
 protected:
   float m_Left = -10.0f;
@@ -121,87 +117,7 @@ public:
     UpdateLookAt();
   }
 
-  void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override {
-    // Process incoming event (if any) to update state, but always
-    // apply movement each frame based on held keys for smooth motion.
-    if (event) {
-      switch (event->type) {
-      case SDL_EVENT_MOUSE_MOTION: {
-        if (event->motion.state &
-            SDL_BUTTON_LMASK) { // Only rotate when left mouse button is pressed
-          m_Yaw -= event->motion.xrel * m_Sensitivity;
-          m_Pitch -= event->motion.yrel * m_Sensitivity;
-
-          // Clamp pitch to avoid gimbal lock
-          if (m_Pitch > 89.0f)
-            m_Pitch = 89.0f;
-          if (m_Pitch < -89.0f)
-            m_Pitch = -89.0f;
-
-          UpdateLookAt();
-        }
-        break;
-      }
-      case SDL_EVENT_KEY_DOWN:
-      case SDL_EVENT_KEY_UP: {
-        bool pressed = (event->type == SDL_EVENT_KEY_DOWN);
-        // Track key states instead of moving only on key-down events
-        switch (event->key.key) {
-        case SDLK_W:
-          m_MoveForward = pressed;
-          break;
-        case SDLK_S:
-          m_MoveBackward = pressed;
-          break;
-        case SDLK_A:
-          m_MoveLeft = pressed;
-          break;
-        case SDLK_D:
-          m_MoveRight = pressed;
-          break;
-        case SDLK_Q:
-        case SDLK_SPACE:
-          m_MoveUp = pressed;
-          break;
-        case SDLK_E:
-        case SDLK_LSHIFT:
-          m_MoveDown = pressed;
-          break;
-        default:
-          break;
-        }
-        break;
-      }
-      default:
-        break;
-      }
-    }
-
-    // Apply continuous movement based on held keys
-    float velocity = m_Speed * deltaTime / 1e9f; // Convert nanoseconds to seconds
-
-    glm::vec3 view_dir = glm::normalize(m_LookAt - m_Position);
-    glm::vec3 right_dir = glm::normalize(glm::cross(view_dir, m_Up));
-
-    glm::vec3 delta = glm::vec3(0.0f);
-    if (m_MoveForward)
-      delta += velocity * view_dir;
-    if (m_MoveBackward)
-      delta -= velocity * view_dir;
-    if (m_MoveLeft)
-      delta -= velocity * right_dir;
-    if (m_MoveRight)
-      delta += velocity * right_dir;
-    if (m_MoveUp)
-      delta += velocity * m_Up;
-    if (m_MoveDown)
-      delta -= velocity * m_Up;
-
-    if (glm::length(delta) > 0.0f) {
-      m_Position += delta;
-      UpdateLookAt();
-    }
-  }
+  void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
 
   glm::mat4 GetMatrix() const override { return glm::lookAt(m_Position, m_LookAt, m_Up); }
 
@@ -233,9 +149,7 @@ public:
   OrbitController(glm::vec3 center, float radius, float azimuth, float elevation)
       : m_Center(center), m_Radius(radius), m_Azimuth(azimuth), m_Elevation(elevation) {}
 
-  void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override {
-    // TODO: Implement orbit camera controls (e.g., rotate around a target point, zoom in/out)
-  }
+  void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
 
   glm::mat4 GetMatrix() const override {
     float azimuthRad = glm::radians(m_Azimuth);

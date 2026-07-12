@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <memory>
 #include <vector>
 
@@ -32,6 +33,9 @@ public:
   std::vector<VkWriteDescriptorSet> m_DescriptorWrites;
 
 private:
+  std::array<VkDescriptorImageInfo, 3> m_DescriptorImageInfos{};
+  uint32_t m_DescriptorImageInfoCount = 0;
+
   // Textures
   VkImage m_DiffuseTextureImage = VK_NULL_HANDLE;
   VkDeviceMemory m_DiffuseTextureImageMemory = VK_NULL_HANDLE;

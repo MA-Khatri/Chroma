@@ -60,6 +60,14 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
         "vulkan_shaders/Solid.frag.spv",
     };
     break;
+
+  case MaterialType::Lines:
+    shaderFiles = {
+        "vulkan_shaders/Lines.vert.spv",
+        "vulkan_shaders/Lines.frag.spv",
+    };
+    break;
+
   // TODO: add other material types as needed
   default:
     shaderFiles = {
@@ -69,9 +77,34 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
     break;
   }
 
-  m_PipelineInfo.pipeline = vke::CreateGraphicsPipeline(
-      shaderFiles, viewportSize, msaaCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, renderPass,
-      m_PipelineInfo.descriptorSetLayout, m_PipelineInfo.pipelineLayout);
+  if (material->m_Type < MaterialType::Point) {
+    m_PipelineInfo.pipeline = vke::CreateGraphicsPipeline(
+        shaderFiles, viewportSize, msaaCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, renderPass,
+        m_PipelineInfo.descriptorSetLayout, m_PipelineInfo.pipelineLayout);
+  } else {
+    switch (material->m_Type) {
+    case MaterialType::Point:
+      m_PipelineInfo.pipeline = vke::CreateGraphicsPipeline(
+          shaderFiles, viewportSize, msaaCount, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, renderPass,
+          m_PipelineInfo.descriptorSetLayout, m_PipelineInfo.pipelineLayout);
+      break;
+
+    case MaterialType::Lines:
+      m_PipelineInfo.pipeline = vke::CreateGraphicsPipeline(
+          shaderFiles, viewportSize, msaaCount, VK_PRIMITIVE_TOPOLOGY_LINE_LIST, renderPass,
+          m_PipelineInfo.descriptorSetLayout, m_PipelineInfo.pipelineLayout);
+      break;
+
+    // TODO: special handling for other non-surface materials (e.g. volume rendering)
+    default:
+      PLOG_ERROR << "Unsupported material type for pipeline creation: "
+                 << static_cast<int>(material->m_Type);
+      m_PipelineInfo.pipeline = vke::CreateGraphicsPipeline(
+          shaderFiles, viewportSize, msaaCount, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, renderPass,
+          m_PipelineInfo.descriptorSetLayout, m_PipelineInfo.pipelineLayout);
+      break;
+    }
+  }
 
   // Create descriptor set for this material
   m_PipelineInfo.descriptorPool = descriptorPool;
@@ -79,11 +112,8 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
                            m_DescriptorSet);
 
   // === Textures ===
-  VkDescriptorImageInfo diffImageInfo{};
-  VkDescriptorImageInfo specImageInfo{};
-  VkDescriptorImageInfo normImageInfo{};
-
   if (!material->m_AlbedoTexture.m_Pixels.empty()) {
+    VkDescriptorImageInfo &diffImageInfo = m_DescriptorImageInfos[m_DescriptorImageInfoCount++];
     vke::CreateTextureImage(material->m_AlbedoTexture, m_DiffuseMipLevels, m_DiffuseTextureImage,
                             m_DiffuseTextureImageMemory);
     vke::CreateTextureImageView(m_DiffuseMipLevels, m_DiffuseTextureImage,
@@ -105,6 +135,7 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
     m_DescriptorWrites.push_back(samplerWrite);
   }
   if (!material->m_RoughnessTexture.m_Pixels.empty()) {
+    VkDescriptorImageInfo &specImageInfo = m_DescriptorImageInfos[m_DescriptorImageInfoCount++];
     vke::CreateTextureImage(material->m_RoughnessTexture, m_SpecularMipLevels,
                             m_SpecularTextureImage, m_SpecularTextureImageMemory);
     vke::CreateTextureImageView(m_SpecularMipLevels, m_SpecularTextureImage,
@@ -126,6 +157,7 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
     m_DescriptorWrites.push_back(samplerWrite);
   }
   if (!material->m_NormalTexture.m_Pixels.empty()) {
+    VkDescriptorImageInfo &normImageInfo = m_DescriptorImageInfos[m_DescriptorImageInfoCount++];
     vke::CreateTextureImage(material->m_NormalTexture, m_NormalMipLevels, m_NormalTextureImage,
                             m_NormalTextureImageMemory);
     vke::CreateTextureImageView(m_NormalMipLevels, m_NormalTextureImage, m_NormalTextureImageView);

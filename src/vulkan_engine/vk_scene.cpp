@@ -6,14 +6,16 @@
 VkScene::VkScene(std::shared_ptr<Scene> scene, ImVec2 viewportSize, VkSampleCountFlagBits msaaCount,
                  VkRenderPass renderPass)
     : m_Scene(scene) {
-  PLOG_VERBOSE << "Creating VkScene for Scene ID: " << m_Scene->m_SceneID;
+  PLOG_DEBUG << "Creating VkScene for Scene ID: " << m_Scene->m_SceneID;
 
   // Create descriptor pool
   std::set<int> materialIDs;
   for (const auto &object : m_Scene->GetObjects()) {
     materialIDs.insert(object->m_Material->m_MaterialID);
   }
-  vke::CreateDescriptorPool(materialIDs.size(), m_DescriptorPool);
+  const uint32_t descriptorSetCount =
+      static_cast<uint32_t>(materialIDs.size() + m_Scene->GetObjects().size());
+  vke::CreateDescriptorPool(descriptorSetCount, m_DescriptorPool);
 
   // Create a list of all materials used in the scene
   for (const auto &object : m_Scene->GetObjects()) {
@@ -36,7 +38,7 @@ VkScene::VkScene(std::shared_ptr<Scene> scene, ImVec2 viewportSize, VkSampleCoun
     m_VkObjects.push_back(std::make_shared<VkObject>(object, material));
   }
 
-  PLOG_VERBOSE << "Done creating VkScene for Scene ID: " << m_Scene->m_SceneID;
+  PLOG_DEBUG << "Done creating VkScene for Scene ID: " << m_Scene->m_SceneID;
 }
 
 VkScene::~VkScene() {
@@ -45,8 +47,6 @@ VkScene::~VkScene() {
 }
 
 void VkScene::Draw(VkCommandBuffer commandBuffer) {
-  PLOG_VERBOSE << "Drawing VkScene for Scene ID: " << m_Scene->m_SceneID;
-
   PushConstants constants;
   auto camera = m_Scene->GetCamera();
   constants.view = camera->GetViewMatrix();
@@ -57,6 +57,4 @@ void VkScene::Draw(VkCommandBuffer commandBuffer) {
   for (const auto &vkObject : m_VkObjects) {
     vkObject->Draw(commandBuffer);
   }
-
-  PLOG_VERBOSE << "Done drawing VkScene for Scene ID: " << m_Scene->m_SceneID;
 }

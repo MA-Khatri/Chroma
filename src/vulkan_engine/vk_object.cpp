@@ -11,8 +11,12 @@ VkObject::VkObject(std::shared_ptr<Object> object, std::shared_ptr<VkMaterial> v
   // Create uniform buffer
   vke::CreateUniformBuffer(sizeof(UniformBufferObject), m_UniformBuffer, m_UniformBufferMemory,
                            m_UniformBufferMapped);
-  VkUpdateUniformBuffer();
+
+  vke::CreateDescriptorSet(m_VkMaterial->m_PipelineInfo.descriptorSetLayout,
+                           m_VkMaterial->m_PipelineInfo.descriptorPool, m_DescriptorSet);
+
   VkUploadUniformBuffer();
+  VkUpdateUniformBuffer();
 }
 
 VkObject::~VkObject() {
@@ -28,21 +32,22 @@ VkObject::~VkObject() {
 }
 
 void VkObject::Draw(VkCommandBuffer commandBuffer) {
+  VkUploadUniformBuffer();
+
+  vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          m_VkMaterial->m_PipelineInfo.pipelineLayout, 0, 1,
+                          &m_DescriptorSet, 0, nullptr);
+
+  vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    m_VkMaterial->m_PipelineInfo.pipeline);
+
   // Bind vertex and index buffers
   VkBuffer vertexBuffers[] = {m_VertexBuffer};
   VkDeviceSize offsets[] = {0};
   vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
   vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-  // Bind descriptor sets (material + object UBO)
-  VkUpdateUniformBuffer();
-  VkUploadUniformBuffer();
-  vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          m_VkMaterial->m_PipelineInfo.pipelineLayout, 0, 1,
-                          &m_VkMaterial->m_DescriptorSet, 0, nullptr);
-
-  vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    m_VkMaterial->m_PipelineInfo.pipeline);
+  vkCmdSetLineWidth(commandBuffer, m_Object->m_Material->m_LineWidth);
 
   // Draw indexed
   vkCmdDrawIndexed(commandBuffer,
@@ -54,7 +59,9 @@ void VkObject::Draw(VkCommandBuffer commandBuffer) {
 }
 
 void VkObject::VkUpdateUniformBuffer() {
-  // Create ubo write. We need to do this since our material was shared...
+  std::vector<VkWriteDescriptorSet> descriptorWrites;
+  descriptorWrites.reserve(m_VkMaterial->m_DescriptorWrites.size() + 1);
+
   VkDescriptorBufferInfo bufferInfo{};
   bufferInfo.buffer = m_UniformBuffer;
   bufferInfo.offset = 0;
@@ -62,7 +69,7 @@ void VkObject::VkUpdateUniformBuffer() {
 
   VkWriteDescriptorSet uboWrite{};
   uboWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-  uboWrite.dstSet = m_VkMaterial->m_DescriptorSet;
+  uboWrite.dstSet = m_DescriptorSet;
   uboWrite.dstBinding = 0;
   uboWrite.dstArrayElement = 0;
   uboWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -70,8 +77,16 @@ void VkObject::VkUpdateUniformBuffer() {
   uboWrite.pBufferInfo = &bufferInfo;
   uboWrite.pImageInfo = nullptr;       // optional
   uboWrite.pTexelBufferView = nullptr; // optional
+  descriptorWrites.push_back(uboWrite);
 
-  vkUpdateDescriptorSets(vke::Device, 1, &uboWrite, 0, nullptr);
+  for (const auto &write : m_VkMaterial->m_DescriptorWrites) {
+    VkWriteDescriptorSet objectWrite = write;
+    objectWrite.dstSet = m_DescriptorSet;
+    descriptorWrites.push_back(objectWrite);
+  }
+
+  vkUpdateDescriptorSets(vke::Device, static_cast<uint32_t>(descriptorWrites.size()),
+                         descriptorWrites.data(), 0, nullptr);
 }
 
 void VkObject::VkUploadUniformBuffer() {

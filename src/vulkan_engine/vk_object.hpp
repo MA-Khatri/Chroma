@@ -35,4 +35,5 @@ private:
   VkBuffer m_UniformBuffer = VK_NULL_HANDLE;
   VkDeviceMemory m_UniformBufferMemory = VK_NULL_HANDLE;
   void *m_UniformBufferMapped = nullptr;
+  VkDescriptorSet m_DescriptorSet = VK_NULL_HANDLE;
 };

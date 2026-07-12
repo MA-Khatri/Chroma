@@ -12,7 +12,18 @@ Scene CreateTestScene() {
   Scene scene;
   scene.SetSceneName("Test Scene");
 
-  // TODO: Add ground grid
+  auto groundGridMesh = std::make_shared<Mesh>(CreateGroundGridMesh());
+  auto groundGridMaterial = std::make_shared<Material>(MaterialType::Lines);
+  auto groundGridTransform = std::make_shared<Transform>();
+  auto groundGridObject = std::make_shared<Object>(groundGridMesh, groundGridMaterial, groundGridTransform);
+  scene.AddObject(groundGridObject);
+
+  auto axesMesh = std::make_shared<Mesh>(CreateXYAxesMesh());
+  auto axesMaterial = std::make_shared<Material>(MaterialType::Lines);
+  axesMaterial->m_LineWidth = 2.0f; // Set thicker line width for axes
+  auto axesTransform = std::make_shared<Transform>();
+  auto axesObject = std::make_shared<Object>(axesMesh, axesMaterial, axesTransform);
+  scene.AddObject(axesObject);
 
   auto planeMesh = std::make_shared<Mesh>(CreatePlaneMesh(10.0f, 10.0f, 10, 10));
   TexturePaths planeTextures;
