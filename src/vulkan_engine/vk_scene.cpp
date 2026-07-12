@@ -14,7 +14,7 @@ VkScene::VkScene(std::shared_ptr<Scene> scene, ImVec2 viewportSize, VkSampleCoun
     materialIDs.insert(object->m_Material->m_MaterialID);
   }
   const uint32_t descriptorSetCount =
-      static_cast<uint32_t>(materialIDs.size() + m_Scene->GetObjects().size());
+      static_cast<uint32_t>(m_Scene->GetObjects().size());
   vke::CreateDescriptorPool(descriptorSetCount, m_DescriptorPool);
 
   // Create a list of all materials used in the scene

@@ -29,7 +29,6 @@ public:
   // The vulkan graphics pipeline to be used to draw this material
   PipelineInfo m_PipelineInfo;
 
-  VkDescriptorSet m_DescriptorSet = VK_NULL_HANDLE;
   std::vector<VkWriteDescriptorSet> m_DescriptorWrites;
 
 private:

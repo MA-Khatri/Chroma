@@ -106,10 +106,8 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
     }
   }
 
-  // Create descriptor set for this material
+  // Store texture writes for later binding on the per-object descriptor set.
   m_PipelineInfo.descriptorPool = descriptorPool;
-  vke::CreateDescriptorSet(m_PipelineInfo.descriptorSetLayout, m_PipelineInfo.descriptorPool,
-                           m_DescriptorSet);
 
   // === Textures ===
   if (!material->m_AlbedoTexture.m_Pixels.empty()) {
@@ -126,7 +124,7 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
 
     VkWriteDescriptorSet samplerWrite{};
     samplerWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    samplerWrite.dstSet = m_DescriptorSet;
+    samplerWrite.dstSet = VK_NULL_HANDLE;
     samplerWrite.dstBinding = 1;
     samplerWrite.dstArrayElement = 0;
     samplerWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -148,7 +146,7 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
 
     VkWriteDescriptorSet samplerWrite{};
     samplerWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    samplerWrite.dstSet = m_DescriptorSet;
+    samplerWrite.dstSet = VK_NULL_HANDLE;
     samplerWrite.dstBinding = 2;
     samplerWrite.dstArrayElement = 0;
     samplerWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -169,7 +167,7 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
 
     VkWriteDescriptorSet samplerWrite{};
     samplerWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    samplerWrite.dstSet = m_DescriptorSet;
+    samplerWrite.dstSet = VK_NULL_HANDLE;
     samplerWrite.dstBinding = 3;
     samplerWrite.dstArrayElement = 0;
     samplerWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -179,8 +177,6 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
   }
   // TODO: add other textures as needed
 
-  vkUpdateDescriptorSets(vke::Device, static_cast<uint32_t>(m_DescriptorWrites.size()),
-                         m_DescriptorWrites.data(), 0, nullptr);
 }
 
 VkMaterial::~VkMaterial() {
