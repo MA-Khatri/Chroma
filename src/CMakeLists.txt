@@ -42,6 +42,7 @@ PRIVATE
     SDL3::SDL3
     $<IF:$<TARGET_EXISTS:SDL3_image::SDL3_image-shared>,SDL3_image::SDL3_image-shared,SDL3_image::SDL3_image-static>
     tinyobjloader::tinyobjloader
+    tinyply
     imgui
     implot::implot
 )

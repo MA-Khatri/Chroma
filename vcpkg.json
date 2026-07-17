@@ -16,6 +16,7 @@
             "features": ["jpeg", "png"]
         },
         "implot",
-        "tinyobjloader"
+        "tinyobjloader",
+        "tinyply"
     ]
 }

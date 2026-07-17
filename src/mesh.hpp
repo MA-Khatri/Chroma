@@ -59,4 +59,7 @@ Mesh CreateGroundGridMesh();
 // Create XY axes separate from ground grid since we render them with a thicker line width
 Mesh CreateXYAxesMesh();
 
+// Load a mesh from a file. The file format is determined by the file extension.
+Mesh LoadMeshFromFile(const std::string &filepath);
 Mesh LoadMeshFromOBJ(const std::string &filepath);
+Mesh LoadMeshFromPLY(const std::string &filepath);

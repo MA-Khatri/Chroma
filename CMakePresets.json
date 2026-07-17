@@ -16,6 +16,8 @@
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
+        "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic",
+        "VCPKG_HOST_TRIPLET": "x64-mingw-dynamic",
         "CMAKE_TOOLCHAIN_FILE": {
           "value": "${sourceDir}/external/vcpkg/scripts/buildsystems/vcpkg.cmake",
           "type": "FILEPATH"
