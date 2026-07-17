@@ -177,7 +177,6 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
     m_DescriptorWrites.push_back(samplerWrite);
   }
   // TODO: add other textures as needed
-
 }
 
 VkMaterial::~VkMaterial() {

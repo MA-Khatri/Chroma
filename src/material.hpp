@@ -16,7 +16,8 @@ enum class MaterialType {
   GroundGrid, // Special material with custom shaders for the ground grid
 };
 
-static int MaterialCounter = 0;
+// Single global counter for assigning unique material IDs
+inline int MaterialCounter = 0;
 
 class Material {
 public:

@@ -1,25 +1,24 @@
 #version 450
 
 layout(location = 0) in vec3 a_Position;
+layout(location = 1) in vec3 a_Normal;   // unused
 layout(location = 2) in vec3 a_Color;
+layout(location = 3) in vec2 a_TexCoord; // unused
 
 layout(location = 0) out vec3 v_Color;
 layout(location = 1) out vec3 v_Position;
 layout(location = 2) out vec3 v_CameraPosn; // Note: camera posn, dir, and clear color are technically not varying, but we're just passing them along
 layout(location = 3) out vec3 v_ClearColor;
 
-
 layout(push_constant) uniform CameraMatrices {
 	mat4 view;
 	mat4 proj;
 } camera;
 
-
 layout(set = 0, binding = 0) uniform UniformBufferObject {
 	mat4 model;
 	mat4 normal;
 } object;
-
 
 void main() 
 {

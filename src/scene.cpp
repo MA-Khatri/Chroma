@@ -32,13 +32,14 @@ Scene CreateTestScene() {
   auto axesObject = std::make_shared<Object>(axesMesh, axesMaterial, axesTransform);
   scene.AddObject(axesObject);
 
-  // auto planeMesh = std::make_shared<Mesh>(CreatePlaneMesh(10.0f, 10.0f, 10, 10));
-  // TexturePaths planeTextures;
-  // planeTextures.albedo = "C:/Users/mmrsk/Repos/Chroma/res/textures/texture.jpg";
-  // auto planeMaterial = std::make_shared<Material>(planeTextures, MaterialType::Lambertian);
-  // auto planeTransform = std::make_shared<Transform>();
-  // auto planeObject = std::make_shared<Object>(planeMesh, planeMaterial, planeTransform);
-  // scene.AddObject(planeObject);
+  auto planeMesh = std::make_shared<Mesh>(CreatePlaneMesh(10.0f, 10.0f, 10, 10));
+  TexturePaths planeTextures;
+  planeTextures.albedo = "C:/Users/mmrsk/Repos/Chroma/res/textures/checker.png";
+  auto planeMaterial = std::make_shared<Material>(planeTextures, MaterialType::Conductor);
+  auto planeTransform = std::make_shared<Transform>();
+  planeTransform->SetPosition(glm::vec3(0.0f, 0.0f, -1e-2f));
+  auto planeObject = std::make_shared<Object>(planeMesh, planeMaterial, planeTransform);
+  scene.AddObject(planeObject);
 
   auto cubeMesh = std::make_shared<Mesh>(CreateCubeMesh());
   TexturePaths cubeTextures;
