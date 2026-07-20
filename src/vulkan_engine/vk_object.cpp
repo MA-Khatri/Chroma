@@ -36,8 +36,8 @@ void VkObject::Draw(VkCommandBuffer commandBuffer) {
   // VkUpdateUniformBuffer();
 
   vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          m_VkMaterial->m_PipelineInfo.pipelineLayout, 0, 1,
-                          &m_DescriptorSet, 0, nullptr);
+                          m_VkMaterial->m_PipelineInfo.pipelineLayout, 0, 1, &m_DescriptorSet, 0,
+                          nullptr);
 
   vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     m_VkMaterial->m_PipelineInfo.pipeline);

@@ -51,6 +51,13 @@ Scene CreateTestScene() {
   auto cubeObject = std::make_shared<Object>(cubeMesh, cubeMaterial, cubeTransform);
   scene.AddObject(cubeObject);
 
+  auto bunnyMesh = std::make_shared<Mesh>(LoadMeshFromFile("C:/Users/mmrsk/Repos/Chroma/res/meshes/bunny.obj"));
+  auto bunnyMaterial = std::make_shared<Material>(MaterialType::Lambertian);
+  auto bunnyTransform = std::make_shared<Transform>();
+  bunnyTransform->SetPosition(glm::vec3(1.0f, 0.0f, 0.0f)); // Position the bunny to the right of the cube
+  auto bunnyObject = std::make_shared<Object>(bunnyMesh, bunnyMaterial, bunnyTransform);
+  scene.AddObject(bunnyObject);
+
   auto perspectiveProjection =
       std::make_shared<PerspectiveProjection>(45.0f, 0.1f, 1000.0f, 16.0f / 9.0f);
   auto freeFlyController = std::make_shared<FreeFlyController>(

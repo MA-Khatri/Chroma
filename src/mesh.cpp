@@ -87,8 +87,8 @@ Mesh CreateCubeMesh() {
       {{ 0.5f, -0.5f, -0.5f}, {0.0f, 0.0f,-1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
       {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f,-1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
   };
-  //clang-format on
-  
+  // clang-format on
+
   std::vector<uint32_t> indices;
   indices.reserve(36);
   for (uint32_t face = 0; face < 6; ++face) {
@@ -118,9 +118,10 @@ Mesh CreateSphereMesh(int latitudeSegments, int longitudeSegments) {
       float sinPhi = sin(phi);
       float cosPhi = cos(phi);
 
-      glm::vec3 position = {cosPhi * sinTheta, cosTheta, sinPhi * sinTheta};
+      glm::vec3 position = {cosPhi * sinTheta, sinPhi * sinTheta, cosTheta};
       glm::vec3 normal = glm::normalize(position);
-      glm::vec2 texCoords = {1.0f - (float)lon / longitudeSegments, 1.0f - (float)lat / latitudeSegments};
+      glm::vec2 texCoords = {1.0f - (float)lon / longitudeSegments,
+                             1.0f - (float)lat / latitudeSegments};
 
       vertices.push_back({position, normal, {1.0f, 1.0f, 1.0f}, texCoords});
     }
@@ -156,7 +157,7 @@ static const float groundGridYMax = 500.0f;
 
 Mesh CreateGroundGridMesh() {
   const glm::vec3 xGridColor = glm::vec3(78.0f / 255.0f, 78.0f / 255.0f, 78.0f / 255.0f);
-	const glm::vec3 yGridColor = glm::vec3(78.0f / 255.0f, 78.0f / 255.0f, 78.0f / 255.0f);
+  const glm::vec3 yGridColor = glm::vec3(78.0f / 255.0f, 78.0f / 255.0f, 78.0f / 255.0f);
 
   // Count from 0 to +x/y max -- actual grid extends x/yCount in pos/neg directions
   const int xCount = 500;
@@ -165,35 +166,39 @@ Mesh CreateGroundGridMesh() {
 
   const float xGap = groundGridXMax / xCount;
   const float yGap = groundGridYMax / yCount;
-  
+
   std::vector<Vertex> vertices(numVertices);
   std::vector<uint32_t> indices(numVertices);
 
   // Lines along x-axis spanning from -groundGridYMax to groundGridYMax
   int index = 0;
-  for (int i = -xCount; i < xCount + 1; i++)
-  {
-    if (i == 0) continue; // Skip the line through the origin since it will be drawn separately
-    
-    vertices[index] = {{i * xGap, -groundGridYMax, 0.0f}, {0.0f, 0.0f, 1.0f}, xGridColor, {0.0f, 0.0f}};
+  for (int i = -xCount; i < xCount + 1; i++) {
+    if (i == 0)
+      continue; // Skip the line through the origin since it will be drawn separately
+
+    vertices[index] = {
+        {i * xGap, -groundGridYMax, 0.0f}, {0.0f, 0.0f, 1.0f}, xGridColor, {0.0f, 0.0f}};
     indices[index] = index;
     index++;
 
-    vertices[index] = {{i * xGap, groundGridYMax, 0.0f}, {0.0f, 0.0f, 1.0f}, xGridColor, {1.0f, 1.0f}};
+    vertices[index] = {
+        {i * xGap, groundGridYMax, 0.0f}, {0.0f, 0.0f, 1.0f}, xGridColor, {1.0f, 1.0f}};
     indices[index] = index;
     index++;
   }
 
   // Lines along y-axis spanning from -groundGridXMax to groundGridXMax
-  for (int i = -yCount; i < yCount + 1; i++)
-  {
-    if (i == 0) continue; // Skip the line through the origin since it will be drawn separately
+  for (int i = -yCount; i < yCount + 1; i++) {
+    if (i == 0)
+      continue; // Skip the line through the origin since it will be drawn separately
 
-    vertices[index] = {{-groundGridXMax, i * yGap, 0.0f}, {0.0f, 0.0f, 1.0f}, yGridColor, {0.0f, 0.0f}};
+    vertices[index] = {
+        {-groundGridXMax, i * yGap, 0.0f}, {0.0f, 0.0f, 1.0f}, yGridColor, {0.0f, 0.0f}};
     indices[index] = index;
     index++;
 
-    vertices[index] = {{groundGridXMax, i * yGap, 0.0f}, {0.0f, 0.0f, 1.0f}, yGridColor, {1.0f, 1.0f}};
+    vertices[index] = {
+        {groundGridXMax, i * yGap, 0.0f}, {0.0f, 0.0f, 1.0f}, yGridColor, {1.0f, 1.0f}};
     indices[index] = index;
     index++;
   }
@@ -219,8 +224,7 @@ Mesh CreateXYAxesMesh() {
   return Mesh(vertices, indices, DrawMode::Lines);
 }
 
-Mesh LoadMeshFromFile(const std::string &filepath)
-{
+Mesh LoadMeshFromFile(const std::string &filepath) {
   // Check the file extension to determine the loader to use
   std::string extension = filepath.substr(filepath.find_last_of(".") + 1);
 
@@ -230,12 +234,11 @@ Mesh LoadMeshFromFile(const std::string &filepath)
     return LoadMeshFromPLY(filepath);
   } else {
     PLOG_ERROR << "Unsupported mesh file format: " << extension;
-    throw std::runtime_error("Unsupported mesh file format: " + extension);
+    return Mesh();
   }
 }
 
-Mesh LoadMeshFromOBJ(const std::string &filepath)
-{
+Mesh LoadMeshFromOBJ(const std::string &filepath) {
   tinyobj::attrib_t attrib;
   std::vector<tinyobj::shape_t> shapes;
   std::vector<tinyobj::material_t> materials;
@@ -243,8 +246,8 @@ Mesh LoadMeshFromOBJ(const std::string &filepath)
 
   std::string baseDir = filepath.substr(0, filepath.find_last_of("/\\") + 1);
 
-  bool ok = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
-                              filepath.c_str(), baseDir.c_str());
+  bool ok = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str(),
+                             baseDir.c_str());
 
   if (!warn.empty()) {
     PLOG_WARNING << warn;
@@ -252,7 +255,7 @@ Mesh LoadMeshFromOBJ(const std::string &filepath)
 
   if (!ok) {
     PLOG_ERROR << "Failed to load OBJ file: " << filepath << " (" << err << ")";
-    throw std::runtime_error("Failed to load OBJ file: " + filepath);
+    return Mesh();
   }
 
   // Detect point cloud: no shape produced any face indices, but vertices exist.
@@ -289,9 +292,9 @@ Mesh LoadMeshFromOBJ(const std::string &filepath)
         };
       }
 
-      vertex.color = hasColors
-          ? glm::vec3(attrib.colors[3 * i + 0], attrib.colors[3 * i + 1], attrib.colors[3 * i + 2])
-          : glm::vec3(1.0f);
+      vertex.color = hasColors ? glm::vec3(attrib.colors[3 * i + 0], attrib.colors[3 * i + 1],
+                                           attrib.colors[3 * i + 2])
+                               : glm::vec3(1.0f);
 
       indices[i] = static_cast<uint32_t>(i);
     }
@@ -321,17 +324,18 @@ Mesh LoadMeshFromOBJ(const std::string &filepath)
         };
       }
 
-      vertex.color = hasColors
-          ? glm::vec3(attrib.colors[3 * index.vertex_index + 0],
-                       attrib.colors[3 * index.vertex_index + 1],
-                       attrib.colors[3 * index.vertex_index + 2])
-          : glm::vec3(1.0f);
+      vertex.color = hasColors ? glm::vec3(attrib.colors[3 * index.vertex_index + 0],
+                                           attrib.colors[3 * index.vertex_index + 1],
+                                           attrib.colors[3 * index.vertex_index + 2])
+                               : glm::vec3(1.0f);
 
       if (index.texcoord_index >= 0) {
         vertex.texCoords = {
             attrib.texcoords[2 * index.texcoord_index + 0],
             attrib.texcoords[2 * index.texcoord_index + 1],
         };
+      } else {
+        vertex.texCoords = {0.0f, 0.0f};
       }
 
       auto it = uniqueVertices.find(vertex);
@@ -349,14 +353,13 @@ Mesh LoadMeshFromOBJ(const std::string &filepath)
   return Mesh(vertices, indices, DrawMode::Triangles);
 }
 
-Mesh LoadMeshFromPLY(const std::string &filepath)
-{
+Mesh LoadMeshFromPLY(const std::string &filepath) {
   using namespace tinyply;
 
   std::ifstream fileStream(filepath, std::ios::binary);
   if (!fileStream || fileStream.fail()) {
     PLOG_ERROR << "Failed to open PLY file: " << filepath;
-    throw std::runtime_error("Failed to open PLY file: " + filepath);
+    return Mesh();
   }
 
   PlyFile file;
@@ -377,23 +380,23 @@ Mesh LoadMeshFromPLY(const std::string &filepath)
     plyPositions = file.request_properties_from_element("vertex", {"x", "y", "z"});
   } catch (const std::exception &e) {
     PLOG_ERROR << "PLY file missing vertex positions: " << e.what();
-    throw std::runtime_error("PLY file missing vertex positions: " + filepath);
+    return Mesh();
   }
 
   try {
     plyNormals = file.request_properties_from_element("vertex", {"nx", "ny", "nz"});
-  } catch (const std::exception &) { 
-   // optional
-   }
+  } catch (const std::exception &) {
+    PLOG_WARNING << "PLY file missing vertex normals, proceeding without normals.";
+  }
 
   try {
     plyColors = file.request_properties_from_element("vertex", {"red", "green", "blue"});
   } catch (const std::exception &) {
     try {
       plyColors = file.request_properties_from_element("vertex", {"r", "g", "b"});
-    } catch (const std::exception &) { 
-     // optional
-     }
+    } catch (const std::exception &) {
+      PLOG_WARNING << "PLY file missing vertex colors, proceeding without colors.";
+    }
   }
 
   try {
@@ -401,9 +404,9 @@ Mesh LoadMeshFromPLY(const std::string &filepath)
   } catch (const std::exception &) {
     try {
       plyTexCoords = file.request_properties_from_element("vertex", {"s", "t"});
-    } catch (const std::exception &) { 
-     // optional
-     }
+    } catch (const std::exception &) {
+      PLOG_WARNING << "PLY file missing vertex texture coordinates, proceeding without texCoords.";
+    }
   }
 
   if (!isPointCloud) {
@@ -411,7 +414,8 @@ Mesh LoadMeshFromPLY(const std::string &filepath)
       plyFaces = file.request_properties_from_element("face", {"vertex_indices"}, 3);
     } catch (const std::exception &e) {
       // Header claimed faces but tinyply couldn't bind them — fall back to points.
-      PLOG_WARNING << "PLY face element present but unreadable, treating as point cloud: " << e.what();
+      PLOG_WARNING << "PLY face element present but unreadable, treating as point cloud: "
+                   << e.what();
       isPointCloud = true;
     }
   }
@@ -424,48 +428,61 @@ Mesh LoadMeshFromPLY(const std::string &filepath)
   auto readVec3 = [](const std::shared_ptr<PlyData> &data, size_t count, auto assign) {
     if (data->t == Type::FLOAT32) {
       const float *p = reinterpret_cast<const float *>(data->buffer.get());
-      for (size_t i = 0; i < count; ++i) assign(i, p[3 * i], p[3 * i + 1], p[3 * i + 2]);
+      for (size_t i = 0; i < count; ++i)
+        assign(i, p[3 * i], p[3 * i + 1], p[3 * i + 2]);
     } else if (data->t == Type::FLOAT64) {
       const double *p = reinterpret_cast<const double *>(data->buffer.get());
-      for (size_t i = 0; i < count; ++i) assign(i, p[3 * i], p[3 * i + 1], p[3 * i + 2]);
+      for (size_t i = 0; i < count; ++i)
+        assign(i, p[3 * i], p[3 * i + 1], p[3 * i + 2]);
     }
   };
 
-  readVec3(plyPositions, vertexCount,
-            [&](size_t i, double x, double y, double z) { vertices[i].position = glm::vec3(x, y, z); });
+  readVec3(plyPositions, vertexCount, [&](size_t i, double x, double y, double z) {
+    vertices[i].position = glm::vec3(x, y, z);
+  });
 
   if (plyNormals) {
-    readVec3(plyNormals, vertexCount,
-              [&](size_t i, double x, double y, double z) { vertices[i].normal = glm::vec3(x, y, z); });
+    readVec3(plyNormals, vertexCount, [&](size_t i, double x, double y, double z) {
+      vertices[i].normal = glm::vec3(x, y, z);
+    });
   }
 
   if (plyColors) {
     if (plyColors->t == Type::UINT8) {
       const uint8_t *p = reinterpret_cast<const uint8_t *>(plyColors->buffer.get());
       for (size_t i = 0; i < vertexCount; ++i) {
-        vertices[i].color = glm::vec3(p[3 * i] / 255.0f, p[3 * i + 1] / 255.0f, p[3 * i + 2] / 255.0f);
+        vertices[i].color =
+            glm::vec3(p[3 * i] / 255.0f, p[3 * i + 1] / 255.0f, p[3 * i + 2] / 255.0f);
       }
     } else {
-      readVec3(plyColors, vertexCount,
-                [&](size_t i, double r, double g, double b) { vertices[i].color = glm::vec3(r, g, b); });
+      readVec3(plyColors, vertexCount, [&](size_t i, double r, double g, double b) {
+        vertices[i].color = glm::vec3(r, g, b);
+      });
     }
   } else {
-    for (auto &v : vertices) v.color = glm::vec3(1.0f);
+    for (auto &v : vertices)
+      v.color = glm::vec3(1.0f);
   }
 
   if (plyTexCoords) {
     if (plyTexCoords->t == Type::FLOAT32) {
       const float *p = reinterpret_cast<const float *>(plyTexCoords->buffer.get());
-      for (size_t i = 0; i < vertexCount; ++i) vertices[i].texCoords = glm::vec2(p[2 * i], p[2 * i + 1]);
+      for (size_t i = 0; i < vertexCount; ++i)
+        vertices[i].texCoords = glm::vec2(p[2 * i], p[2 * i + 1]);
     } else if (plyTexCoords->t == Type::FLOAT64) {
       const double *p = reinterpret_cast<const double *>(plyTexCoords->buffer.get());
-      for (size_t i = 0; i < vertexCount; ++i) vertices[i].texCoords = glm::vec2(p[2 * i], p[2 * i + 1]);
+      for (size_t i = 0; i < vertexCount; ++i)
+        vertices[i].texCoords = glm::vec2(p[2 * i], p[2 * i + 1]);
     }
+  } else {
+    for (auto &v : vertices)
+      v.texCoords = glm::vec2(0.0f, 0.0f);
   }
 
   if (isPointCloud) {
     std::vector<uint32_t> indices(vertexCount);
-    for (size_t i = 0; i < vertexCount; ++i) indices[i] = static_cast<uint32_t>(i);
+    for (size_t i = 0; i < vertexCount; ++i)
+      indices[i] = static_cast<uint32_t>(i);
 
     PLOG_INFO << "Detected point cloud PLY (" << vertexCount << " points): " << filepath;
     return Mesh(vertices, indices, DrawMode::Points);
@@ -475,26 +492,29 @@ Mesh LoadMeshFromPLY(const std::string &filepath)
   indices.reserve(plyFaces->count * 3);
 
   switch (plyFaces->t) {
-    case Type::UINT32:
-    case Type::INT32: {
-      const uint32_t *p = reinterpret_cast<const uint32_t *>(plyFaces->buffer.get());
-      indices.assign(p, p + plyFaces->count * 3);
-      break;
-    }
-    case Type::UINT16:
-    case Type::INT16: {
-      const uint16_t *p = reinterpret_cast<const uint16_t *>(plyFaces->buffer.get());
-      for (size_t i = 0; i < plyFaces->count * 3; ++i) indices.push_back(p[i]);
-      break;
-    }
-    case Type::UINT8:
-    case Type::INT8: {
-      const uint8_t *p = reinterpret_cast<const uint8_t *>(plyFaces->buffer.get());
-      for (size_t i = 0; i < plyFaces->count * 3; ++i) indices.push_back(p[i]);
-      break;
-    }
-    default:
-      throw std::runtime_error("Unsupported PLY face index type: " + filepath);
+  case Type::UINT32:
+  case Type::INT32: {
+    const uint32_t *p = reinterpret_cast<const uint32_t *>(plyFaces->buffer.get());
+    indices.assign(p, p + plyFaces->count * 3);
+    break;
+  }
+  case Type::UINT16:
+  case Type::INT16: {
+    const uint16_t *p = reinterpret_cast<const uint16_t *>(plyFaces->buffer.get());
+    for (size_t i = 0; i < plyFaces->count * 3; ++i)
+      indices.push_back(p[i]);
+    break;
+  }
+  case Type::UINT8:
+  case Type::INT8: {
+    const uint8_t *p = reinterpret_cast<const uint8_t *>(plyFaces->buffer.get());
+    for (size_t i = 0; i < plyFaces->count * 3; ++i)
+      indices.push_back(p[i]);
+    break;
+  }
+  default:
+    PLOG_ERROR << "Unsupported PLY face index type: " << filepath;
+    return Mesh();
   }
 
   return Mesh(vertices, indices, DrawMode::Triangles);

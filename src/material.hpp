@@ -2,17 +2,19 @@
 
 #include "texture.hpp"
 
-enum class MaterialType { 
+enum class MaterialType {
   // Surface materials
-  Lambertian, 
-  Conductor, 
-  Dielectric, 
-  Principled, 
-  Emissive, 
-  
+  Lambertian,
+  Conductor,
+  Dielectric,
+  Principled,
+  Emissive,
+
   // Special non-surface materials
-  Point,
-  Lines, 
+  PointFlat,
+  PointShaded,
+  PointNormal,
+  Lines,
   GroundGrid, // Special material with custom shaders for the ground grid
 };
 
@@ -25,6 +27,11 @@ public:
   Material(MaterialType type) : m_Type(type) {};
   Material() : m_Type(MaterialType::Lambertian) {};
   ~Material() {};
+
+  bool HasTextures() {
+    return !m_AlbedoTexture.empty() || !m_NormalTexture.empty() || !m_MetallicTexture.empty() ||
+           !m_RoughnessTexture.empty() || !m_HeightTexture.empty() || !m_AOTexture.empty();
+  }
 
   int m_MaterialID = MaterialCounter++;
 
@@ -63,7 +70,7 @@ public:
   Texture<uint8_t> m_MetallicTexture;
   Texture<uint8_t> m_RoughnessTexture; // Aka "specular" map
   Texture<uint8_t> m_HeightTexture;
-  Texture<uint8_t> m_AOTexture;
+  Texture<uint8_t> m_AOTexture; // Ambient Occlusion
 
   // Special non-surface material properties
   float m_PointSize = 1.0f; // For point materials

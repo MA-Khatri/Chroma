@@ -2,16 +2,20 @@
 set(VULKAN_SHADER_OUTPUT_DIR ${CMAKE_BINARY_DIR}/vulkan_shaders)
 
 set(VULKAN_SHADERS
-    Flat.frag
+Default.vert
+    Default.frag
+    Default.vert
     Flat.vert
+    Flat.frag
     FlatWithSpecular.frag
-    HelloTriangle.frag
-    HelloTriangle.vert
-    GroundGrid.frag
     GroundGrid.vert
-    Normal.frag
-    Solid.frag
+    GroundGrid.frag
+    HelloTriangle.vert
+    HelloTriangle.frag
     Solid.vert
+    SolidNormal.frag
+    SolidPerVertex.frag
+    SolidTextured.frag
 )
 
 # Compile shaders with glslc

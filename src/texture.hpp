@@ -26,14 +26,12 @@ public:
     if (path.empty()) {
       PLOG_VERBOSE << "No texture path provided for texture type " << static_cast<int>(type)
                    << ", skipping load.";
-      m_Size = glm::ivec3(0, 0, 0);
       return;
     }
 
     SDL_Surface *surface = IMG_Load(path.c_str());
     if (!surface) {
       PLOG_ERROR << "Failed to load texture: " << path << " SDL_image Error: " << SDL_GetError();
-      m_Size = glm::ivec3(0, 0, 0);
       return;
     }
 
@@ -42,7 +40,6 @@ public:
       PLOG_ERROR << "Unexpected pixel format in texture: " << path
                  << " Bytes per pixel: " << bytesPerPixel << ", sizeof(T): " << sizeof(T);
       SDL_DestroySurface(surface);
-      m_Size = glm::ivec3(0, 0, 0);
       return;
     }
     m_Size = glm::ivec3(surface->w, surface->h, bytesPerPixel);
@@ -55,9 +52,11 @@ public:
   }
   ~Texture() = default;
 
+  bool empty() const { return m_Pixels.size() < 2; }
+
   std::string m_FilePath;
   TextureType m_Type;
 
-  std::vector<T> m_Pixels;
-  glm::ivec3 m_Size; // width, height, bytes per pixel (e.g. 3 for RGB, 4 for RGBA)
+  std::vector<T> m_Pixels = {0};
+  glm::ivec3 m_Size = {1, 1, 1}; // width, height, bytes per pixel (e.g. 3 for RGB, 4 for RGBA)
 };

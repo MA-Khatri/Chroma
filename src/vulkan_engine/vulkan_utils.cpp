@@ -1384,7 +1384,7 @@ void CreateTextureImage(const Texture<uint8_t> &tex, uint32_t &mipLevels, VkImag
   const int texWidth = tex.m_Size.x;
   const int texHeight = tex.m_Size.y;
   const uint32_t srcChannels = std::max(1, tex.m_Size.z);
-  const uint32_t dstChannels = (srcChannels == 3) ? 4u : srcChannels;
+  const uint32_t dstChannels = 4;
 
   std::vector<uint8_t> uploadPixels(static_cast<size_t>(texWidth) * texHeight * dstChannels, 0u);
   for (int i = 0; i < texWidth * texHeight; ++i) {
