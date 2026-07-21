@@ -14,8 +14,7 @@ VkDescriptorSetLayoutBinding CreateDSLFragmentBinding(unsigned int binding) {
 }
 
 VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool descriptorPool,
-                       ImVec2 viewportSize, VkSampleCountFlagBits msaaCount,
-                       VkRenderPass renderPass) {
+                       VkSampleCountFlagBits msaaCount, VkRenderPass renderPass) {
   // Clear the descriptor writes
   m_DescriptorWrites.resize(0);
 
@@ -116,8 +115,8 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
   vke::CreateDescriptorSetLayout(layoutBindings, m_PipelineInfo.objectDescriptorSetLayout);
 
   m_PipelineInfo.pipeline = vke::CreateGraphicsPipeline(
-      shaderFiles, viewportSize, msaaCount, topology, renderPass,
-      m_PipelineInfo.objectDescriptorSetLayout, m_PipelineInfo.pipelineLayout);
+      shaderFiles, msaaCount, topology, renderPass, m_PipelineInfo.objectDescriptorSetLayout,
+      m_PipelineInfo.pipelineLayout);
 
   // Store texture writes for later binding on the per-object descriptor set.
   m_PipelineInfo.descriptorPool = descriptorPool;

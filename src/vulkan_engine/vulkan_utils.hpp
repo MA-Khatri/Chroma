@@ -121,12 +121,11 @@ void CreateViewportImageViews(std::vector<VkImage> &images, std::vector<VkImageV
 
 void CreateRenderPass(VkSampleCountFlagBits msaaSamples, VkRenderPass &renderPass);
 
-void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
-                            VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology,
-                            const VkRenderPass &renderPass,
+void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, VkSampleCountFlagBits msaaSamples,
+                            VkPrimitiveTopology topology, const VkRenderPass &renderPass,
                             const VkDescriptorSetLayout &descriptorSetLayout,
                             VkPipelineLayout &layout, VkPipeline &pipeline);
-VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
+VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles,
                                   VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology,
                                   const VkRenderPass &renderPass,
                                   const VkDescriptorSetLayout &descriptorSetLayout,

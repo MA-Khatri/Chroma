@@ -3,7 +3,7 @@
 #include <set>
 #include <vulkan/vulkan_core.h>
 
-VkScene::VkScene(std::shared_ptr<Scene> scene, ImVec2 viewportSize, VkSampleCountFlagBits msaaCount,
+VkScene::VkScene(std::shared_ptr<Scene> scene, VkSampleCountFlagBits msaaCount,
                  VkRenderPass renderPass)
     : m_Scene(scene) {
   PLOG_DEBUG << "Creating VkScene for Scene ID: " << m_Scene->m_SceneID;
@@ -13,17 +13,15 @@ VkScene::VkScene(std::shared_ptr<Scene> scene, ImVec2 viewportSize, VkSampleCoun
   for (const auto &object : m_Scene->GetObjects()) {
     materialIDs.insert(object->m_Material->m_MaterialID);
   }
-  const uint32_t descriptorSetCount =
-      static_cast<uint32_t>(m_Scene->GetObjects().size());
+  const uint32_t descriptorSetCount = static_cast<uint32_t>(m_Scene->GetObjects().size());
   vke::CreateDescriptorPool(descriptorSetCount, m_DescriptorPool);
 
   // Create a list of all materials used in the scene
   for (const auto &object : m_Scene->GetObjects()) {
     int matID = object->m_Material->m_MaterialID;
     if (m_Materials.find(matID) == m_Materials.end()) {
-      m_Materials.insert(
-          {matID, std::make_shared<VkMaterial>(object->m_Material, m_DescriptorPool, viewportSize,
-                                               msaaCount, renderPass)});
+      m_Materials.insert({matID, std::make_shared<VkMaterial>(object->m_Material, m_DescriptorPool,
+                                                              msaaCount, renderPass)});
     }
   }
 

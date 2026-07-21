@@ -868,9 +868,8 @@ std::vector<char> ReadShaderFile(const std::string &filename) {
   return buffer;
 }
 
-void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
-                            VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology,
-                            const VkRenderPass &renderPass,
+void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, VkSampleCountFlagBits msaaSamples,
+                            VkPrimitiveTopology topology, const VkRenderPass &renderPass,
                             const VkDescriptorSetLayout &descriptorSetLayout,
                             VkPipelineLayout &layout, VkPipeline &pipeline) {
   VkResult err;
@@ -929,14 +928,14 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
   VkViewport viewport{};
   viewport.x = 0.0f;
   viewport.y = 0.0f;
-  viewport.width = extent.x;
-  viewport.height = extent.y;
+  viewport.width = 1.0f; // Note: Arbitrary width/height since it will be resized anyways
+  viewport.height = 1.0f;
   viewport.minDepth = 0.0f;
   viewport.maxDepth = 1.0f;
 
   VkRect2D scissor{};
   scissor.offset = {0, 0};
-  scissor.extent = {(uint32_t)extent.x, (uint32_t)extent.y};
+  scissor.extent = {1, 1};
 
   VkPipelineViewportStateCreateInfo viewportState{};
   viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -957,7 +956,6 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
   rasterizer.depthBiasEnable = VK_FALSE;
 
   // === Multisampling ===
-  // We'll get back to this later? For now, disabled.
   VkPipelineMultisampleStateCreateInfo multisampling{};
   multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
   multisampling.sampleShadingEnable = VK_TRUE;
@@ -1066,14 +1064,14 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
   }
 }
 
-VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
+VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles,
                                   VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology,
                                   const VkRenderPass &renderPass,
                                   const VkDescriptorSetLayout &descriptorSetLayout,
                                   VkPipelineLayout &layout) {
   VkPipeline pipeline;
-  CreateGraphicsPipeline(shaderFiles, extent, msaaSamples, topology, renderPass,
-                         descriptorSetLayout, layout, pipeline);
+  CreateGraphicsPipeline(shaderFiles, msaaSamples, topology, renderPass, descriptorSetLayout,
+                         layout, pipeline);
   return pipeline;
 }
 

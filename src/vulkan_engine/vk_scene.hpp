@@ -11,8 +11,7 @@ class VulkanEngine; // Forward declaration
 
 class VkScene {
 public:
-  VkScene(std::shared_ptr<Scene> scene, ImVec2 viewportSize, VkSampleCountFlagBits msaaCount,
-          VkRenderPass renderPass);
+  VkScene(std::shared_ptr<Scene> scene, VkSampleCountFlagBits msaaCount, VkRenderPass renderPass);
   ~VkScene();
 
   void Draw(VkCommandBuffer commandBuffer);
