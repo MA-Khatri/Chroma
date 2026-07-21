@@ -24,7 +24,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
 void main() 
 {
 	gl_Position = camera.proj * camera.view * object.model * vec4(a_Position, 1.0);
-	gl_PointSize = 1.0;
+	gl_PointSize = 5.0;
 
 	fragColor = a_Color;
 	fragTexCoord = a_TexCoord;

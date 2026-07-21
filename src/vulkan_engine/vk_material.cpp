@@ -23,13 +23,13 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
   std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
 
   // We'll have 1 ubo to pass in mesh data like its model & normal matrices
-  VkDescriptorSetLayoutBinding uboLayoutBinding{};
-  uboLayoutBinding.binding = 0;
-  uboLayoutBinding.descriptorCount = 1;
-  uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  uboLayoutBinding.pImmutableSamplers = nullptr;
-  uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-  layoutBindings.push_back(uboLayoutBinding);
+  VkDescriptorSetLayoutBinding objectUboBinding{};
+  objectUboBinding.binding = 0;
+  objectUboBinding.descriptorCount = 1;
+  objectUboBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  objectUboBinding.pImmutableSamplers = nullptr;
+  objectUboBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+  layoutBindings.push_back(objectUboBinding);
 
   // Create graphics pipeline
   std::vector<std::string> shaderFiles;
@@ -113,11 +113,11 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
   }
 
   // Create descriptor set layout
-  vke::CreateDescriptorSetLayout(layoutBindings, m_PipelineInfo.descriptorSetLayout);
+  vke::CreateDescriptorSetLayout(layoutBindings, m_PipelineInfo.objectDescriptorSetLayout);
 
   m_PipelineInfo.pipeline = vke::CreateGraphicsPipeline(
       shaderFiles, viewportSize, msaaCount, topology, renderPass,
-      m_PipelineInfo.descriptorSetLayout, m_PipelineInfo.pipelineLayout);
+      m_PipelineInfo.objectDescriptorSetLayout, m_PipelineInfo.pipelineLayout);
 
   // Store texture writes for later binding on the per-object descriptor set.
   m_PipelineInfo.descriptorPool = descriptorPool;

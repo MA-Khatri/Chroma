@@ -876,23 +876,23 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
   VkResult err;
 
   // ====== Shader Modules and Shader Stages ======
+  std::vector<VkShaderModule> shaderModules(shaderFiles.size());
   std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
   for (size_t i = 0; i < shaderFiles.size(); i++) {
     // Read in SPIR-V code
     auto shaderCode = ReadShaderFile(shaderFiles[i]);
     // Create shader module
-    VkShaderModule shaderModule;
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = shaderCode.size();
     createInfo.pCode = reinterpret_cast<const uint32_t *>(shaderCode.data());
-    err = vkCreateShaderModule(Device, &createInfo, nullptr, &shaderModule);
+    err = vkCreateShaderModule(Device, &createInfo, nullptr, &shaderModules[i]);
     CHECK_VK_RESULT(err);
     // Create shader stage info
     VkPipelineShaderStageCreateInfo shaderStageInfo{};
     shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderStageInfo.stage = (i == 0) ? VK_SHADER_STAGE_VERTEX_BIT : VK_SHADER_STAGE_FRAGMENT_BIT;
-    shaderStageInfo.module = shaderModule;
+    shaderStageInfo.module = shaderModules[i];
     shaderStageInfo.pName = "main";
     shaderStages.push_back(shaderStageInfo);
   }
@@ -952,7 +952,7 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
   rasterizer.rasterizerDiscardEnable = VK_FALSE;
   rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
   rasterizer.lineWidth = 1.0f;
-  rasterizer.cullMode = VK_CULL_MODE_NONE; // TODO: Enable culling later...
+  rasterizer.cullMode = VK_CULL_MODE_NONE; // TODO: Enable back-face culling later...
   rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
   rasterizer.depthBiasEnable = VK_FALSE;
 
@@ -1021,11 +1021,12 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
   // ====== Pipeline layout ======
   // What we use to determine push constants/uniforms being sent to the shaders
 
-  // We can send upto 2 4x4 matrices as push constants (128 bytes)
+  // The Vulkan spec ensures 128 bytes (up to 2 4x4 float32 matrices)
   VkPushConstantRange pushConstant{};
   pushConstant.offset = 0;
-  pushConstant.size = 2 * sizeof(glm::mat4);
+  pushConstant.size = 128; // TODO: Set according to an actual PushConstant struct's size
   pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+  // pushConstant.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
 
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -1060,7 +1061,9 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,
   CHECK_VK_RESULT(err);
 
   // === Clean up ===
-  // DestroyShaderModules(shaderModules);
+  for (VkShaderModule shaderModule : shaderModules) {
+    vkDestroyShaderModule(Device, shaderModule, nullptr);
+  }
 }
 
 VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles, ImVec2 extent,

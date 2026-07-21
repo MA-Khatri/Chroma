@@ -23,7 +23,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
 
 void main() {
 	gl_Position = camera.proj * camera.view * object.model * vec4(a_Position, 1.0);
-	gl_PointSize = 1.0;
+	gl_PointSize = 5.0;
 
 	v_Position = (object.model * vec4(a_Position, 1.0)).xyz;
 	v_Normal = (object.normal * vec4(a_Normal, 0.0)).xyz;

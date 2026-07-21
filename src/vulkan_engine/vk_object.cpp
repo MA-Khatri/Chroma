@@ -12,7 +12,7 @@ VkObject::VkObject(std::shared_ptr<Object> object, std::shared_ptr<VkMaterial> v
   vke::CreateUniformBuffer(sizeof(UniformBufferObject), m_UniformBuffer, m_UniformBufferMemory,
                            m_UniformBufferMapped);
 
-  vke::CreateDescriptorSet(m_VkMaterial->m_PipelineInfo.descriptorSetLayout,
+  vke::CreateDescriptorSet(m_VkMaterial->m_PipelineInfo.objectDescriptorSetLayout,
                            m_VkMaterial->m_PipelineInfo.descriptorPool, m_DescriptorSet);
 
   VkUploadUniformBuffer();

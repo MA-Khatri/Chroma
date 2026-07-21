@@ -51,17 +51,21 @@ Scene CreateTestScene() {
   auto cubeObject = std::make_shared<Object>(cubeMesh, cubeMaterial, cubeTransform);
   scene.AddObject(cubeObject);
 
-  auto bunnyMesh = std::make_shared<Mesh>(LoadMeshFromFile("C:/Users/mmrsk/Repos/Chroma/res/meshes/bunny.obj"));
+  auto bunnyMesh =
+      std::make_shared<Mesh>(LoadMeshFromFile("C:/Users/mmrsk/Repos/Chroma/res/meshes/bunny.obj"));
   auto bunnyMaterial = std::make_shared<Material>(MaterialType::Lambertian);
   auto bunnyTransform = std::make_shared<Transform>();
-  bunnyTransform->SetPosition(glm::vec3(1.0f, 0.0f, 0.0f)); // Position the bunny to the right of the cube
+  bunnyTransform->SetPosition(
+      glm::vec3(1.0f, 0.0f, 0.0f)); // Position the bunny to the right of the cube
   auto bunnyObject = std::make_shared<Object>(bunnyMesh, bunnyMaterial, bunnyTransform);
   scene.AddObject(bunnyObject);
 
-  auto pointsMesh = std::make_shared<Mesh>(LoadMeshFromFile("C:/Users/mmrsk/Repos/Chroma/res/meshes/thumb_print.ply"));
+  auto pointsMesh = std::make_shared<Mesh>(
+      LoadMeshFromFile("C:/Users/mmrsk/Repos/Chroma/res/meshes/thumb_print.ply"));
   auto pointsMaterial = std::make_shared<Material>(MaterialType::PointNormal);
   auto pointsTransform = std::make_shared<Transform>();
-  pointsTransform->SetPosition(glm::vec3(0.0f, 0.0f, -100.0f)); // Position the points to the right of the cube
+  pointsTransform->SetRotation(glm::vec3(3.14159265f, 0.0f, 0.0f));
+  pointsTransform->SetPosition(glm::vec3(0.0f, 0.0f, 100.0f));
   auto pointsObject = std::make_shared<Object>(pointsMesh, pointsMaterial, pointsTransform);
   scene.AddObject(pointsObject);
 
