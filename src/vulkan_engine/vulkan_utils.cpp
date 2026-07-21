@@ -374,6 +374,8 @@ void SelectPhysicalDevice() {
     VkPhysicalDeviceProperties properties;
     vkGetPhysicalDeviceProperties(device, &properties);
 
+    PLOG_VERBOSE << "Found Vulkan Device " << properties.deviceID << ": " << properties.deviceName;
+
     if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
       PhysicalDevice = device;
       MaxMSAASamples = GetMaxUsableSampleCount();
@@ -384,6 +386,12 @@ void SelectPhysicalDevice() {
   // Use first GPU (integrated) if a discrete one is unavailable
   if (gpu_count > 0) {
     PhysicalDevice = gpus[0];
+
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(PhysicalDevice, &properties);
+    PLOG_DEBUG << "Selected Vulkan Device " << properties.deviceID << ": " << properties.deviceName;
+    PLOG_DEBUG << "Push Constant Limit: " << properties.limits.maxPushConstantsSize;
+
     return;
   }
 

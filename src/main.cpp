@@ -11,7 +11,7 @@
 int main() {
   // Initialize logger with up to 3, 10 MB files (stored in build dir)
   static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
-  static plog::RollingFileAppender<plog::TxtFormatter> fileAppender("log.txt", 10 * 1024 * 1024, 3);
+  static plog::RollingFileAppender<plog::TxtFormatter> fileAppender("chroma_log.txt", 10 * 1024 * 1024, 3);
   plog::init(plog::debug, &fileAppender).addAppender(&consoleAppender);
 
   PLOG_INFO << "========== Starting Chroma ==========";

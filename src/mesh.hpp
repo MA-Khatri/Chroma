@@ -32,8 +32,8 @@ template <> struct std::hash<Vertex> {
 enum class DrawMode { Points, Lines, LineStrip, LineLoop, Triangles, TriangleStrip, TriangleFan };
 
 struct Mesh {
-  std::vector<Vertex> vertices;
-  std::vector<uint32_t> indices;
+  std::vector<Vertex> vertices = {{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0}}};
+  std::vector<uint32_t> indices = {0, 0, 0};
 
   DrawMode drawMode = DrawMode::Triangles;
   float pointSize = 1.0f;
@@ -42,7 +42,7 @@ struct Mesh {
   Mesh(const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices, DrawMode drawMode)
       : vertices(vertices), indices(indices), drawMode(drawMode) {}
 
-  Mesh() = default;
+  Mesh() = default; // Default mesh is a zero area triangle
 };
 
 Mesh CreateHelloTriangleMesh();

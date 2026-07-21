@@ -228,12 +228,17 @@ Mesh LoadMeshFromFile(const std::string &filepath) {
   // Check the file extension to determine the loader to use
   std::string extension = filepath.substr(filepath.find_last_of(".") + 1);
 
-  if (extension == "obj") {
-    return LoadMeshFromOBJ(filepath);
-  } else if (extension == "ply") {
-    return LoadMeshFromPLY(filepath);
-  } else {
-    PLOG_ERROR << "Unsupported mesh file format: " << extension;
+  try {
+    if (extension == "obj") {
+      return LoadMeshFromOBJ(filepath);
+    } else if (extension == "ply") {
+      return LoadMeshFromPLY(filepath);
+    } else {
+      PLOG_ERROR << "Unsupported mesh file format: " << extension;
+      return Mesh();
+    }
+  } catch (const std::exception &e) {
+    PLOG_ERROR << "Failed loading file " << filepath << ": " << e.what();
     return Mesh();
   }
 }
