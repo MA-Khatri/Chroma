@@ -181,7 +181,8 @@ void VulkanEngine::DrawFrame() {
 /// =============================
 
 void VulkanEngine::InitVulkan() {
-  m_MSAASampleCount = vke::MaxMSAASamples;
+  m_MSAASampleCount =
+      vke::MaxMSAASamples > VK_SAMPLE_COUNT_4_BIT ? VK_SAMPLE_COUNT_4_BIT : vke::MaxMSAASamples;
 
   // Set up viewport rendering
   vke::CreateRenderPass(m_MSAASampleCount, m_ViewportRenderPass);

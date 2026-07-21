@@ -8,15 +8,15 @@ VkScene::VkScene(std::shared_ptr<Scene> scene, VkSampleCountFlagBits msaaCount,
     : m_Scene(scene) {
   PLOG_DEBUG << "Creating VkScene for Scene ID: " << m_Scene->m_SceneID;
 
-  // Create descriptor pool
+  // Create descriptor pool with size == unique material count
   std::set<int> materialIDs;
   for (const auto &object : m_Scene->GetObjects()) {
     materialIDs.insert(object->m_Material->m_MaterialID);
   }
-  const uint32_t descriptorSetCount = static_cast<uint32_t>(m_Scene->GetObjects().size());
+  const uint32_t descriptorSetCount = static_cast<uint32_t>(materialIDs.size());
   vke::CreateDescriptorPool(descriptorSetCount, m_DescriptorPool);
 
-  // Create a list of all materials used in the scene
+  // Initialize unique materials
   for (const auto &object : m_Scene->GetObjects()) {
     int matID = object->m_Material->m_MaterialID;
     if (m_Materials.find(matID) == m_Materials.end()) {
