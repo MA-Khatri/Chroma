@@ -94,6 +94,11 @@ protected:
 // ===============================================
 
 class CameraController {
+protected:
+  glm::vec3 m_Position = glm::vec3(0.0f, 0.0f, 5.0f);
+  glm::vec3 m_LookAt = glm::vec3(0.0f, 0.0f, 0.0f);
+  glm::vec3 m_Up = glm::vec3(0.0f, 1.0f, 0.0f);
+
 public:
   virtual ~CameraController() = default;
 
@@ -101,10 +106,9 @@ public:
 
   virtual glm::mat4 GetMatrix() const = 0;
 
-protected:
-  glm::vec3 m_Position = glm::vec3(0.0f, 0.0f, 5.0f);
-  glm::vec3 m_LookAt = glm::vec3(0.0f, 0.0f, 0.0f);
-  glm::vec3 m_Up = glm::vec3(0.0f, 1.0f, 0.0f);
+  glm::vec3 GetPosition() const { return m_Position; }
+  glm::vec3 GetLookAt() const { return m_LookAt; }
+  glm::vec3 GetUp() const { return m_Up; }
 };
 
 class FreeFlyController : public CameraController {
@@ -199,6 +203,13 @@ public:
   }
 
   glm::mat4 GetViewProjectionMatrix() const { return GetProjectionMatrix() * GetViewMatrix(); }
+
+  glm::vec3 GetPosition() const {
+    if (m_Controller) {
+      return m_Controller->GetPosition();
+    } else
+      return glm::vec3(0.0f);
+  }
 
   void SetAspectRatio(float aspectRatio) {
     if (m_Projection) {

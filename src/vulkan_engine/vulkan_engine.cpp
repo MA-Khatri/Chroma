@@ -169,7 +169,7 @@ void VulkanEngine::DrawFrame() {
                     static_cast<uint32_t>(m_ViewportSize.y)};
   vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-  m_VkScene->Draw(commandBuffer);
+  m_VkScene->Draw(commandBuffer, m_ViewportSize);
 
   vkCmdEndRenderPass(commandBuffer);
 

@@ -142,4 +142,6 @@ void FreeFlyController::Update(Camera &camera, int64_t deltaTime, const SDL_Even
 
 void OrbitController::Update(Camera &camera, int64_t deltaTime, const SDL_Event *event) {
   // TODO: Implement orbit camera controls (e.g., rotate around a target point, zoom in/out)
+  // Make sure to update m_Position to be the resulting camera position (distinct from the orbit
+  // center!)
 }

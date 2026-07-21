@@ -14,11 +14,21 @@ public:
   VkScene(std::shared_ptr<Scene> scene, VkSampleCountFlagBits msaaCount, VkRenderPass renderPass);
   ~VkScene();
 
-  void Draw(VkCommandBuffer commandBuffer);
+  struct alignas(16) SceneUBO {
+    glm::mat4 viewMatrix;
+    glm::mat4 projectionMatrix;
+    glm::mat4 viewProjectionMatrix;
+    glm::vec4 cameraPositionAndViewportHeight; // [pos.x, pos.y, pos.z, viewportHeight]
+  };
+
+  void Draw(VkCommandBuffer commandBuffer, ImVec2 viewportSize);
 
   std::shared_ptr<Scene> GetBaseScene() const { return m_Scene; }
 
 private:
+  // Uploads the uniform buffer data to the GPU
+  void VkUploadUniformBuffer(ImVec2 viewportSize);
+
   std::shared_ptr<Scene> m_Scene; // Original scene
 
   std::vector<std::shared_ptr<VkObject>> m_VkObjects;
@@ -26,4 +36,11 @@ private:
 
   VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
   VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
+
+  // Uniform buffer for scene-wide uniforms
+  VkBuffer m_UniformBuffer = VK_NULL_HANDLE;
+  VkDeviceMemory m_UniformBufferMemory = VK_NULL_HANDLE;
+  void *m_UniformBufferMapped = nullptr;
+  VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
+  VkDescriptorSet m_DescriptorSet = VK_NULL_HANDLE;
 };

@@ -8,8 +8,8 @@ VkObject::VkObject(std::shared_ptr<Object> object, std::shared_ptr<VkMaterial> v
   vke::CreateVertexBuffer(m_Object->m_Mesh->vertices, m_VertexBuffer, m_VertexBufferMemory);
   vke::CreateIndexBuffer(m_Object->m_Mesh->indices, m_IndexBuffer, m_IndexBufferMemory);
 
-  // Create uniform buffer
-  vke::CreateUniformBuffer(sizeof(UniformBufferObject), m_UniformBuffer, m_UniformBufferMemory,
+  // Create object uniform buffer
+  vke::CreateUniformBuffer(sizeof(ObjectUBO), m_UniformBuffer, m_UniformBufferMemory,
                            m_UniformBufferMapped);
 
   vke::CreateDescriptorSet(m_VkMaterial->m_PipelineInfo.objectDescriptorSetLayout,
@@ -36,7 +36,7 @@ void VkObject::Draw(VkCommandBuffer commandBuffer) {
   // VkUpdateUniformBuffer();
 
   vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          m_VkMaterial->m_PipelineInfo.pipelineLayout, 0, 1, &m_DescriptorSet, 0,
+                          m_VkMaterial->m_PipelineInfo.pipelineLayout, 1, 1, &m_DescriptorSet, 0,
                           nullptr);
 
   vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -66,7 +66,7 @@ void VkObject::VkUpdateUniformBuffer() {
   VkDescriptorBufferInfo bufferInfo{};
   bufferInfo.buffer = m_UniformBuffer;
   bufferInfo.offset = 0;
-  bufferInfo.range = sizeof(UniformBufferObject);
+  bufferInfo.range = sizeof(ObjectUBO);
 
   VkWriteDescriptorSet uboWrite{};
   uboWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -92,7 +92,7 @@ void VkObject::VkUpdateUniformBuffer() {
 
 void VkObject::VkUploadUniformBuffer() {
   if (m_UniformBufferMapped) {
-    UniformBufferObject ubo{};
+    ObjectUBO ubo{};
     ubo.modelMatrix = m_Object->m_Transform->GetModelMatrix();
     ubo.normalMatrix = glm::mat4(m_Object->m_Transform->GetNormalMatrix());
     memcpy(m_UniformBufferMapped, &ubo, sizeof(ubo));

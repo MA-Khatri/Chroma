@@ -10,7 +10,7 @@ public:
   VkObject(std::shared_ptr<Object> object, std::shared_ptr<VkMaterial> material);
   ~VkObject();
 
-  struct UniformBufferObject {
+  struct ObjectUBO {
     glm::mat4 modelMatrix;
     glm::mat4 normalMatrix;
   };

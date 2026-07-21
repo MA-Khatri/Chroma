@@ -22,7 +22,7 @@ namespace vke {
 extern VkInstance Instance;
 extern VkPhysicalDevice PhysicalDevice;
 extern VkDevice Device;
-extern VkDescriptorPool DescriptorPool;
+extern VkDescriptorPool DescriptorPool; // Note: this descriptor pool is only used by ImGUI!
 extern VkPipelineCache PipelineCache;
 extern VkCommandPool TransferCommandPool;
 extern VkCommandPool GraphicsCommandPool;
@@ -123,12 +123,12 @@ void CreateRenderPass(VkSampleCountFlagBits msaaSamples, VkRenderPass &renderPas
 
 void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, VkSampleCountFlagBits msaaSamples,
                             VkPrimitiveTopology topology, const VkRenderPass &renderPass,
-                            const VkDescriptorSetLayout &descriptorSetLayout,
+                            const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts,
                             VkPipelineLayout &layout, VkPipeline &pipeline);
 VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles,
                                   VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology,
                                   const VkRenderPass &renderPass,
-                                  const VkDescriptorSetLayout &descriptorSetLayout,
+                                  const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts,
                                   VkPipelineLayout &layout);
 
 void CreateFrameBuffer(std::vector<VkImageView> attachments, VkRenderPass &renderPass,
@@ -167,7 +167,7 @@ void CreateUniformBuffer(VkDeviceSize bufferSize, VkBuffer &uniformBuffer,
 void CreateUniformBuffers(VkDeviceSize bufferSize, std::vector<VkBuffer> &uniformBuffers,
                           std::vector<VkDeviceMemory> &uniformBuffersMemory,
                           std::vector<void *> &uniformBuffersMapped);
-void CreateDescriptorPool(uint32_t nSets, VkDescriptorPool &descriptorPool);
+void CreateDescriptorPool(uint32_t nMaterials, uint32_t nObjects, VkDescriptorPool &descriptorPool);
 void CreateDescriptorSet(VkDescriptorSetLayout &descriptorSetLayout,
                          VkDescriptorPool &descriptorPool, VkDescriptorSet &descriptorSet);
 void CreateDescriptorSets(VkDescriptorSetLayout &descriptorSetLayout,

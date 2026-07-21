@@ -23,7 +23,8 @@ struct PushConstants {
 class VkMaterial {
 public:
   VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool descriptorPool,
-             VkSampleCountFlagBits msaaCount, VkRenderPass renderPass);
+             VkDescriptorSetLayout sceneDescriptorSetLayout, VkSampleCountFlagBits msaaCount,
+             VkRenderPass renderPass);
   ~VkMaterial();
 
   // The vulkan graphics pipeline to be used to draw this material

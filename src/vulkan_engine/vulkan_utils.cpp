@@ -1,6 +1,7 @@
 #include "vulkan_utils.hpp"
 
 #include <algorithm>
+#include <cstdint>
 #include <fstream>
 #include <plog/Log.h>
 #include <stdlib.h>
@@ -870,7 +871,7 @@ std::vector<char> ReadShaderFile(const std::string &filename) {
 
 void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, VkSampleCountFlagBits msaaSamples,
                             VkPrimitiveTopology topology, const VkRenderPass &renderPass,
-                            const VkDescriptorSetLayout &descriptorSetLayout,
+                            const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts,
                             VkPipelineLayout &layout, VkPipeline &pipeline) {
   VkResult err;
 
@@ -1028,8 +1029,8 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, VkSampleCountF
 
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipelineLayoutInfo.setLayoutCount = 1;
-  pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+  pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+  pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
   pipelineLayoutInfo.pushConstantRangeCount = 1;
   pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
   err = vkCreatePipelineLayout(Device, &pipelineLayoutInfo, nullptr, &layout);
@@ -1067,10 +1068,10 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, VkSampleCountF
 VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles,
                                   VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology,
                                   const VkRenderPass &renderPass,
-                                  const VkDescriptorSetLayout &descriptorSetLayout,
+                                  const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts,
                                   VkPipelineLayout &layout) {
   VkPipeline pipeline;
-  CreateGraphicsPipeline(shaderFiles, msaaSamples, topology, renderPass, descriptorSetLayout,
+  CreateGraphicsPipeline(shaderFiles, msaaSamples, topology, renderPass, descriptorSetLayouts,
                          layout, pipeline);
   return pipeline;
 }
@@ -1283,37 +1284,44 @@ void CreateUniformBuffers(VkDeviceSize bufferSize, std::vector<VkBuffer> &unifor
   }
 }
 
-void CreateDescriptorPool(uint32_t nSets, VkDescriptorPool &descriptorPool) {
-  std::array<VkDescriptorPoolSize, 4> poolSizes;
+void CreateDescriptorPool(uint32_t nMaterials, uint32_t nObjects,
+                          VkDescriptorPool &descriptorPool) {
+  std::vector<VkDescriptorPoolSize> poolSizes;
 
-  // Uniform buffer
-  VkDescriptorPoolSize uboPoolSize{};
-  uboPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  uboPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
-  poolSizes[0] = uboPoolSize;
+  // (Single) Camera uniform buffer
+  VkDescriptorPoolSize cameraUboPoolSize{};
+  cameraUboPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  cameraUboPoolSize.descriptorCount = 1 * static_cast<uint32_t>(ImageCount);
+  poolSizes.push_back(cameraUboPoolSize);
+
+  // Object uniform buffer for model/normal matrices -- one per object
+  VkDescriptorPoolSize objectUboPoolSize{};
+  objectUboPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  objectUboPoolSize.descriptorCount = nObjects * static_cast<uint32_t>(ImageCount);
+  poolSizes.push_back(objectUboPoolSize);
 
   // Texture samplers (diffuse, specular, normal)
   VkDescriptorPoolSize diffuseSamplerPoolSize{};
   diffuseSamplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  diffuseSamplerPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
-  poolSizes[1] = diffuseSamplerPoolSize;
+  diffuseSamplerPoolSize.descriptorCount = nMaterials * static_cast<uint32_t>(ImageCount);
+  poolSizes.push_back(diffuseSamplerPoolSize);
 
   VkDescriptorPoolSize specularSamplerPoolSize{};
   specularSamplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  specularSamplerPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
-  poolSizes[2] = specularSamplerPoolSize;
+  specularSamplerPoolSize.descriptorCount = nMaterials * static_cast<uint32_t>(ImageCount);
+  poolSizes.push_back(specularSamplerPoolSize);
 
   VkDescriptorPoolSize normalSamplerPoolSize{};
   normalSamplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  normalSamplerPoolSize.descriptorCount = nSets * static_cast<uint32_t>(ImageCount);
-  poolSizes[3] = normalSamplerPoolSize;
+  normalSamplerPoolSize.descriptorCount = nMaterials * static_cast<uint32_t>(ImageCount);
+  poolSizes.push_back(normalSamplerPoolSize);
 
   // Descriptor pool create info
   VkDescriptorPoolCreateInfo poolInfo{};
   poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
   poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
   poolInfo.pPoolSizes = poolSizes.data();
-  poolInfo.maxSets = nSets * static_cast<uint32_t>(ImageCount);
+  poolInfo.maxSets = std::max(nMaterials, nObjects) * static_cast<uint32_t>(ImageCount);
 
   VkResult err = vkCreateDescriptorPool(Device, &poolInfo, nullptr, &descriptorPool);
   CHECK_VK_RESULT(err);
