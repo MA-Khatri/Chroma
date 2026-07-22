@@ -21,6 +21,7 @@ RasterView::~RasterView() {
 void RasterView::OnAttach(Application *app) {
   PLOG_DEBUG << "Attaching RasterView layer";
   m_AppHandle = app;
+  m_WindowHandle = app->GetWindowHandle();
   m_VulkanEngine = new VulkanEngine();
 }
 
@@ -53,9 +54,7 @@ void RasterView::OnUIRender() {
       if (m_ViewportFocused) {
         m_AppHandle->m_FocusedWindow = Application::RasterizedViewport;
         m_CurrentScene->GetCamera()->SetControllerActive(true);
-      }
-      else
-      {
+      } else {
         m_CurrentScene->GetCamera()->SetControllerActive(false);
       }
 
@@ -63,7 +62,12 @@ void RasterView::OnUIRender() {
       {
         m_ViewportHovered = ImGui::IsWindowHovered();
 
-        ImVec2 newSize = ImGui::GetContentRegionAvail();
+        ImVec2 childMin = ImGui::GetCursorScreenPos();
+        ImVec2 childSize = ImGui::GetContentRegionAvail();
+        ImVec2 childMax = ImVec2(childMin.x + childSize.x, childMin.y + childSize.y);
+        WrapMouseWithinRect(m_WindowHandle, childMin, childMax, m_ViewportFocused);
+
+        ImVec2 newSize = childSize;
         if (m_ViewportSize.x != newSize.x || m_ViewportSize.y != newSize.y) {
           OnResize(newSize);
         }

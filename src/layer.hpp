@@ -9,6 +9,7 @@
 #include <SDL3/SDL_surface.h>
 #include <SDL3_image/SDL_image.h>
 
+#include <imgui.h>
 #include <plog/Log.h>
 
 #include "application.hpp"
@@ -20,8 +21,7 @@ class Application;
 // m_MaxCount appends to the end and removes the first element
 template <typename T> class SlidingBuffer {
 public:
-  SlidingBuffer(int maxCount)
-      : m_MaxCount(maxCount), m_Deque(std::deque<T>()) {}
+  SlidingBuffer(int maxCount) : m_MaxCount(maxCount), m_Deque(std::deque<T>()) {}
 
   void Add(T item) {
     if (m_Deque.size() == m_MaxCount) {
@@ -78,8 +78,7 @@ std::string GetDateTimeStr();
 // As the name suggests, used for flipping screenshots s.t. the origin is top
 // left, not bottom left
 template <typename T>
-std::vector<T> FlipImageVertically(const std::vector<T> &in, int width,
-                                   int height) {
+std::vector<T> FlipImageVertically(const std::vector<T> &in, int width, int height) {
   std::vector<T> out(in.size());
 
   for (int j = 0; j < height; j++) {
@@ -95,26 +94,24 @@ std::vector<T> FlipImageVertically(const std::vector<T> &in, int width,
 // the generated saved image filepath or an error message so it can be displayed
 // in ImGui.
 template <typename T>
-void WriteImageToFile(std::string filename, int width, int height,
-                      SDL_PixelFormat format, std::vector<T> &pixelData) {
+void WriteImageToFile(std::string filename, int width, int height, SDL_PixelFormat format,
+                      std::vector<T> &pixelData) {
   PLOG_INFO << "Saving image to " << filename;
 
   // Check if the pixel data size is correct
   size_t bytesPerPixel = SDL_BYTESPERPIXEL(format);
-  size_t pixelDataSize =
-      pixelData.size() * sizeof(typename std::vector<T>::value_type);
+  size_t pixelDataSize = pixelData.size() * sizeof(typename std::vector<T>::value_type);
   size_t providedSize = static_cast<size_t>(width * height) * bytesPerPixel;
   if (pixelDataSize != providedSize) {
     PLOG_ERROR << "Error! Pixel data size (" << pixelDataSize
-               << ") does not match assumed size from given params: "
-               << providedSize;
+               << ") does not match assumed size from given params: " << providedSize;
     return;
   }
 
   // Create an SDL surface from image data
-  SDL_Surface *surface = SDL_CreateSurfaceFrom(
-      width, height, format, static_cast<void *>(pixelData.data()),
-      /*pitch=*/width * bytesPerPixel);
+  SDL_Surface *surface =
+      SDL_CreateSurfaceFrom(width, height, format, static_cast<void *>(pixelData.data()),
+                            /*pitch=*/width * bytesPerPixel);
 
   if (!surface) {
 
@@ -144,13 +141,19 @@ public:
 
   virtual void TakeScreenshot() {}
 
+  void SetMouseWrapEnabled(bool enabled) { m_MouseWrapEnabled = enabled; }
+  bool IsMouseWrapEnabled() const { return m_MouseWrapEnabled; }
+
 protected:
+  void WrapMouseWithinRect(SDL_Window *window, const ImVec2 &rectMin, const ImVec2 &rectMax,
+                           bool isActiveViewport, float edgeThreshold = 12.0f);
+
   // Frame rate/time graph buffers
   int m_FrameGraphStorageCount = 1001;
-  SlidingBuffer<float> m_FrameTimes =
-      SlidingBuffer<float>(m_FrameGraphStorageCount);
-  SlidingBuffer<float> m_FrameRates =
-      SlidingBuffer<float>(m_FrameGraphStorageCount);
-  std::vector<float> m_FrameGraphX =
-      arange<float>(0, (float)m_FrameGraphStorageCount, 1);
+  SlidingBuffer<float> m_FrameTimes = SlidingBuffer<float>(m_FrameGraphStorageCount);
+  SlidingBuffer<float> m_FrameRates = SlidingBuffer<float>(m_FrameGraphStorageCount);
+  std::vector<float> m_FrameGraphX = arange<float>(0, (float)m_FrameGraphStorageCount, 1);
+
+private:
+  bool m_MouseWrapEnabled = true;
 };
