@@ -53,7 +53,41 @@ void PerspectiveProjection::Update(Camera &camera, int64_t deltaTime, const SDL_
 }
 
 void OrthographicProjection::Update(Camera &camera, int64_t deltaTime, const SDL_Event *event) {
-  // TODO: Update orthographic projection parameters based on user input
+  if (event) {
+    switch (event->type) {
+    case SDL_EVENT_MOUSE_WHEEL: {
+      const SDL_Keymod modState = SDL_GetModState();
+
+      if (modState & SDL_KMOD_CTRL) { // Ctrl + mouse wheel for far clip adjustment
+        m_FarClip += event->wheel.y;
+        if (m_FarClip < m_NearClip + 0.1f)
+          m_FarClip = m_NearClip + 0.1f;
+
+        PLOG_DEBUG << "Adjusted far clip to: " << m_FarClip;
+      }
+
+      else if (modState & SDL_KMOD_ALT) { // Alt + mouse wheel for near clip adjustment
+        m_NearClip += event->wheel.y;
+        if (m_NearClip > m_FarClip - 0.1f)
+          m_NearClip = m_FarClip - 0.1f;
+
+        PLOG_DEBUG << "Adjusted near clip to: " << m_NearClip;
+      }
+
+      else { // Zoom in/out by adjusting the orthographic vertical extent
+        m_VerticalExtent -= event->wheel.y;
+        if (m_VerticalExtent < 1.0f)
+          m_VerticalExtent = 1.0f;
+
+        PLOG_DEBUG << "Adjusted orthographic vertical extent to: " << m_VerticalExtent;
+      }
+      break;
+    }
+
+    default:
+      break;
+    }
+  }
 }
 
 //

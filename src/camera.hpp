@@ -64,29 +64,25 @@ protected:
 
 class OrthographicProjection : public Projection {
 public:
-  OrthographicProjection(float left, float right, float bottom, float top, float nearClip,
-                         float farClip, float aspectRatio) {
-    m_Left = left;
-    m_Right = right;
-    m_Bottom = bottom;
-    m_Top = top;
+  OrthographicProjection(float verticalExtent, float nearClip, float farClip, float aspectRatio) {
+    m_VerticalExtent = verticalExtent;
     m_NearClip = nearClip;
     m_FarClip = farClip;
     m_AspectRatio = aspectRatio;
   }
 
   glm::mat4 GetMatrix() const override {
-    return glm::ortho(m_Left * m_AspectRatio, m_Right * m_AspectRatio, m_Bottom, m_Top, m_NearClip,
-                      m_FarClip);
+    const float halfVerticalExtent = m_VerticalExtent * 0.5f;
+    const float halfHorizontalExtent = halfVerticalExtent * m_AspectRatio;
+
+    return glm::ortho(-halfHorizontalExtent, halfHorizontalExtent, -halfVerticalExtent,
+                      halfVerticalExtent, m_NearClip, m_FarClip);
   }
 
   void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
 
 protected:
-  float m_Left = -10.0f;
-  float m_Right = 10.0f;
-  float m_Bottom = -10.0f;
-  float m_Top = 10.0f;
+  float m_VerticalExtent = 20.0f; // Total visible vertical size in world units
 };
 
 // ===============================================
@@ -174,6 +170,22 @@ private:
   float m_Radius = 5.0f;    // Distance from the center point
   float m_Azimuth = 0.0f;   // Horizontal angle from +x in degrees
   float m_Elevation = 0.0f; // Vertical angle from xy-plane in degrees
+};
+
+class TrackBallController : public CameraController {
+public:
+  TrackBallController(glm::vec3 center, float radius, float azimuth, float elevation)
+      : m_Center(center), m_Radius(radius), m_Azimuth(azimuth), m_Elevation(elevation) {}
+
+  void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
+
+  glm::mat4 GetMatrix() const override {
+    // TODO
+    return glm::mat4(1.0f);
+  }
+
+private:
+  // TODO: Implement trackball-specific behavior (e.g., mouse drag to rotate around the center point)
 };
 
 // ==================================
