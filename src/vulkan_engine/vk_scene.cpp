@@ -25,13 +25,14 @@ VkScene::VkScene(std::shared_ptr<Scene> scene, VkSampleCountFlagBits msaaCount,
   sceneBinding.binding = 0;
   sceneBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
   sceneBinding.descriptorCount = 1;
-  sceneBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+  sceneBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
   sceneBinding.pImmutableSamplers = nullptr;
   sceneBindings.push_back(sceneBinding);
 
   vke::CreateDescriptorSetLayout(sceneBindings, m_DescriptorSetLayout);
   vke::CreateDescriptorSet(m_DescriptorSetLayout, m_DescriptorPool, m_DescriptorSet);
 
+  VkUpdateUniformBuffer();
   VkUploadUniformBuffer(ImVec2(1, 1));
 
   // Initialize unique materials
@@ -52,7 +53,7 @@ VkScene::VkScene(std::shared_ptr<Scene> scene, VkSampleCountFlagBits msaaCount,
   // Create VkObject for each Object in the Scene
   for (const auto &object : m_Scene->GetObjects()) {
     auto material = m_Materials[object->m_Material->m_MaterialID];
-    m_VkObjects.push_back(std::make_shared<VkObject>(object, material));
+    m_VkObjects.push_back(std::make_shared<VkObject>(object, material, m_DescriptorSet));
   }
 
   PLOG_DEBUG << "Done creating VkScene for Scene ID: " << m_Scene->m_SceneID;
@@ -64,14 +65,30 @@ VkScene::~VkScene() {
 }
 
 void VkScene::Draw(VkCommandBuffer commandBuffer, ImVec2 viewportSize) {
-  // Upload and bind scene UBO descriptor set
+  // Upload scene UBO
   VkUploadUniformBuffer(viewportSize);
-  vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1,
-                          &m_DescriptorSet, 0, nullptr);
 
   for (const auto &vkObject : m_VkObjects) {
     vkObject->Draw(commandBuffer);
   }
+}
+
+void VkScene::VkUpdateUniformBuffer() {
+  VkDescriptorBufferInfo sceneBufferInfo{};
+  sceneBufferInfo.buffer = m_UniformBuffer;
+  sceneBufferInfo.offset = 0;
+  sceneBufferInfo.range = sizeof(SceneUBO);
+
+  VkWriteDescriptorSet sceneWrite{};
+  sceneWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  sceneWrite.dstSet = m_DescriptorSet;
+  sceneWrite.dstBinding = 0;
+  sceneWrite.dstArrayElement = 0;
+  sceneWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  sceneWrite.descriptorCount = 1;
+  sceneWrite.pBufferInfo = &sceneBufferInfo;
+
+  vkUpdateDescriptorSets(vke::Device, 1, &sceneWrite, 0, nullptr);
 }
 
 void VkScene::VkUploadUniformBuffer(ImVec2 viewportSize) {

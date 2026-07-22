@@ -26,6 +26,9 @@ public:
   std::shared_ptr<Scene> GetBaseScene() const { return m_Scene; }
 
 private:
+  // Updates descriptor set to take in this scene's uniform buffer
+  void VkUpdateUniformBuffer();
+
   // Uploads the uniform buffer data to the GPU
   void VkUploadUniformBuffer(ImVec2 viewportSize);
 

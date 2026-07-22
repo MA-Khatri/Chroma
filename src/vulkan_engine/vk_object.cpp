@@ -1,9 +1,11 @@
 #include "vk_object.hpp"
 #include "vk_material.hpp"
+#include <array>
 #include <memory>
 
-VkObject::VkObject(std::shared_ptr<Object> object, std::shared_ptr<VkMaterial> vkMaterial)
-    : m_Object(object), m_VkMaterial(vkMaterial) {
+VkObject::VkObject(std::shared_ptr<Object> object, std::shared_ptr<VkMaterial> vkMaterial,
+                   VkDescriptorSet sceneDescriptorSet)
+    : m_Object(object), m_VkMaterial(vkMaterial), m_SceneDescriptorSet(sceneDescriptorSet) {
   // Create Vulkan buffers for the mesh
   vke::CreateVertexBuffer(m_Object->m_Mesh->vertices, m_VertexBuffer, m_VertexBufferMemory);
   vke::CreateIndexBuffer(m_Object->m_Mesh->indices, m_IndexBuffer, m_IndexBufferMemory);
@@ -33,10 +35,11 @@ VkObject::~VkObject() {
 
 void VkObject::Draw(VkCommandBuffer commandBuffer) {
   // VkUploadUniformBuffer();
-  // VkUpdateUniformBuffer();
 
+  std::array<VkDescriptorSet, 2> descriptorSets = {m_SceneDescriptorSet, m_DescriptorSet};
   vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          m_VkMaterial->m_PipelineInfo.pipelineLayout, 1, 1, &m_DescriptorSet, 0,
+                          m_VkMaterial->m_PipelineInfo.pipelineLayout, 0,
+                          static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0,
                           nullptr);
 
   vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,

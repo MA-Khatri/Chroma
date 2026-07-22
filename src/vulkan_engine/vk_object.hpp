@@ -7,7 +7,8 @@
 
 class VkObject {
 public:
-  VkObject(std::shared_ptr<Object> object, std::shared_ptr<VkMaterial> material);
+  VkObject(std::shared_ptr<Object> object, std::shared_ptr<VkMaterial> material,
+           VkDescriptorSet sceneDescriptorSet);
   ~VkObject();
 
   struct ObjectUBO {
@@ -30,6 +31,8 @@ private:
 
   VkBuffer m_IndexBuffer = VK_NULL_HANDLE;
   VkDeviceMemory m_IndexBufferMemory = VK_NULL_HANDLE;
+
+  VkDescriptorSet m_SceneDescriptorSet = VK_NULL_HANDLE;
 
   // Uniform buffer
   VkBuffer m_UniformBuffer = VK_NULL_HANDLE;

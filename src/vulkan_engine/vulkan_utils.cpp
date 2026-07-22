@@ -1025,7 +1025,6 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, VkSampleCountF
   pushConstant.offset = 0;
   pushConstant.size = 128; // TODO: Set according to an actual PushConstant struct's size
   pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-  // pushConstant.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
 
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
