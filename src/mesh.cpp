@@ -249,18 +249,28 @@ Mesh LoadMeshFromOBJ(const std::string &filepath) {
   std::vector<tinyobj::material_t> materials;
   std::string warn, err;
 
-  std::string baseDir = filepath.substr(0, filepath.find_last_of("/\\") + 1);
+  std::string search_dir = RES_DIR;
+  search_dir += "meshes/";
+  std::string fullpath = search_dir + filepath;
 
-  bool ok = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str(),
+  std::string baseDir = fullpath.substr(0, fullpath.find_last_of("/\\") + 1);
+  bool ok = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, fullpath.c_str(),
                              baseDir.c_str());
+
+  if (!ok) {
+    // Try loading from the provided path directly if the relative path fails
+    baseDir = filepath.substr(0, filepath.find_last_of("/\\") + 1);
+    ok = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filepath.c_str(),
+                          baseDir.c_str());
+
+    if (!ok) {
+      PLOG_ERROR << "Failed to load OBJ file: " << filepath << " (" << err << ")";
+      return Mesh();
+    }
+  }
 
   if (!warn.empty()) {
     PLOG_WARNING << warn;
-  }
-
-  if (!ok) {
-    PLOG_ERROR << "Failed to load OBJ file: " << filepath << " (" << err << ")";
-    return Mesh();
   }
 
   // Detect point cloud: no shape produced any face indices, but vertices exist.
@@ -361,10 +371,18 @@ Mesh LoadMeshFromOBJ(const std::string &filepath) {
 Mesh LoadMeshFromPLY(const std::string &filepath) {
   using namespace tinyply;
 
-  std::ifstream fileStream(filepath, std::ios::binary);
+  std::string search_dir = RES_DIR;
+  search_dir += "meshes/";
+  std::string fullpath = search_dir + filepath;
+
+  std::ifstream fileStream(fullpath, std::ios::binary);
   if (!fileStream || fileStream.fail()) {
-    PLOG_ERROR << "Failed to open PLY file: " << filepath;
-    return Mesh();
+    // Try loading from the provided path directly if the relative path fails
+    fileStream.open(filepath, std::ios::binary);
+    if (!fileStream || fileStream.fail()) {
+      PLOG_ERROR << "Failed to open PLY file: " << fullpath;
+      return Mesh();
+    }
   }
 
   PlyFile file;

@@ -48,3 +48,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # Add main source subdirectory 
 add_subdirectory(src)
+
+# Preprocessor definitions for the entire project
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    ROOT_DIR="${CMAKE_SOURCE_DIR}/"
+    SRC_DIR="${CMAKE_SOURCE_DIR}/src/"
+    RES_DIR="${CMAKE_SOURCE_DIR}/res/"
+)

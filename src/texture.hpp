@@ -29,10 +29,16 @@ public:
       return;
     }
 
-    SDL_Surface *surface = IMG_Load(path.c_str());
+    std::string search_dir = RES_DIR;
+    search_dir += "textures/";
+    SDL_Surface *surface = IMG_Load((search_dir + path).c_str());
     if (!surface) {
-      PLOG_ERROR << "Failed to load texture: " << path << " SDL_image Error: " << SDL_GetError();
-      return;
+      // Try loading from the provided path directly if the relative path fails
+      surface = IMG_Load(path.c_str());
+      if (!surface) {
+        PLOG_ERROR << "Failed to load texture: " << path << " SDL_image Error: " << SDL_GetError();
+        return;
+      }
     }
 
     int bytesPerPixel = SDL_BYTESPERPIXEL(surface->format);

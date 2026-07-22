@@ -6,9 +6,9 @@ layout(location = 2) in vec3 v_Color;
 layout(location = 3) in vec2 v_TexCoord;
 layout(location = 4) in vec3 v_CameraPosn;
 
-layout(binding = 1) uniform sampler2D diffuseSampler;
-layout(binding = 2) uniform sampler2D specularSampler;
-layout(binding = 3) uniform sampler2D normalSampler;
+layout(set = 1, binding = 1) uniform sampler2D diffuseSampler;
+layout(set = 1, binding = 2) uniform sampler2D specularSampler;
+layout(set = 1, binding = 3) uniform sampler2D normalSampler;
 
 layout(location = 0) out vec4 outColor;
 

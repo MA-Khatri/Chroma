@@ -24,10 +24,21 @@ layout(set = 1, binding = 0) uniform ObjectUBO {
 } object;
 
 void main() {
-	gl_Position = scene.viewProj * object.model * vec4(a_Position, 1.0);
-	gl_PointSize = 5.0;
+	vec4 worldPos = object.model * vec4(a_Position, 1.0);
+	vec4 viewPos = scene.view * worldPos;
+	gl_Position = scene.proj * viewPos;
 
-	v_Position = (object.model * vec4(a_Position, 1.0)).xyz;
+  	// proj[1][1] is the standard vertical focal length factor (1.0 / tan(fov_y / 2))
+	float fovScalingFactor = scene.proj[1][1];
+
+	const float targetPercent = 0.02; // percent of viewport height
+
+  	// Scale up by the projection scale and viewport height, and down by the view-space depth
+	float viewportHeight = scene.cameraPositionAndViewportHeight.w;
+	gl_PointSize = (targetPercent * viewportHeight * fovScalingFactor) / abs(viewPos.z);
+
+  	// Assign outputs
+	v_Position = worldPos.xyz;
 	v_Normal = (object.normal * vec4(a_Normal, 0.0)).xyz;
 	v_Color = a_Color;
 	v_TexCoord = a_TexCoord;
