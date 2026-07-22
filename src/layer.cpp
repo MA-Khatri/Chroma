@@ -25,7 +25,9 @@ std::string GetDateTimeStr() {
 void Layer::WrapMouseWithinRect(SDL_Window *window, const ImVec2 &rectMin, const ImVec2 &rectMax,
                                 bool isActiveViewport, float edgeThreshold) {
   if (!window || !m_MouseWrapEnabled || !isActiveViewport ||
-      !ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+      !(ImGui::IsMouseDragging(ImGuiMouseButton_Left) ||
+        ImGui::IsMouseDragging(ImGuiMouseButton_Middle) ||
+        ImGui::IsMouseDragging(ImGuiMouseButton_Right))) {
     return;
   }
 

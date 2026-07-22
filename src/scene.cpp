@@ -71,10 +71,11 @@ Scene CreateTestScene() {
       std::make_shared<PerspectiveProjection>(45.0f, 0.1f, 1000.0f, 16.0f / 9.0f);
   auto orthographicProjection =
       std::make_shared<OrthographicProjection>(20.0f, 0.1f, 1000.0f, 16.0f / 9.0f);
-  auto freeFlyController = std::make_shared<FreeFlyController>(
-      glm::vec3(0.0f, 0.0f, 0.0f), 0.0f, 0.0f);
-    //   glm::vec3(5.0f, 5.0f, 5.0f), -135.0f, -30.0f); // Position and orientation to look at the cube
-  auto camera = std::make_shared<Camera>(orthographicProjection, freeFlyController);
+  auto freeFlyController = std::make_shared<FreeFlyController>(glm::vec3(5.0f, 5.0f, 5.0f), 135.0f, -30.0f);
+  auto orbitController = std::make_shared<OrbitController>(glm::vec3(0.0f, 0.0f, 0.0f), 5.0f, 0.0f, 30.0f);
+  auto trackBallController = std::make_shared<TrackBallController>(
+      glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+  auto camera = std::make_shared<Camera>(perspectiveProjection, orbitController);
   scene.SetCamera(camera);
 
   return scene;

@@ -6,8 +6,10 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 #include <SDL3/SDL.h>
+#include <imgui.h>
 
 // Forward declaration of Camera class
 class Camera;
@@ -93,7 +95,7 @@ class CameraController {
 protected:
   glm::vec3 m_Position = glm::vec3(0.0f, 0.0f, 5.0f);
   glm::vec3 m_LookAt = glm::vec3(0.0f, 0.0f, 0.0f);
-  glm::vec3 m_Up = glm::vec3(0.0f, 1.0f, 0.0f);
+  glm::vec3 m_Up = glm::vec3(0.0f, 0.0f, 1.0f);
 
 public:
   virtual ~CameraController() = default;
@@ -146,12 +148,23 @@ private:
 
 class OrbitController : public CameraController {
 public:
-  OrbitController(glm::vec3 center, float radius, float azimuth, float elevation)
-      : m_Center(center), m_Radius(radius), m_Azimuth(azimuth), m_Elevation(elevation) {}
+  OrbitController(glm::vec3 center, float radius, float azimuth, float elevation) {
+    m_LookAt = center;
+    m_Radius = radius;
+    m_Azimuth = azimuth;
+    m_Elevation = elevation;
+    UpdatePosition();
+  }
 
   void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
 
   glm::mat4 GetMatrix() const override {
+    return glm::lookAt(m_Position, m_LookAt, m_Up);
+  }
+
+private:
+  // Note: Must call this before using m_Position!
+  void UpdatePosition() {
     float azimuthRad = glm::radians(m_Azimuth);
     float elevationRad = glm::radians(m_Elevation);
 
@@ -160,13 +173,9 @@ public:
     offset.y = m_Radius * cos(elevationRad) * sin(azimuthRad);
     offset.z = m_Radius * sin(elevationRad);
 
-    glm::vec3 position = m_Center + offset;
-    return glm::lookAt(position, m_Center, m_Up);
+    m_Position = m_LookAt + offset;
   }
 
-private:
-  glm::vec3 m_Center = glm::vec3(0.0f, 0.0f, 0.0f);
-  glm::vec3 m_Up = glm::vec3(0.0f, 0.0f, 1.0f);
   float m_Radius = 5.0f;    // Distance from the center point
   float m_Azimuth = 0.0f;   // Horizontal angle from +x in degrees
   float m_Elevation = 0.0f; // Vertical angle from xy-plane in degrees
@@ -174,18 +183,15 @@ private:
 
 class TrackBallController : public CameraController {
 public:
-  TrackBallController(glm::vec3 center, float radius, float azimuth, float elevation)
-      : m_Center(center), m_Radius(radius), m_Azimuth(azimuth), m_Elevation(elevation) {}
+  TrackBallController(glm::vec3 center, glm::vec3 position, glm::vec3 up) {
+    m_LookAt = center;
+    m_Position = position;
+    m_Up = glm::normalize(up);
+  }
 
   void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
 
-  glm::mat4 GetMatrix() const override {
-    // TODO
-    return glm::mat4(1.0f);
-  }
-
-private:
-  // TODO: Implement trackball-specific behavior (e.g., mouse drag to rotate around the center point)
+  glm::mat4 GetMatrix() const override { return glm::lookAt(m_Position, m_LookAt, m_Up); }
 };
 
 // ==================================
@@ -223,10 +229,22 @@ public:
       return glm::vec3(0.0f);
   }
 
-  void SetAspectRatio(float aspectRatio) {
+  void SetViewportBounds(ImVec2 min, ImVec2 max) {
+    m_ViewportMin = min;
+    m_ViewportMax = max;
+
+    int width = max.x - min.x;
+    int height = max.y - min.y;
+
     if (m_Projection) {
-      m_Projection->SetAspectRatio(aspectRatio);
+      m_Projection->SetAspectRatio(float(width) / float(height));
     }
+  }
+
+  ImVec2 GetViewportMin() const { return m_ViewportMin; }
+  ImVec2 GetViewportMax() const { return m_ViewportMax; }
+  ImVec2 GetViewportSize() const {
+    return ImVec2(m_ViewportMax.x - m_ViewportMin.x, m_ViewportMax.y - m_ViewportMin.y);
   }
 
   void SetControllerActive(bool active) { m_ControllerActive = active; }
@@ -237,4 +255,7 @@ private:
   std::shared_ptr<CameraController> m_Controller;
 
   bool m_ControllerActive = false;
+
+  ImVec2 m_ViewportMin;
+  ImVec2 m_ViewportMax;
 };

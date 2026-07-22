@@ -66,6 +66,7 @@ void RasterView::OnUIRender() {
         ImVec2 childSize = ImGui::GetContentRegionAvail();
         ImVec2 childMax = ImVec2(childMin.x + childSize.x, childMin.y + childSize.y);
         WrapMouseWithinRect(m_WindowHandle, childMin, childMax, m_ViewportFocused);
+        m_CurrentScene->GetCamera()->SetViewportBounds(childMin, childMax);
 
         ImVec2 newSize = childSize;
         if (m_ViewportSize.x != newSize.x || m_ViewportSize.y != newSize.y) {
@@ -115,10 +116,10 @@ void RasterView::TakeScreenshot() {
 // ===================================
 
 void RasterView::OnResize(ImVec2 newSize) {
-  PLOG_DEBUG << "Resizing raster viewport to " << newSize.x << " x " << newSize.y;
+  PLOG_VERBOSE << "Resizing raster viewport to " << newSize.x << " x " << newSize.y;
 
   m_ViewportSize = newSize;
   m_VulkanEngine->OnResize(m_ViewportSize);
 
-  m_CurrentScene->GetCamera()->SetAspectRatio(m_ViewportSize.x / m_ViewportSize.y);
+  // Note: Camera resizing is done in OnUIRender
 }
