@@ -25,7 +25,7 @@ VkScene::VkScene(std::shared_ptr<Scene> scene, VkSampleCountFlagBits msaaCount,
   sceneBinding.binding = 0;
   sceneBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
   sceneBinding.descriptorCount = 1;
-  sceneBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+  sceneBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
   sceneBinding.pImmutableSamplers = nullptr;
   sceneBindings.push_back(sceneBinding);
 

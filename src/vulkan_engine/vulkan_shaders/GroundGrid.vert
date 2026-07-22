@@ -7,8 +7,7 @@ layout(location = 3) in vec2 a_TexCoord; // unused
 
 layout(location = 0) out vec3 v_Color;
 layout(location = 1) out vec3 v_Position;
-layout(location = 2) out vec3 v_CameraPosn; // Note: camera posn, dir, and clear color are technically not varying, but we're just passing them along
-layout(location = 3) out vec3 v_ClearColor;
+layout(location = 2) out vec3 v_ClearColor;
 
 layout(set = 0, binding = 0) uniform SceneUBO {
 	mat4 view;
@@ -27,6 +26,5 @@ void main() {
 
 	v_Color = a_Color;
 	v_Position = (object.model * vec4(a_Position, 1.0)).xyz;
-	v_CameraPosn = scene.cameraPositionAndViewportHeight.xyz;
 	v_ClearColor = object.normal[0].xyz; // The clear color is stored in the first column of the normal matrix!
 }

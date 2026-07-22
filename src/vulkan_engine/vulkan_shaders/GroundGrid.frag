@@ -2,8 +2,14 @@
 
 layout(location = 0) in vec3 v_Color;
 layout(location = 1) in vec3 v_Position;
-layout(location = 2) in vec3 v_CameraPosn;
-layout(location = 3) in vec3 v_ClearColor;
+layout(location = 2) in vec3 v_ClearColor;
+
+layout(set = 0, binding = 0) uniform SceneUBO {
+	mat4 view;
+	mat4 proj;
+	mat4 viewProj;
+	vec4 cameraPositionAndViewportHeight;
+} scene;
 
 layout(location = 0) out vec4 outColor;
 
@@ -15,7 +21,8 @@ void main()
 	// Where does color falloff start?
 	float start = 10.0;
 
-	float dist = length(v_Position - v_CameraPosn);
+	vec3 cameraPosn = scene.cameraPositionAndViewportHeight.xyz;
+	float dist = length(v_Position - cameraPosn);
 	float scale = 1.0 - exp(-coeff * (dist - start));
 
 	if (dist < start) 

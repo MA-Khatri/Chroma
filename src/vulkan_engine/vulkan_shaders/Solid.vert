@@ -9,7 +9,6 @@ layout(location = 0) out vec3 v_Position;
 layout(location = 1) out vec3 v_Normal;
 layout(location = 2) out vec3 v_Color;
 layout(location = 3) out vec2 v_TexCoord;
-layout(location = 4) out vec3 v_CameraPosn;
 
 layout(set = 0, binding = 0) uniform SceneUBO {
 	mat4 view;
@@ -42,5 +41,4 @@ void main() {
 	v_Normal = (object.normal * vec4(a_Normal, 0.0)).xyz;
 	v_Color = a_Color;
 	v_TexCoord = a_TexCoord;
-	v_CameraPosn = scene.cameraPositionAndViewportHeight.xyz;
 }
