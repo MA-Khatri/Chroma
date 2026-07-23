@@ -12,6 +12,10 @@ Default.vert
     GroundGrid.frag
     HelloTriangle.vert
     HelloTriangle.frag
+    Point.vert
+    PointFlat.frag
+    PointNormal.frag
+    PointShaded.frag
     Solid.vert
     SolidNormal.frag
     SolidPerVertex.frag

@@ -9,7 +9,4 @@ layout(binding = 1) uniform sampler2D diffuseSampler;
 layout(binding = 2) uniform sampler2D specularSampler;
 layout(binding = 3) uniform sampler2D normalSampler;
 
-void main() 
-{
-	outColor = texture(diffuseSampler, fragTexCoord);
-}
+void main() { outColor = texture(diffuseSampler, fragTexCoord); }

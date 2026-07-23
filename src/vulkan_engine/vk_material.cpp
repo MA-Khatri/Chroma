@@ -63,24 +63,24 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
 
   case MaterialType::PointFlat:
     shaderFiles = {
-        "vulkan_shaders/Default.vert.spv",
-        "vulkan_shaders/Default.frag.spv",
+        "vulkan_shaders/Point.vert.spv",
+        "vulkan_shaders/PointFlat.frag.spv",
     };
     topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
     break;
 
   case MaterialType::PointShaded:
     shaderFiles = {
-        "vulkan_shaders/Solid.vert.spv",
-        "vulkan_shaders/SolidPerVertex.frag.spv",
+        "vulkan_shaders/Point.vert.spv",
+        "vulkan_shaders/PointShaded.frag.spv",
     };
     topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
     break;
 
   case MaterialType::PointNormal:
     shaderFiles = {
-        "vulkan_shaders/Solid.vert.spv",
-        "vulkan_shaders/SolidNormal.frag.spv",
+        "vulkan_shaders/Point.vert.spv",
+        "vulkan_shaders/PointNormal.frag.spv",
     };
     topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
     break;
