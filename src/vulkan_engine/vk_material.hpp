@@ -13,6 +13,7 @@ struct PipelineInfo {
   VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
   VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
   VkPipeline pipeline = VK_NULL_HANDLE;
+  VkPipeline pickPipeline = VK_NULL_HANDLE;
 };
 
 struct PushConstants {
@@ -24,7 +25,7 @@ class VkMaterial {
 public:
   VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool descriptorPool,
              VkDescriptorSetLayout sceneDescriptorSetLayout, VkSampleCountFlagBits msaaCount,
-             VkRenderPass renderPass);
+             VkRenderPass renderPass, VkRenderPass pickRenderPass = VK_NULL_HANDLE);
   ~VkMaterial();
 
   // The vulkan graphics pipeline to be used to draw this material

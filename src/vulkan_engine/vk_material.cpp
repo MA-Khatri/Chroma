@@ -15,7 +15,8 @@ VkDescriptorSetLayoutBinding CreateDSLFragmentBinding(unsigned int binding) {
 
 VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool descriptorPool,
                        VkDescriptorSetLayout sceneDescriptorSetLayout,
-                       VkSampleCountFlagBits msaaCount, VkRenderPass renderPass) {
+                       VkSampleCountFlagBits msaaCount, VkRenderPass renderPass,
+                       VkRenderPass pickRenderPass) {
   // Clear the descriptor writes
   m_DescriptorWrites.resize(0);
 
@@ -33,6 +34,7 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
 
   // Create graphics pipeline
   std::vector<std::string> shaderFiles;
+  std::vector<std::string> pickShaderFiles;
   VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
   bool hasTextures = material->HasTextures();
@@ -52,10 +54,18 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
           "vulkan_shaders/Solid.vert.spv",
           "vulkan_shaders/SolidTextured.frag.spv",
       };
+      pickShaderFiles = {
+          "vulkan_shaders/Solid.vert.spv",
+          "vulkan_shaders/DepthOnly.frag.spv",
+      };
     } else {
       shaderFiles = {
           "vulkan_shaders/Solid.vert.spv",
           "vulkan_shaders/SolidPerVertex.frag.spv",
+      };
+      pickShaderFiles = {
+          "vulkan_shaders/Solid.vert.spv",
+          "vulkan_shaders/DepthOnly.frag.spv",
       };
     }
     topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -66,6 +76,10 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
         "vulkan_shaders/Point.vert.spv",
         "vulkan_shaders/PointFlat.frag.spv",
     };
+    pickShaderFiles = {
+        "vulkan_shaders/Point.vert.spv",
+        "vulkan_shaders/DepthOnlyPoint.frag.spv",
+    };
     topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
     break;
 
@@ -73,6 +87,10 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
     shaderFiles = {
         "vulkan_shaders/Point.vert.spv",
         "vulkan_shaders/PointShaded.frag.spv",
+    };
+    pickShaderFiles = {
+        "vulkan_shaders/Point.vert.spv",
+        "vulkan_shaders/DepthOnlyPoint.frag.spv",
     };
     topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
     break;
@@ -82,6 +100,10 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
         "vulkan_shaders/Point.vert.spv",
         "vulkan_shaders/PointNormal.frag.spv",
     };
+    pickShaderFiles = {
+        "vulkan_shaders/Point.vert.spv",
+        "vulkan_shaders/DepthOnlyPoint.frag.spv",
+    };
     topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
     break;
 
@@ -89,6 +111,10 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
     shaderFiles = {
         "vulkan_shaders/Default.vert.spv",
         "vulkan_shaders/Default.frag.spv",
+    };
+    pickShaderFiles = {
+        "vulkan_shaders/Default.vert.spv",
+        "vulkan_shaders/DepthOnly.frag.spv",
     };
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
     break;
@@ -98,6 +124,10 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
         "vulkan_shaders/GroundGrid.vert.spv",
         "vulkan_shaders/GroundGrid.frag.spv",
     };
+    pickShaderFiles = {
+        "vulkan_shaders/GroundGrid.vert.spv",
+        "vulkan_shaders/DepthOnly.frag.spv",
+    };
     topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
     break;
 
@@ -105,6 +135,10 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
     shaderFiles = {
         "vulkan_shaders/Default.vert.spv",
         "vulkan_shaders/Default.frag.spv",
+    };
+    pickShaderFiles = {
+        "vulkan_shaders/Default.vert.spv",
+        "vulkan_shaders/DepthOnly.frag.spv",
     };
     topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     PLOG_WARNING << "Material type not recognized, using default shader: "
@@ -121,6 +155,9 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
   };
   m_PipelineInfo.pipeline = vke::CreateGraphicsPipeline(
       shaderFiles, msaaCount, topology, renderPass, DSLs, m_PipelineInfo.pipelineLayout);
+  m_PipelineInfo.pickPipeline = vke::CreateGraphicsPipeline(
+      pickShaderFiles, VK_SAMPLE_COUNT_1_BIT, topology, pickRenderPass, DSLs,
+      m_PipelineInfo.pipelineLayout);
 
   // Store texture writes for later binding on the per-object descriptor set.
   m_PipelineInfo.descriptorPool = descriptorPool;

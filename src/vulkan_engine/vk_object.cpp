@@ -69,7 +69,7 @@ void VkObject::DrawPick(VkCommandBuffer commandBuffer) {
       0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
   vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    m_VkMaterial->m_PipelineInfo.pipeline);
+                    m_VkMaterial->m_PipelineInfo.pickPipeline);
 
   // Bind vertex and index buffers
   VkBuffer vertexBuffers[] = {m_VertexBuffer};

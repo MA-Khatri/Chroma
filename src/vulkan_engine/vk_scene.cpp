@@ -5,7 +5,7 @@
 #include <vulkan/vulkan_core.h>
 
 VkScene::VkScene(std::shared_ptr<Scene> scene, VkSampleCountFlagBits msaaCount,
-                 VkRenderPass renderPass)
+                 VkRenderPass renderPass, VkRenderPass pickRenderPass)
     : m_Scene(scene) {
   PLOG_DEBUG << "Creating VkScene for Scene ID: " << m_Scene->m_SceneID;
 
@@ -39,9 +39,9 @@ VkScene::VkScene(std::shared_ptr<Scene> scene, VkSampleCountFlagBits msaaCount,
   for (const auto &object : m_Scene->GetObjects()) {
     int matID = object->m_Material->m_MaterialID;
     if (m_Materials.find(matID) == m_Materials.end()) {
-      m_Materials.insert(
-          {matID, std::make_shared<VkMaterial>(object->m_Material, m_DescriptorPool,
-                                               m_DescriptorSetLayout, msaaCount, renderPass)});
+      m_Materials.insert({matID, std::make_shared<VkMaterial>(
+                                     object->m_Material, m_DescriptorPool, m_DescriptorSetLayout,
+                                     msaaCount, renderPass, pickRenderPass)});
     }
   }
 

@@ -11,7 +11,8 @@ class VulkanEngine; // Forward declaration
 
 class VkScene {
 public:
-  VkScene(std::shared_ptr<Scene> scene, VkSampleCountFlagBits msaaCount, VkRenderPass renderPass);
+  VkScene(std::shared_ptr<Scene> scene, VkSampleCountFlagBits msaaCount, VkRenderPass renderPass,
+          VkRenderPass pickRenderPass);
   ~VkScene();
 
   struct alignas(16) SceneUBO {

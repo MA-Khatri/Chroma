@@ -133,7 +133,8 @@ void VulkanEngine::SetScene(std::shared_ptr<Scene> scene) {
     return;
   }
 
-  m_VkScene = std::make_shared<VkScene>(scene, m_MSAASampleCount, m_ViewportRenderPass);
+  m_VkScene = std::make_shared<VkScene>(scene, m_MSAASampleCount, m_ViewportRenderPass,
+                                         m_PickRenderPass);
   m_VkScenes.insert({scene->m_SceneID, m_VkScene});
 }
 
@@ -329,6 +330,9 @@ void VulkanEngine::CreatePickResources() {
   vke::TransitionImageLayout(m_PickDepthImage, pickDepthFormat, VK_IMAGE_LAYOUT_UNDEFINED,
                              VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 
+  vke::CreateFrameBuffer({m_PickDepthImageView}, m_PickRenderPass, m_ViewportSize,
+                         m_PickFramebuffer);
+
   // Pick depth readback buffer
   vke::CreateBuffer(m_ReadbackSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -338,10 +342,12 @@ void VulkanEngine::CreatePickResources() {
 }
 
 void VulkanEngine::DestroyPickResources() {
+  vkDestroyFramebuffer(vke::Device, m_PickFramebuffer, nullptr);
   vkDestroyImageView(vke::Device, m_PickDepthImageView, nullptr);
   vkDestroyImage(vke::Device, m_PickDepthImage, nullptr);
   vkFreeMemory(vke::Device, m_PickDepthImageMemory, nullptr);
 
+  vkUnmapMemory(vke::Device, m_PickDepthReadbackMemory);
   vkDestroyBuffer(vke::Device, m_PickDepthReadbackBuffer, nullptr);
   vkFreeMemory(vke::Device, m_PickDepthReadbackMemory, nullptr);
 }

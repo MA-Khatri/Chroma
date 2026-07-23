@@ -5,6 +5,8 @@ set(VULKAN_SHADERS
 Default.vert
     Default.frag
     Default.vert
+    DepthOnly.frag
+    DepthOnlyPoint.frag
     Flat.vert
     Flat.frag
     FlatWithSpecular.frag
