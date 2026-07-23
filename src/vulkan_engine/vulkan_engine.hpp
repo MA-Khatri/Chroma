@@ -3,6 +3,7 @@
 #include "imgui.h"
 #include "vk_scene.hpp"
 #include "vulkan_utils.hpp"
+#include <cstdint>
 #include <vulkan/vulkan_core.h>
 
 class VulkanEngine {
@@ -27,12 +28,19 @@ public:
 private:
   void InitVulkan();
   void CleanupVulkan();
+
   void CreateViewportImagesAndFramebuffers();
   void DestroyViewportImagesAndFramebuffers();
+
   void CreateViewportImageDescriptorSets();
   void DestroyViewportImageDescriptorSets();
+
   void DestroyColorResources();
   void DestroyDepthResources();
+
+  // Non-viewport rendering related resources
+  void CreateUtilityResources();
+  void DestroyUtilityResources();
 
   std::map<int, std::shared_ptr<VkScene>> m_VkScenes;
   std::shared_ptr<VkScene> m_VkScene; // Current active VkScene
@@ -54,7 +62,22 @@ private:
   std::vector<VkFramebuffer> m_ViewportFramebuffers;
   VkSampler m_ViewportSampler;
 
+  // Depth image for rendering
   VkImage m_DepthImage;
   VkDeviceMemory m_DepthImageMemory;
   VkImageView m_DepthImageView;
+
+  // Depth image for picking
+  VkImage m_PickDepthImage;
+  VkDeviceMemory m_PickDepthImageMemory;
+  VkImageView m_PickDepthImageView;
+
+  // Depth image for picking readback buffer
+  static constexpr uint32_t m_PickDiameter = 5;
+  static constexpr VkDeviceSize m_ReadbackSize = m_PickDiameter * m_PickDiameter * sizeof(float);
+  VkBuffer m_PickDepthReadbackBuffer;
+  VkDeviceMemory m_PickDepthReadbackMemory;
+  void *m_PickDepthMappedReadback;
+
+  // TODO: Add object and vertex id images?
 };

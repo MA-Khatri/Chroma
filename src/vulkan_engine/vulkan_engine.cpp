@@ -197,6 +197,8 @@ void VulkanEngine::InitVulkan() {
   CreateViewportImagesAndFramebuffers();
   CreateViewportImageDescriptorSets();
 
+  CreateUtilityResources();
+
   // Ensure device is idle before finishing init
   vkDeviceWaitIdle(vke::Device);
 }
@@ -211,6 +213,8 @@ void VulkanEngine::CleanupVulkan() {
   DestroyViewportImagesAndFramebuffers();
 
   vkDestroyRenderPass(vke::Device, m_ViewportRenderPass, nullptr);
+
+  DestroyUtilityResources();
 }
 
 void VulkanEngine::CreateViewportImagesAndFramebuffers() {
@@ -266,4 +270,33 @@ void VulkanEngine::DestroyDepthResources() {
   vkDestroyImageView(vke::Device, m_DepthImageView, nullptr);
   vkDestroyImage(vke::Device, m_DepthImage, nullptr);
   vkFreeMemory(vke::Device, m_DepthImageMemory, nullptr);
+}
+
+void VulkanEngine::CreateUtilityResources() {
+  // Pick depth image
+  VkFormat pickDepthFormat = vke::FindDepthFormat();
+  vke::CreateImage(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y),
+                   1, VK_SAMPLE_COUNT_1_BIT, pickDepthFormat, VK_IMAGE_TILING_OPTIMAL,
+                   VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_PickDepthImage, m_PickDepthImageMemory);
+  vke::CreateImageView(pickDepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1, m_PickDepthImage,
+                       m_PickDepthImageView);
+  vke::TransitionImageLayout(m_PickDepthImage, pickDepthFormat, VK_IMAGE_LAYOUT_UNDEFINED,
+                             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
+
+  // Pick depth readback buffer
+  vke::CreateBuffer(m_ReadbackSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                    m_PickDepthReadbackBuffer, m_PickDepthReadbackMemory);
+  vkMapMemory(vke::Device, m_PickDepthReadbackMemory, 0, VK_WHOLE_SIZE, 0,
+              &m_PickDepthMappedReadback);
+}
+
+void VulkanEngine::DestroyUtilityResources() {
+  vkDestroyImageView(vke::Device, m_PickDepthImageView, nullptr);
+  vkDestroyImage(vke::Device, m_PickDepthImage, nullptr);
+  vkFreeMemory(vke::Device, m_PickDepthImageMemory, nullptr);
+
+  vkDestroyBuffer(vke::Device, m_PickDepthReadbackBuffer, nullptr);
+  vkFreeMemory(vke::Device, m_PickDepthReadbackMemory, nullptr);
 }
