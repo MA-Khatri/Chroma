@@ -133,8 +133,8 @@ void VulkanEngine::SetScene(std::shared_ptr<Scene> scene) {
     return;
   }
 
-  m_VkScene = std::make_shared<VkScene>(scene, m_MSAASampleCount, m_ViewportRenderPass,
-                                         m_PickRenderPass);
+  m_VkScene =
+      std::make_shared<VkScene>(scene, m_MSAASampleCount, m_ViewportRenderPass, m_PickRenderPass);
   m_VkScenes.insert({scene->m_SceneID, m_VkScene});
 }
 

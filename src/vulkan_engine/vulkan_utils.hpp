@@ -7,6 +7,7 @@
 #include <imgui_impl_vulkan.h>
 
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 #include "../material.hpp"
 #include "../mesh.hpp"
@@ -52,6 +53,11 @@ extern std::vector<std::vector<std::function<void()>>> ResourceFreeQueue;
 // Unlike g_MainWindowData.FrameIndex, this is not the the swapchain image index
 // and is always guaranteed to increase (eg. 0, 1, 2, 0, 1, 2)
 extern uint32_t CurrentFrameIndex;
+
+struct ShaderInfo {
+  VkShaderStageFlagBits stage;
+  std::string path;
+};
 
 // === Error Handling Utilities ===
 
@@ -123,11 +129,11 @@ void CreateRenderPass(VkSampleCountFlagBits msaaSamples, VkRenderPass &renderPas
 
 void CreatePickRenderPass(VkRenderPass &renderPass);
 
-void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, VkSampleCountFlagBits msaaSamples,
+void CreateGraphicsPipeline(std::vector<ShaderInfo> shaders, VkSampleCountFlagBits msaaSamples,
                             VkPrimitiveTopology topology, const VkRenderPass &renderPass,
                             const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts,
                             VkPipelineLayout &layout, VkPipeline &pipeline);
-VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles,
+VkPipeline CreateGraphicsPipeline(std::vector<ShaderInfo> shaders,
                                   VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology,
                                   const VkRenderPass &renderPass,
                                   const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts,

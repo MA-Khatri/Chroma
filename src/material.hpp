@@ -10,10 +10,12 @@ enum class MaterialType {
   Principled,
   Emissive,
 
-  // Special non-surface materials
+  // Points
   PointFlat,
   PointShaded,
   PointNormal,
+
+  // Lines
   Lines,
   GroundGrid, // Special material with custom shaders for the ground grid
 };

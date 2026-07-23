@@ -911,18 +911,18 @@ std::vector<char> ReadShaderFile(const std::string &filename) {
   return buffer;
 }
 
-void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, VkSampleCountFlagBits msaaSamples,
+void CreateGraphicsPipeline(std::vector<ShaderInfo> shaders, VkSampleCountFlagBits msaaSamples,
                             VkPrimitiveTopology topology, const VkRenderPass &renderPass,
                             const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts,
                             VkPipelineLayout &layout, VkPipeline &pipeline) {
   VkResult err;
 
   // ====== Shader Modules and Shader Stages ======
-  std::vector<VkShaderModule> shaderModules(shaderFiles.size());
+  std::vector<VkShaderModule> shaderModules(shaders.size());
   std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-  for (size_t i = 0; i < shaderFiles.size(); i++) {
+  for (size_t i = 0; i < shaders.size(); i++) {
     // Read in SPIR-V code
-    auto shaderCode = ReadShaderFile(shaderFiles[i]);
+    auto shaderCode = ReadShaderFile(shaders[i].path);
     // Create shader module
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -933,7 +933,7 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, VkSampleCountF
     // Create shader stage info
     VkPipelineShaderStageCreateInfo shaderStageInfo{};
     shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shaderStageInfo.stage = (i == 0) ? VK_SHADER_STAGE_VERTEX_BIT : VK_SHADER_STAGE_FRAGMENT_BIT;
+    shaderStageInfo.stage = shaders[i].stage;
     shaderStageInfo.module = shaderModules[i];
     shaderStageInfo.pName = "main";
     shaderStages.push_back(shaderStageInfo);
@@ -1106,14 +1106,14 @@ void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, VkSampleCountF
   }
 }
 
-VkPipeline CreateGraphicsPipeline(std::vector<std::string> shaderFiles,
+VkPipeline CreateGraphicsPipeline(std::vector<ShaderInfo> shaders,
                                   VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology,
                                   const VkRenderPass &renderPass,
                                   const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts,
                                   VkPipelineLayout &layout) {
   VkPipeline pipeline;
-  CreateGraphicsPipeline(shaderFiles, msaaSamples, topology, renderPass, descriptorSetLayouts,
-                         layout, pipeline);
+  CreateGraphicsPipeline(shaders, msaaSamples, topology, renderPass, descriptorSetLayouts, layout,
+                         pipeline);
   return pipeline;
 }
 
