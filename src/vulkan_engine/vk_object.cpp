@@ -37,10 +37,36 @@ void VkObject::Draw(VkCommandBuffer commandBuffer) {
   // VkUploadUniformBuffer();
 
   std::array<VkDescriptorSet, 2> descriptorSets = {m_SceneDescriptorSet, m_DescriptorSet};
-  vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          m_VkMaterial->m_PipelineInfo.pipelineLayout, 0,
-                          static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0,
-                          nullptr);
+  vkCmdBindDescriptorSets(
+      commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkMaterial->m_PipelineInfo.pipelineLayout,
+      0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
+
+  vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    m_VkMaterial->m_PipelineInfo.pipeline);
+
+  // Bind vertex and index buffers
+  VkBuffer vertexBuffers[] = {m_VertexBuffer};
+  VkDeviceSize offsets[] = {0};
+  vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+  vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+  vkCmdSetLineWidth(commandBuffer, m_Object->m_Material->m_LineWidth);
+
+  // Draw indexed
+  vkCmdDrawIndexed(commandBuffer,
+                   static_cast<uint32_t>(m_Object->m_Mesh->indices.size()), // indexCount
+                   1,                                                       // instanceCount
+                   0,                                                       // firstIndex
+                   0,                                                       // vertexOffset
+                   0);                                                      // firstInstance
+}
+
+void VkObject::DrawPick(VkCommandBuffer commandBuffer) {
+
+  std::array<VkDescriptorSet, 2> descriptorSets = {m_SceneDescriptorSet, m_DescriptorSet};
+  vkCmdBindDescriptorSets(
+      commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkMaterial->m_PipelineInfo.pipelineLayout,
+      0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
   vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                     m_VkMaterial->m_PipelineInfo.pipeline);

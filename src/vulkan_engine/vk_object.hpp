@@ -4,6 +4,7 @@
 #include "vk_material.hpp"
 #include "vulkan_utils.hpp"
 #include <memory>
+#include <vulkan/vulkan_core.h>
 
 class VkObject {
 public:
@@ -17,6 +18,8 @@ public:
   };
 
   void Draw(VkCommandBuffer commandBuffer);
+
+  void DrawPick(VkCommandBuffer commandBuffer);
 
 private:
   void VkUpdateUniformBuffer(); // Updates descriptor set to take in this object's uniform buffer

@@ -73,6 +73,15 @@ void VkScene::Draw(VkCommandBuffer commandBuffer, ImVec2 viewportSize) {
   }
 }
 
+void VkScene::DrawPick(VkCommandBuffer commandBuffer, ImVec2 viewportSize) {
+  // Upload scene UBO
+  VkUploadUniformBuffer(viewportSize);
+
+  for (const auto &vkObject : m_VkObjects) {
+    vkObject->DrawPick(commandBuffer);
+  }
+}
+
 void VkScene::VkUpdateUniformBuffer() {
   VkDescriptorBufferInfo sceneBufferInfo{};
   sceneBufferInfo.buffer = m_UniformBuffer;

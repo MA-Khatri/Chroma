@@ -121,6 +121,8 @@ void CreateViewportImageViews(std::vector<VkImage> &images, std::vector<VkImageV
 
 void CreateRenderPass(VkSampleCountFlagBits msaaSamples, VkRenderPass &renderPass);
 
+void CreatePickRenderPass(VkRenderPass &renderPass);
+
 void CreateGraphicsPipeline(std::vector<std::string> shaderFiles, VkSampleCountFlagBits msaaSamples,
                             VkPrimitiveTopology topology, const VkRenderPass &renderPass,
                             const std::vector<VkDescriptorSetLayout> &descriptorSetLayouts,

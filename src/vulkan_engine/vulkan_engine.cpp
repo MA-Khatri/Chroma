@@ -24,6 +24,8 @@ void VulkanEngine::OnResize(ImVec2 newSize) {
   DestroyViewportImagesAndFramebuffers();
   DestroyViewportImageDescriptorSets();
 
+  DestroyPickResources();
+
   // Recreate new
   vke::CreateColorResources(static_cast<uint32_t>(m_ViewportSize.x),
                             static_cast<uint32_t>(m_ViewportSize.y), m_MSAASampleCount,
@@ -33,6 +35,8 @@ void VulkanEngine::OnResize(ImVec2 newSize) {
                             m_DepthImage, m_DepthImageMemory, m_DepthImageView);
   CreateViewportImagesAndFramebuffers();
   CreateViewportImageDescriptorSets();
+
+  CreatePickResources();
 }
 
 // Screenshot functionality for Vulkan based partially on:
@@ -173,6 +177,45 @@ void VulkanEngine::DrawFrame() {
 
   vkCmdEndRenderPass(commandBuffer);
 
+  if (m_AddPickRenderPass) {
+
+    VkRenderPassBeginInfo pickRenderPassInfo{};
+    pickRenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    pickRenderPassInfo.renderPass = m_PickRenderPass;
+    pickRenderPassInfo.framebuffer = m_PickFramebuffer;
+    pickRenderPassInfo.renderArea.offset = {0, 0};
+    pickRenderPassInfo.renderArea.extent = {static_cast<uint32_t>(m_ViewportSize.x),
+                                            static_cast<uint32_t>(m_ViewportSize.y)};
+
+    VkClearValue pickDepthClearValue{};
+    pickDepthClearValue.depthStencil = {1.0f, 0};
+    pickRenderPassInfo.clearValueCount = 1;
+    pickRenderPassInfo.pClearValues = &pickDepthClearValue;
+
+    vkCmdBeginRenderPass(commandBuffer, &pickRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    // Need to set the viewport and scissor since they are dynamic
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = m_ViewportSize.x;
+    viewport.height = m_ViewportSize.y;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = {static_cast<uint32_t>(m_ViewportSize.x),
+                      static_cast<uint32_t>(m_ViewportSize.y)};
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+    m_VkScene->DrawPick(commandBuffer, m_ViewportSize);
+
+    vkCmdEndRenderPass(commandBuffer);
+  }
+  m_AddPickRenderPass = false;
+
   vke::FlushGraphicsCommandBuffer(commandBuffer);
 }
 
@@ -197,7 +240,8 @@ void VulkanEngine::InitVulkan() {
   CreateViewportImagesAndFramebuffers();
   CreateViewportImageDescriptorSets();
 
-  CreateUtilityResources();
+  vke::CreatePickRenderPass(m_PickRenderPass);
+  CreatePickResources();
 
   // Ensure device is idle before finishing init
   vkDeviceWaitIdle(vke::Device);
@@ -214,7 +258,8 @@ void VulkanEngine::CleanupVulkan() {
 
   vkDestroyRenderPass(vke::Device, m_ViewportRenderPass, nullptr);
 
-  DestroyUtilityResources();
+  DestroyPickResources();
+  vkDestroyRenderPass(vke::Device, m_PickRenderPass, nullptr);
 }
 
 void VulkanEngine::CreateViewportImagesAndFramebuffers() {
@@ -272,7 +317,7 @@ void VulkanEngine::DestroyDepthResources() {
   vkFreeMemory(vke::Device, m_DepthImageMemory, nullptr);
 }
 
-void VulkanEngine::CreateUtilityResources() {
+void VulkanEngine::CreatePickResources() {
   // Pick depth image
   VkFormat pickDepthFormat = vke::FindDepthFormat();
   vke::CreateImage(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y),
@@ -292,7 +337,7 @@ void VulkanEngine::CreateUtilityResources() {
               &m_PickDepthMappedReadback);
 }
 
-void VulkanEngine::DestroyUtilityResources() {
+void VulkanEngine::DestroyPickResources() {
   vkDestroyImageView(vke::Device, m_PickDepthImageView, nullptr);
   vkDestroyImage(vke::Device, m_PickDepthImage, nullptr);
   vkFreeMemory(vke::Device, m_PickDepthImageMemory, nullptr);

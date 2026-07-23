@@ -23,6 +23,7 @@ public:
 
   void SetScene(std::shared_ptr<Scene> scene);
 
+  // Draw call for main viewport render
   void DrawFrame();
 
 private:
@@ -38,9 +39,9 @@ private:
   void DestroyColorResources();
   void DestroyDepthResources();
 
-  // Non-viewport rendering related resources
-  void CreateUtilityResources();
-  void DestroyUtilityResources();
+  // Pick-info frame resources
+  void CreatePickResources();
+  void DestroyPickResources();
 
   std::map<int, std::shared_ptr<VkScene>> m_VkScenes;
   std::shared_ptr<VkScene> m_VkScene; // Current active VkScene
@@ -67,6 +68,12 @@ private:
   VkDeviceMemory m_DepthImageMemory;
   VkImageView m_DepthImageView;
 
+  // === Pick info frame resources ===
+  bool m_AddPickRenderPass = false;
+  VkRenderPass m_PickRenderPass;
+  VkPipelineLayout m_PickPipelineLayout;
+  VkFramebuffer m_PickFramebuffer;
+
   // Depth image for picking
   VkImage m_PickDepthImage;
   VkDeviceMemory m_PickDepthImageMemory;
@@ -79,5 +86,5 @@ private:
   VkDeviceMemory m_PickDepthReadbackMemory;
   void *m_PickDepthMappedReadback;
 
-  // TODO: Add object and vertex id images?
+  // TODO: Add pick object and vertex id images?
 };

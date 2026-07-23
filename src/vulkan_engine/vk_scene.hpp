@@ -23,6 +23,8 @@ public:
 
   void Draw(VkCommandBuffer commandBuffer, ImVec2 viewportSize);
 
+  void DrawPick(VkCommandBuffer commandBuffer, ImVec2 viewportSize);
+
   std::shared_ptr<Scene> GetBaseScene() const { return m_Scene; }
 
 private:
