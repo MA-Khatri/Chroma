@@ -77,8 +77,8 @@ public:
     const float halfVerticalExtent = m_VerticalExtent * 0.5f;
     const float halfHorizontalExtent = halfVerticalExtent * m_AspectRatio;
 
-    return glm::ortho(-halfHorizontalExtent, halfHorizontalExtent, -halfVerticalExtent,
-                      halfVerticalExtent, m_NearClip, m_FarClip);
+    return glm::orthoRH_ZO(-halfHorizontalExtent, halfHorizontalExtent, -halfVerticalExtent,
+                           halfVerticalExtent, m_NearClip, m_FarClip);
   }
 
   void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
@@ -158,9 +158,7 @@ public:
 
   void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
 
-  glm::mat4 GetMatrix() const override {
-    return glm::lookAt(m_Position, m_LookAt, m_Up);
-  }
+  glm::mat4 GetMatrix() const override { return glm::lookAt(m_Position, m_LookAt, m_Up); }
 
 private:
   // Note: Must call this before using m_Position!

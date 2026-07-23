@@ -75,7 +75,7 @@ Scene CreateTestScene() {
   auto orbitController = std::make_shared<OrbitController>(glm::vec3(0.0f, 0.0f, 0.0f), 5.0f, 0.0f, 30.0f);
   auto trackBallController = std::make_shared<TrackBallController>(
       glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-  auto camera = std::make_shared<Camera>(perspectiveProjection, orbitController);
+  auto camera = std::make_shared<Camera>(orthographicProjection, trackBallController);
   scene.SetCamera(camera);
 
   return scene;
