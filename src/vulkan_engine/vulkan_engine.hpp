@@ -26,6 +26,17 @@ public:
   // Draw call for main viewport render
   void DrawFrame();
 
+  // Draw call for pick render pass (including depth buffer)
+  void DrawPickFrame();
+
+  std::tuple<VkRect2D, std::vector<float>> GetDepthBuffer(VkRect2D region);
+  std::tuple<VkRect2D, std::vector<float>>
+  GetDepthBuffer(int startX, int startY, unsigned int extentX, unsigned int extentY);
+  std::tuple<VkRect2D, std::vector<float>> GetDepthBuffer();
+
+  // Get depth buffer image of size m_PickDiameter * m_PickDiameter at provided center
+  std::vector<float> GetPickDepth(int cx, int cy);
+
 private:
   void InitVulkan();
   void CleanupVulkan();
@@ -75,6 +86,7 @@ private:
   VkFramebuffer m_PickFramebuffer;
 
   // Depth image for picking
+  VkFormat m_PickDepthImageFormat;
   VkImage m_PickDepthImage;
   VkDeviceMemory m_PickDepthImageMemory;
   VkImageView m_PickDepthImageView;

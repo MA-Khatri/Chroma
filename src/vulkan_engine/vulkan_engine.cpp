@@ -1,6 +1,7 @@
 #include "vulkan_engine.hpp"
 #include "vulkan_utils.hpp"
 
+#include <cstdint>
 #include <plog/Log.h>
 #include <vulkan/vulkan_core.h>
 
@@ -178,46 +179,203 @@ void VulkanEngine::DrawFrame() {
 
   vkCmdEndRenderPass(commandBuffer);
 
-  if (m_AddPickRenderPass) {
+  vke::FlushGraphicsCommandBuffer(commandBuffer);
+}
 
-    VkRenderPassBeginInfo pickRenderPassInfo{};
-    pickRenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    pickRenderPassInfo.renderPass = m_PickRenderPass;
-    pickRenderPassInfo.framebuffer = m_PickFramebuffer;
-    pickRenderPassInfo.renderArea.offset = {0, 0};
-    pickRenderPassInfo.renderArea.extent = {static_cast<uint32_t>(m_ViewportSize.x),
-                                            static_cast<uint32_t>(m_ViewportSize.y)};
+void VulkanEngine::DrawPickFrame() {
+  VkCommandBuffer commandBuffer = vke::GetGraphicsCommandBuffer();
 
-    VkClearValue pickDepthClearValue{};
-    pickDepthClearValue.depthStencil = {1.0f, 0};
-    pickRenderPassInfo.clearValueCount = 1;
-    pickRenderPassInfo.pClearValues = &pickDepthClearValue;
+  VkRenderPassBeginInfo pickRenderPassInfo{};
+  pickRenderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  pickRenderPassInfo.renderPass = m_PickRenderPass;
+  pickRenderPassInfo.framebuffer = m_PickFramebuffer;
+  pickRenderPassInfo.renderArea.offset = {0, 0};
+  pickRenderPassInfo.renderArea.extent = {static_cast<uint32_t>(m_ViewportSize.x),
+                                          static_cast<uint32_t>(m_ViewportSize.y)};
 
-    vkCmdBeginRenderPass(commandBuffer, &pickRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+  VkClearValue pickDepthClearValue{};
+  pickDepthClearValue.depthStencil = {1.0f, 0};
+  pickRenderPassInfo.clearValueCount = 1;
+  pickRenderPassInfo.pClearValues = &pickDepthClearValue;
 
-    // Need to set the viewport and scissor since they are dynamic
-    VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = m_ViewportSize.x;
-    viewport.height = m_ViewportSize.y;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+  vkCmdBeginRenderPass(commandBuffer, &pickRenderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    VkRect2D scissor{};
-    scissor.offset = {0, 0};
-    scissor.extent = {static_cast<uint32_t>(m_ViewportSize.x),
-                      static_cast<uint32_t>(m_ViewportSize.y)};
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+  // Need to set the viewport and scissor since they are dynamic
+  VkViewport viewport{};
+  viewport.x = 0.0f;
+  viewport.y = 0.0f;
+  viewport.width = m_ViewportSize.x;
+  viewport.height = m_ViewportSize.y;
+  viewport.minDepth = 0.0f;
+  viewport.maxDepth = 1.0f;
+  vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
-    m_VkScene->DrawPick(commandBuffer, m_ViewportSize);
+  VkRect2D scissor{};
+  scissor.offset = {0, 0};
+  scissor.extent = {static_cast<uint32_t>(m_ViewportSize.x),
+                    static_cast<uint32_t>(m_ViewportSize.y)};
+  vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    vkCmdEndRenderPass(commandBuffer);
-  }
-  m_AddPickRenderPass = false;
+  m_VkScene->DrawPick(commandBuffer, m_ViewportSize);
+
+  vkCmdEndRenderPass(commandBuffer);
 
   vke::FlushGraphicsCommandBuffer(commandBuffer);
+}
+
+std::tuple<VkRect2D, std::vector<float>> VulkanEngine::GetDepthBuffer(VkRect2D rect) {
+  if (m_PickDepthImageFormat != VK_FORMAT_D32_SFLOAT) {
+    PLOG_ERROR << "GetDepthBuffer(): Expected m_PickDepthImageFormat to be VK_FORMAT_D32_SFLOAT, "
+                  "but it is "
+               << m_PickDepthImageFormat << "!";
+    return {};
+  }
+
+  // Draw new depth buffer
+  DrawPickFrame();
+
+  // Copy region of depth buffer
+  vke::TransitionImageLayout(m_PickDepthImage, m_PickDepthImageFormat,
+                             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+
+  const VkDeviceSize bytesPerTexel = sizeof(float); // D32_SFLOAT is a single 32-bit float
+  const VkDeviceSize bufferSize = rect.extent.width * rect.extent.height * bytesPerTexel;
+
+  // Host-visible staging buffer to receive the region
+  VkBuffer stagingBuffer;
+  VkDeviceMemory stagingBufferMemory;
+  vke::CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                    stagingBuffer, stagingBufferMemory);
+
+  // Record and submit the image -> buffer copy
+  VkCommandBuffer commandBuffer = vke::GetTransferCommandBuffer();
+
+  VkBufferImageCopy region{};
+  region.bufferOffset = 0;
+  region.bufferRowLength = 0;   // tightly packed
+  region.bufferImageHeight = 0; // tightly packed
+  region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+  region.imageSubresource.mipLevel = 0;
+  region.imageSubresource.baseArrayLayer = 0;
+  region.imageSubresource.layerCount = 1;
+  region.imageOffset = {rect.offset.x, rect.offset.y, 0};
+  region.imageExtent = {rect.extent.width, rect.extent.height, 1};
+
+  vkCmdCopyImageToBuffer(commandBuffer, m_PickDepthImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                         stagingBuffer, 1, &region);
+
+  vke::FlushTransferCommandBuffer(commandBuffer);
+
+  // Put the depth image back into a renderable layout for next frame
+  vke::TransitionImageLayout(m_PickDepthImage, m_PickDepthImageFormat,
+                             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
+
+  // Copy out of the mapped staging buffer into the result vector
+  void *mappedData;
+  vkMapMemory(vke::Device, stagingBufferMemory, 0, bufferSize, 0, &mappedData);
+
+  std::vector<float> result(rect.extent.width * rect.extent.height);
+  memcpy(result.data(), mappedData, bufferSize);
+
+  vkUnmapMemory(vke::Device, stagingBufferMemory);
+
+  vkDestroyBuffer(vke::Device, stagingBuffer, nullptr);
+  vkFreeMemory(vke::Device, stagingBufferMemory, nullptr);
+
+  return {rect, result};
+}
+
+std::tuple<VkRect2D, std::vector<float>>
+VulkanEngine::GetDepthBuffer(int startX, int startY, unsigned int extentX, unsigned int extentY) {
+  VkRect2D rect{};
+  rect.offset = {startX, startY};
+  rect.extent = {extentX, extentY};
+
+  return GetDepthBuffer(rect);
+}
+
+std::tuple<VkRect2D, std::vector<float>> VulkanEngine::GetDepthBuffer() {
+  return GetDepthBuffer(0, 0, m_ViewportSize.x, m_ViewportSize.y);
+}
+
+std::vector<float> VulkanEngine::GetPickDepth(int cx, int cy) {
+  if (m_PickDepthImageFormat != VK_FORMAT_D32_SFLOAT) {
+    PLOG_ERROR << "GetPickDepth(): Expected m_PickDepthImageFormat to be VK_FORMAT_D32_SFLOAT, "
+                  "but it is "
+               << m_PickDepthImageFormat << "!";
+    return {};
+  }
+
+  // Clamp the pick region to the viewport bounds
+  const int viewportWidth = static_cast<int>(m_ViewportSize.x);
+  const int viewportHeight = static_cast<int>(m_ViewportSize.y);
+  const int half = m_PickDiameter / 2;
+
+  int startX = std::clamp(cx - half, 0, viewportWidth);
+  int startY = std::clamp(cy - half, 0, viewportHeight);
+  int endX = std::clamp(cx - half + static_cast<int>(m_PickDiameter), 0, viewportWidth);
+  int endY = std::clamp(cy - half + static_cast<int>(m_PickDiameter), 0, viewportHeight);
+
+  const uint32_t extentX = static_cast<uint32_t>(endX - startX);
+  const uint32_t extentY = static_cast<uint32_t>(endY - startY);
+
+  if (extentX == 0 || extentY == 0) {
+    PLOG_ERROR << "GetPickDepth(): Requested pick center (" << cx << ", " << cy
+               << ") lies entirely outside the viewport!";
+    return {};
+  }
+
+  const VkDeviceSize bytesPerTexel = sizeof(float); // D32_SFLOAT is a single 32-bit float
+  const VkDeviceSize bufferSize = static_cast<VkDeviceSize>(extentX) * extentY * bytesPerTexel;
+
+  if (bufferSize > m_ReadbackSize) {
+    PLOG_ERROR << "GetPickDepth(): Requested region (" << bufferSize
+               << " bytes) exceeds readback buffer capacity (" << m_ReadbackSize << " bytes)!";
+    return {};
+  }
+
+  // Draw new depth buffer
+  DrawPickFrame();
+
+  // Copy region of depth buffer
+  vke::TransitionImageLayout(m_PickDepthImage, m_PickDepthImageFormat,
+                             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
+
+  VkCommandBuffer commandBuffer = vke::GetTransferCommandBuffer();
+
+  VkBufferImageCopy region{};
+  region.bufferOffset = 0;
+  region.bufferRowLength = 0;   // tightly packed
+  region.bufferImageHeight = 0; // tightly packed
+  region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+  region.imageSubresource.mipLevel = 0;
+  region.imageSubresource.baseArrayLayer = 0;
+  region.imageSubresource.layerCount = 1;
+  region.imageOffset = {startX, startY, 0};
+  region.imageExtent = {extentX, extentY, 1};
+
+  vkCmdCopyImageToBuffer(commandBuffer, m_PickDepthImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                         m_PickDepthReadbackBuffer, 1, &region);
+
+  // Waits on a fence internally, so the copy is guaranteed complete before we
+  // touch m_PickDepthMappedReadback below. HOST_COHERENT means no explicit
+  // invalidate needed.
+  vke::FlushTransferCommandBuffer(commandBuffer);
+
+  // Put the depth image back into a renderable layout for next frame
+  vke::TransitionImageLayout(m_PickDepthImage, m_PickDepthImageFormat,
+                             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                             VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
+
+  // Copy out of the persistently mapped readback buffer into the result vector
+  std::vector<float> result(static_cast<size_t>(extentX) * extentY);
+  memcpy(result.data(), m_PickDepthMappedReadback, bufferSize);
+
+  return result;
 }
 
 /// =============================
@@ -320,14 +478,14 @@ void VulkanEngine::DestroyDepthResources() {
 
 void VulkanEngine::CreatePickResources() {
   // Pick depth image
-  VkFormat pickDepthFormat = vke::FindDepthFormat();
+  m_PickDepthImageFormat = vke::FindDepthFormat();
   vke::CreateImage(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y),
-                   1, VK_SAMPLE_COUNT_1_BIT, pickDepthFormat, VK_IMAGE_TILING_OPTIMAL,
+                   1, VK_SAMPLE_COUNT_1_BIT, m_PickDepthImageFormat, VK_IMAGE_TILING_OPTIMAL,
                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_PickDepthImage, m_PickDepthImageMemory);
-  vke::CreateImageView(pickDepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1, m_PickDepthImage,
+  vke::CreateImageView(m_PickDepthImageFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1, m_PickDepthImage,
                        m_PickDepthImageView);
-  vke::TransitionImageLayout(m_PickDepthImage, pickDepthFormat, VK_IMAGE_LAYOUT_UNDEFINED,
+  vke::TransitionImageLayout(m_PickDepthImage, m_PickDepthImageFormat, VK_IMAGE_LAYOUT_UNDEFINED,
                              VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 
   vke::CreateFrameBuffer({m_PickDepthImageView}, m_PickRenderPass, m_ViewportSize,
