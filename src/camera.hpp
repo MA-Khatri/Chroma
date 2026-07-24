@@ -1,6 +1,8 @@
 #pragma once
 
+#include <functional>
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/vector_float3.hpp>
 #include <glm/fwd.hpp>
 #include <memory>
 
@@ -97,6 +99,10 @@ protected:
   glm::vec3 m_LookAt = glm::vec3(0.0f, 0.0f, 0.0f);
   glm::vec3 m_Up = glm::vec3(0.0f, 0.0f, 1.0f);
 
+  // Returns closest pixel location within pick search region (x, y) and corresponding depth (z)
+  // Note: Assumes input is viewport-relative already
+  std::function<glm::vec3(glm::vec2)> m_DoubleClickCallback;
+
 public:
   virtual ~CameraController() = default;
 
@@ -107,6 +113,10 @@ public:
   glm::vec3 GetPosition() const { return m_Position; }
   glm::vec3 GetLookAt() const { return m_LookAt; }
   glm::vec3 GetUp() const { return m_Up; }
+
+  void RegisterDoubleClickCallback(std::function<glm::vec3(glm::vec2)> callback) {
+    m_DoubleClickCallback = callback;
+  };
 };
 
 class FreeFlyController : public CameraController {
@@ -227,26 +237,30 @@ public:
       return glm::vec3(0.0f);
   }
 
-  void SetViewportBounds(ImVec2 min, ImVec2 max) {
+  std::shared_ptr<CameraController> GetCameraController() { return m_Controller; }
+  std::shared_ptr<Projection> GetProjection() { return m_Projection; }
+
+  void SetViewportBounds(glm::vec2 min, glm::vec2 max) {
     m_ViewportMin = min;
     m_ViewportMax = max;
 
-    int width = max.x - min.x;
-    int height = max.y - min.y;
+    float width = max.x - min.x;
+    float height = max.y - min.y;
 
     if (m_Projection) {
-      m_Projection->SetAspectRatio(float(width) / float(height));
+      m_Projection->SetAspectRatio(width / height);
     }
   }
 
-  ImVec2 GetViewportMin() const { return m_ViewportMin; }
-  ImVec2 GetViewportMax() const { return m_ViewportMax; }
-  ImVec2 GetViewportSize() const {
-    return ImVec2(m_ViewportMax.x - m_ViewportMin.x, m_ViewportMax.y - m_ViewportMin.y);
-  }
+  glm::vec2 GetViewportMin() const { return m_ViewportMin; }
+  glm::vec2 GetViewportMax() const { return m_ViewportMax; }
+  glm::vec2 GetViewportSize() const { return m_ViewportMax - m_ViewportMin; }
 
   void SetControllerActive(bool active) { m_ControllerActive = active; }
   bool IsControllerActive() const { return m_ControllerActive; }
+
+  // Back project pixel coordinates to given depth to get corresponding world space location
+  glm::vec3 GetWorldPosition(glm::vec3 screenCoordsDepth);
 
 private:
   std::shared_ptr<Projection> m_Projection;
@@ -254,6 +268,6 @@ private:
 
   bool m_ControllerActive = false;
 
-  ImVec2 m_ViewportMin;
-  ImVec2 m_ViewportMax;
+  glm::vec2 m_ViewportMin;
+  glm::vec2 m_ViewportMax;
 };

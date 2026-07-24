@@ -1,5 +1,7 @@
 #include "camera.hpp"
 
+#include <SDL3/SDL_events.h>
+#include <glm/ext/vector_float2.hpp>
 #include <plog/Log.h>
 
 // ===================================
@@ -244,6 +246,18 @@ void OrbitController::Update(Camera &camera, int64_t deltaTime, const SDL_Event 
       break;
     }
 
+    case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+      if (event->button.clicks == 2 && m_DoubleClickCallback) {
+        glm::vec2 clickPosition(event->motion.x, event->motion.y);
+        glm::vec2 viewportClickPosition = clickPosition - camera.GetViewportMin();
+        m_LookAt = camera.GetWorldPosition(m_DoubleClickCallback(viewportClickPosition));
+        UpdatePosition();
+      } else {
+        PLOG_WARNING << "No registered double click callback for Orbit Controller!";
+      }
+      break;
+    }
+
     default:
       break;
     }
@@ -350,8 +364,40 @@ void TrackBallController::Update(Camera &camera, int64_t deltaTime, const SDL_Ev
       break;
     }
 
+    case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+      if (event->button.clicks == 2 && m_DoubleClickCallback) {
+        glm::vec3 toCamera = m_Position - m_LookAt;
+        glm::vec2 clickPosition(event->motion.x, event->motion.y);
+        glm::vec2 viewportClickPosition = clickPosition - camera.GetViewportMin();
+        m_LookAt = camera.GetWorldPosition(m_DoubleClickCallback(viewportClickPosition));
+        m_Position = m_LookAt + toCamera;
+      } else {
+        PLOG_WARNING << "No registered double click callback for Trackball Controller!";
+      }
+      break;
+    }
+
     default:
       break;
     }
   }
+}
+
+glm::vec3 Camera::GetWorldPosition(glm::vec3 screenCoordsDepth) {
+  // Convert pixel (x, y) to NDC [-1, 1]
+  glm::vec2 viewportSize = GetViewportSize();
+  glm::vec2 screenCoords = glm::vec2(screenCoordsDepth);
+  glm::vec2 ndc = (screenCoords / viewportSize) * 2.0f - 1.0f;
+  glm::vec4 clipSpaceCoord(ndc, screenCoordsDepth.z, 1.0f);
+
+  // Back-project to world space
+  glm::mat4 invViewProj = glm::inverse(m_Projection->GetMatrix() * m_Controller->GetMatrix());
+  glm::vec4 worldSpaceCoord = invViewProj * clipSpaceCoord;
+
+  // Perspective division
+  if (worldSpaceCoord.w != 0.0f) {
+    worldSpaceCoord /= worldSpaceCoord.w;
+  }
+
+  return glm::vec3(worldSpaceCoord);
 }

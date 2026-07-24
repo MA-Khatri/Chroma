@@ -2,6 +2,7 @@
 #include "vulkan_utils.hpp"
 
 #include <cstdint>
+#include <limits>
 #include <plog/Log.h>
 #include <vulkan/vulkan_core.h>
 
@@ -376,6 +377,34 @@ std::vector<float> VulkanEngine::GetPickDepth(int cx, int cy) {
   memcpy(result.data(), m_PickDepthMappedReadback, bufferSize);
 
   return result;
+}
+
+glm::vec3 VulkanEngine::GetClosestDepth(glm::vec2 clickPosn) {
+  constexpr int halfPick = m_PickDiameter / 2;
+
+  std::vector<float> pickDepth = GetPickDepth(clickPosn.x, clickPosn.y);
+
+  glm::vec2 closestDepthOffset(0, 0);
+  float closestOffsetDist = 10000.0f;
+  float closestDepth = 1.0f;
+  for (int j = 0; j < m_PickDiameter; j++) {
+    unsigned int rowOffset = j * m_PickDiameter;
+    for (int i = 0; i < m_PickDiameter; i++) {
+      unsigned int idx = rowOffset + i;
+      float cdepth = pickDepth[idx];
+      if (cdepth < 1.0f) { // i.e., valid depth
+        glm::vec2 offset(i - halfPick, j - halfPick);
+        float offsetDist = glm::length2(offset);
+        if (offsetDist < closestOffsetDist) {
+          closestOffsetDist = offsetDist;
+          closestDepthOffset = offset;
+          closestDepth = cdepth;
+        }
+      }
+    }
+  }
+
+  return glm::vec3(clickPosn + closestDepthOffset, closestDepth);
 }
 
 /// =============================

@@ -4,6 +4,7 @@
 #include "vk_scene.hpp"
 #include "vulkan_utils.hpp"
 #include <cstdint>
+#include <glm/ext/vector_float3.hpp>
 #include <vulkan/vulkan_core.h>
 
 class VulkanEngine {
@@ -36,6 +37,8 @@ public:
 
   // Get depth buffer image of size m_PickDiameter * m_PickDiameter at provided center
   std::vector<float> GetPickDepth(int cx, int cy);
+
+  glm::vec3 GetClosestDepth(glm::vec2 clickPosn);
 
 private:
   void InitVulkan();

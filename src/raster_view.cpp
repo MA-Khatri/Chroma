@@ -42,6 +42,12 @@ void RasterView::OnUpdate() {
     // Update controller with new scene's camera
     Controller::GetInstance()->SetActiveCamera(scene->GetCamera());
   }
+
+  // TODO: This should not be re-registered on every update!
+  scene->GetCamera()->GetCameraController()->RegisterDoubleClickCallback(
+      [this](glm::vec2 clickPos) -> glm::vec3 {
+        return m_VulkanEngine->GetClosestDepth(clickPos);
+      });
 }
 
 void RasterView::OnUIRender() {
@@ -66,7 +72,8 @@ void RasterView::OnUIRender() {
         ImVec2 childSize = ImGui::GetContentRegionAvail();
         ImVec2 childMax = ImVec2(childMin.x + childSize.x, childMin.y + childSize.y);
         WrapMouseWithinRect(m_WindowHandle, childMin, childMax, m_ViewportFocused);
-        m_CurrentScene->GetCamera()->SetViewportBounds(childMin, childMax);
+        m_CurrentScene->GetCamera()->SetViewportBounds(glm::vec2(childMin.x, childMin.y),
+                                                       glm::vec2(childMax.x, childMax.y));
 
         ImVec2 newSize = childSize;
         if (m_ViewportSize.x != newSize.x || m_ViewportSize.y != newSize.y) {

@@ -60,7 +60,7 @@ Scene CreateTestScene() {
   scene.AddObject(bunnyObject);
 
   auto pointsMesh = std::make_shared<Mesh>(LoadMeshFromFile("thumb_print.ply"));
-  auto pointsMaterial = std::make_shared<Material>(MaterialType::PointShaded);
+  auto pointsMaterial = std::make_shared<Material>(MaterialType::PointNormal);
   auto pointsTransform = std::make_shared<Transform>();
   pointsTransform->SetRotation(glm::vec3(180.0f, 0.0f, 0.0f));
   pointsTransform->SetPosition(glm::vec3(0.0f, 0.0f, 100.0f));
