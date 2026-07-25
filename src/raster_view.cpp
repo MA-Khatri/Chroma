@@ -1,5 +1,6 @@
 #include "raster_view.hpp"
 
+#include "camera.hpp"
 #include "controller.hpp"
 #include "vulkan_engine/vulkan_engine.hpp"
 #include "vulkan_engine/vulkan_utils.hpp"
@@ -39,15 +40,16 @@ void RasterView::OnUpdate() {
     // Update VulkanEngine with new scene
     m_VulkanEngine->SetScene(scene);
 
+    // TODO: We need to reset the active camera and callback if camera changes
     // Update controller with new scene's camera
     Controller::GetInstance()->SetActiveCamera(scene->GetCamera());
-  }
 
-  // TODO: This should not be re-registered on every update!
-  scene->GetCamera()->GetCameraController()->RegisterDoubleClickCallback(
-      [this](glm::vec2 clickPos) -> glm::vec3 {
-        return m_VulkanEngine->GetClosestDepth(clickPos);
-      });
+    // Register double click callback
+    scene->GetCamera()->GetCameraController()->RegisterDoubleClickCallback(
+        [this](glm::vec2 clickPos) -> glm::vec3 {
+          return m_VulkanEngine->GetClosestDepth(clickPos);
+        });
+  }
 }
 
 void RasterView::OnUIRender() {
@@ -59,9 +61,6 @@ void RasterView::OnUIRender() {
       m_ViewportFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
       if (m_ViewportFocused) {
         m_AppHandle->m_FocusedWindow = Application::RasterizedViewport;
-        m_CurrentScene->GetCamera()->SetControllerActive(true);
-      } else {
-        m_CurrentScene->GetCamera()->SetControllerActive(false);
       }
 
       ImGui::BeginChild("Rasterized");
@@ -71,12 +70,20 @@ void RasterView::OnUIRender() {
         ImVec2 childMin = ImGui::GetCursorScreenPos();
         ImVec2 childSize = ImGui::GetContentRegionAvail();
         ImVec2 childMax = ImVec2(childMin.x + childSize.x, childMin.y + childSize.y);
+
+        ImVec2 mp = ImGui::GetMousePos();
+        if (mp.x > childMin.x && mp.x < childMax.x && mp.y > childMin.y && mp.y < childMax.y) {
+          m_CurrentScene->GetCamera()->SetControllerActive(true);
+        } else {
+          m_CurrentScene->GetCamera()->SetControllerActive(false);
+        }
+
         WrapMouseWithinRect(m_WindowHandle, childMin, childMax, m_ViewportFocused);
-        m_CurrentScene->GetCamera()->SetViewportBounds(glm::vec2(childMin.x, childMin.y),
-                                                       glm::vec2(childMax.x, childMax.y));
 
         ImVec2 newSize = childSize;
         if (m_ViewportSize.x != newSize.x || m_ViewportSize.y != newSize.y) {
+          m_CurrentScene->GetCamera()->SetViewportBounds(glm::vec2(childMin.x, childMin.y),
+                                                         glm::vec2(childMax.x, childMax.y));
           OnResize(newSize);
         }
 

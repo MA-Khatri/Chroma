@@ -1,5 +1,7 @@
 #include "layer.hpp"
 
+#include <imgui_internal.h>
+
 #include <chrono>
 #include <ctime>
 
@@ -24,10 +26,20 @@ std::string GetDateTimeStr() {
 
 void Layer::WrapMouseWithinRect(SDL_Window *window, const ImVec2 &rectMin, const ImVec2 &rectMax,
                                 bool isActiveViewport, float edgeThreshold) {
-  if (!window || !m_MouseWrapEnabled || !isActiveViewport ||
-      !(ImGui::IsMouseDragging(ImGuiMouseButton_Left) ||
-        ImGui::IsMouseDragging(ImGuiMouseButton_Middle) ||
-        ImGui::IsMouseDragging(ImGuiMouseButton_Right))) {
+  bool isDragging = ImGui::IsMouseDragging(ImGuiMouseButton_Left) ||
+                    ImGui::IsMouseDragging(ImGuiMouseButton_Middle) ||
+                    ImGui::IsMouseDragging(ImGuiMouseButton_Right);
+
+  // Latch whether this drag "started" with the mouse actually over the viewport content.
+  if (!m_WasDragging && isDragging) {
+    ImVec2 mp = ImGui::GetMousePos();
+    m_DragOriginatedInViewport =
+        mp.x > rectMin.x && mp.x < rectMax.x && mp.y > rectMin.y && mp.y < rectMax.y;
+  }
+  m_WasDragging = isDragging;
+
+  if (!window || !m_MouseWrapEnabled || !isActiveViewport || !isDragging ||
+      !m_DragOriginatedInViewport || GImGui->MovingWindow != nullptr) {
     return;
   }
 

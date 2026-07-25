@@ -156,4 +156,7 @@ protected:
 
 private:
   bool m_MouseWrapEnabled = true;
+
+  bool m_DragOriginatedInViewport = false;
+  bool m_WasDragging = false;
 };

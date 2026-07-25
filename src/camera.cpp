@@ -247,13 +247,17 @@ void OrbitController::Update(Camera &camera, int64_t deltaTime, const SDL_Event 
     }
 
     case SDL_EVENT_MOUSE_BUTTON_DOWN: {
-      if (event->button.clicks == 2 && m_DoubleClickCallback) {
-        glm::vec2 clickPosition(event->motion.x, event->motion.y);
-        glm::vec2 viewportClickPosition = clickPosition - camera.GetViewportMin();
-        m_LookAt = camera.GetWorldPosition(m_DoubleClickCallback(viewportClickPosition));
-        UpdatePosition();
-      } else {
-        PLOG_WARNING << "No registered double click callback for Orbit Controller!";
+      if (event->button.clicks == 2) {
+        if (m_DoubleClickCallback) {
+          glm::vec2 clickPosition(event->motion.x, event->motion.y);
+          glm::vec2 viewportClickPosition = clickPosition - camera.GetViewportMin();
+          m_LookAt = camera.GetWorldPosition(m_DoubleClickCallback(viewportClickPosition));
+          UpdatePosition();
+          PLOG_DEBUG << "New camera center: [" << m_LookAt.x << ", " << m_LookAt.y << ", "
+                     << m_LookAt.z << "]";
+        } else {
+          PLOG_WARNING << "No registered double click callback for Orbit Controller!";
+        }
       }
       break;
     }
@@ -365,14 +369,23 @@ void TrackBallController::Update(Camera &camera, int64_t deltaTime, const SDL_Ev
     }
 
     case SDL_EVENT_MOUSE_BUTTON_DOWN: {
-      if (event->button.clicks == 2 && m_DoubleClickCallback) {
-        glm::vec3 toCamera = m_Position - m_LookAt;
-        glm::vec2 clickPosition(event->motion.x, event->motion.y);
-        glm::vec2 viewportClickPosition = clickPosition - camera.GetViewportMin();
-        m_LookAt = camera.GetWorldPosition(m_DoubleClickCallback(viewportClickPosition));
-        m_Position = m_LookAt + toCamera;
-      } else {
-        PLOG_WARNING << "No registered double click callback for Trackball Controller!";
+      if (event->button.clicks == 2) {
+        if (m_DoubleClickCallback) {
+          glm::vec3 toCamera = m_Position - m_LookAt;
+          glm::vec2 clickPosition(event->motion.x, event->motion.y);
+          PLOG_WARNING << "Click Position: " << clickPosition.x << " " << clickPosition.y;
+          PLOG_WARNING << "Viewport Min: " << camera.GetViewportMin().x << " "
+                       << camera.GetViewportMin().y;
+          glm::vec2 viewportClickPosition = clickPosition - camera.GetViewportMin();
+          PLOG_WARNING << "Viewport Click Position: " << viewportClickPosition.x << " "
+                       << viewportClickPosition.y;
+          m_LookAt = camera.GetWorldPosition(m_DoubleClickCallback(clickPosition));
+          m_Position = m_LookAt + toCamera;
+          PLOG_DEBUG << "New camera center: [" << m_LookAt.x << ", " << m_LookAt.y << ", "
+                     << m_LookAt.z << "]";
+        } else {
+          PLOG_WARNING << "No registered double click callback for Trackball Controller!";
+        }
       }
       break;
     }
