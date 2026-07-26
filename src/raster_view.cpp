@@ -50,6 +50,15 @@ void RasterView::OnUpdate() {
           return m_VulkanEngine->GetClosestDepth(clickPos);
         });
   }
+
+  // Update frame rate/time
+  ImGuiIO io = ImGui::GetIO();
+
+  float frame_time = io.DeltaTime * 1000.0f;
+  float frame_rate = 1.0f / io.DeltaTime;
+
+  m_FrameTimes.Add(frame_time);
+  m_FrameRates.Add(frame_rate);
 }
 
 void RasterView::OnUIRender() {
@@ -72,7 +81,9 @@ void RasterView::OnUIRender() {
         ImVec2 childMax = ImVec2(childMin.x + childSize.x, childMin.y + childSize.y);
 
         ImVec2 mp = ImGui::GetMousePos();
-        if (mp.x > childMin.x && mp.x < childMax.x && mp.y > childMin.y && mp.y < childMax.y) {
+        const float buffer = 12.0f;
+        if (mp.x > childMin.x + buffer && mp.x < childMax.x - buffer &&
+            mp.y > childMin.y + buffer && mp.y < childMax.y - buffer) {
           m_CurrentScene->GetCamera()->SetControllerActive(true);
         } else {
           m_CurrentScene->GetCamera()->SetControllerActive(false);
@@ -96,8 +107,9 @@ void RasterView::OnUIRender() {
         vkDeviceWaitIdle(vke::Device);
 
         // Note: we flip the image vertically to match Vulkan convention!
-        ImGui::Image(m_VulkanEngine->GetImageDescriptorSets()[vke::MainWindowData.FrameIndex],
-                     m_ViewportSize, ImVec2(0, 1), ImVec2(1, 0));
+        ImGui::Image(
+            (ImTextureID)m_VulkanEngine->GetImageDescriptorSets()[vke::MainWindowData.FrameIndex],
+            m_ViewportSize, ImVec2(0, 1), ImVec2(1, 0));
       }
       ImGui::EndChild();
     }
@@ -108,7 +120,8 @@ void RasterView::OnUIRender() {
 
   ImGui::Begin("Debug Panel");
   {
-    // TODO?
+    Layer::CommonDebug(m_AppHandle, m_CurrentScene->GetCamera());
+    // TODO: RasterView specific
   }
   ImGui::End();
 }
@@ -130,7 +143,7 @@ void RasterView::TakeScreenshot() {
 // ===================================
 
 void RasterView::OnResize(ImVec2 newSize) {
-  PLOG_DEBUG << "Resizing raster viewport to " << newSize.x << " x " << newSize.y;
+  PLOG_VERBOSE << "Resizing raster viewport to " << newSize.x << " x " << newSize.y;
 
   m_ViewportSize = newSize;
   m_VulkanEngine->OnResize(m_ViewportSize);

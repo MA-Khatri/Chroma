@@ -250,7 +250,7 @@ void OrbitController::Update(Camera &camera, int64_t deltaTime, const SDL_Event 
     }
 
     case SDL_EVENT_MOUSE_BUTTON_DOWN: {
-      if (event->button.clicks == 2) {
+      if ((event->motion.state & SDL_BUTTON_LMASK) && (event->button.clicks == 2)) {
         if (m_DoubleClickCallback) {
           // Get click position relative to viewport
           ImVec2 mousePosImVec = ImGui::GetMousePos();
@@ -380,7 +380,7 @@ void TrackBallController::Update(Camera &camera, int64_t deltaTime, const SDL_Ev
     }
 
     case SDL_EVENT_MOUSE_BUTTON_DOWN: {
-      if (event->button.clicks == 2) {
+      if ((event->motion.state & SDL_BUTTON_LMASK) && (event->button.clicks == 2)) {
         if (m_DoubleClickCallback) {
           glm::vec3 toCamera = m_Position - m_LookAt;
 

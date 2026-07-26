@@ -43,13 +43,12 @@ PRIVATE
     $<IF:$<TARGET_EXISTS:SDL3_image::SDL3_image-shared>,SDL3_image::SDL3_image-shared,SDL3_image::SDL3_image-static>
     tinyobjloader::tinyobjloader
     tinyply
-    imgui
+    imgui::imgui
     implot::implot
 )
 
 # Include external headers
 target_include_directories(${PROJECT_NAME}
 PRIVATE
-    ${CMAKE_SOURCE_DIR}/external/imgui
     ${CMAKE_SOURCE_DIR}/external/optix_utils
 )

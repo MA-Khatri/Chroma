@@ -2,6 +2,7 @@
 #include "imgui.h"
 #include "vulkan_engine/vulkan_utils.hpp"
 
+#include <implot.h>
 #include <plog/Log.h>
 #include <string>
 
@@ -104,6 +105,7 @@ void Application::Init() {
   // Setup Dear Imgui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
+  ImPlot::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
   (void)io;
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
@@ -123,7 +125,6 @@ void Application::Init() {
     style.Colors[ImGuiCol_WindowBg].w = 1.0f;
   }
   style.ScaleAllSizes(main_scale);
-  style.FontScaleDpi = main_scale;
 
   // Setup Platform/Renderer backends
   ImGui_ImplSDL3_InitForVulkan(m_WindowHandle);
@@ -303,7 +304,7 @@ void Application::Shutdown() {
   vke::check_vk_result(err);
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL3_Shutdown();
-  // ImPlot::DestroyContext();
+  ImPlot::DestroyContext();
   ImGui::DestroyContext();
 
   vke::CleanupVulkanWindow();

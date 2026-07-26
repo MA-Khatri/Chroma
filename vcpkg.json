@@ -15,6 +15,14 @@
             "name": "sdl3-image",
             "features": ["jpeg", "png"]
         },
+        {      
+            "name": "imgui",
+            "features": [
+                "sdl3-binding",
+                "vulkan-binding",
+                "docking-experimental"
+            ]
+        },
         "implot",
         "tinyobjloader",
         "tinyply"
