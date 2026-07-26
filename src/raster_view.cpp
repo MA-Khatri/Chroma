@@ -121,7 +121,8 @@ void RasterView::OnUIRender() {
   ImGui::Begin("Debug Panel");
   {
     Layer::CommonDebug(m_AppHandle, m_CurrentScene->GetCamera());
-    // TODO: RasterView specific
+
+    m_CurrentScene->GetCamera()->GetGuiElements();
   }
   ImGui::End();
 }

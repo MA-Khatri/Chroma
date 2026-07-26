@@ -27,6 +27,8 @@ public:
 
   virtual void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) = 0;
 
+  virtual void GetGuiElements() = 0;
+
   void SetClippingPlanes(float nearClip, float farClip) {
     m_NearClip = nearClip;
     m_FarClip = farClip;
@@ -45,6 +47,10 @@ protected:
   float m_NearClip = 0.1f;
   float m_FarClip = 1000.0f;
   float m_AspectRatio = 16.0f / 9.0f; // Default aspect ratio
+
+  const float m_MinClip = 0.1f;
+  const float m_MaxClip = 1000.0f;
+  const float m_MinClipDiff = 0.1f;
 };
 
 class PerspectiveProjection : public Projection {
@@ -62,8 +68,13 @@ public:
 
   void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
 
+  void GetGuiElements() override;
+
 protected:
   float m_VFOV = 45.0f; // vertical field of view in degrees
+
+  const float m_MinVFOV = 1.0f;
+  const float m_MaxVFOV = 120.0f;
 };
 
 class OrthographicProjection : public Projection {
@@ -85,8 +96,13 @@ public:
 
   void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
 
+  void GetGuiElements() override;
+
 protected:
   float m_VerticalExtent = 20.0f; // Total visible vertical size in world units
+
+  const float m_VerticalExtentMin = 1.0f;
+  const float m_VerticalExtentMax = 100.0f;
 };
 
 // ===============================================
@@ -110,6 +126,8 @@ public:
 
   virtual glm::mat4 GetMatrix() const = 0;
 
+  virtual void GetGuiElements() = 0;
+
   glm::vec3 GetPosition() const { return m_Position; }
   glm::vec3 GetLookAt() const { return m_LookAt; }
   glm::vec3 GetUp() const { return m_Up; }
@@ -132,6 +150,8 @@ public:
   void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
 
   glm::mat4 GetMatrix() const override { return glm::lookAt(m_Position, m_LookAt, m_Up); }
+
+  void GetGuiElements() override;
 
 private:
   void UpdateLookAt() {
@@ -170,6 +190,8 @@ public:
 
   glm::mat4 GetMatrix() const override { return glm::lookAt(m_Position, m_LookAt, m_Up); }
 
+  void GetGuiElements() override;
+
 private:
   // Note: Must call this before using m_Position!
   void UpdatePosition() {
@@ -200,6 +222,17 @@ public:
   void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
 
   glm::mat4 GetMatrix() const override { return glm::lookAt(m_Position, m_LookAt, m_Up); }
+
+  void GetGuiElements() override;
+
+private:
+  const float m_MinRadius = 0.15f;
+  const float m_MaxRadius = 1e6f;
+  const float m_RadiusScale = 1.1f;
+  const float m_InvRadiusScale = 1.0f / m_RadiusScale;
+
+  float m_Radius = 10.0f;
+  glm::vec3 m_ToCameraNormalized = glm::vec3(1.0f, 0.0f, 0.0f);
 };
 
 // ==================================
@@ -261,6 +294,9 @@ public:
 
   // Back project pixel coordinates to given depth to get corresponding world space location
   glm::vec3 GetWorldPosition(glm::vec3 screenCoordsDepth);
+
+  // ImGui camera controls
+  void GetGuiElements();
 
 private:
   std::shared_ptr<Projection> m_Projection;

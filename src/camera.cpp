@@ -2,10 +2,14 @@
 #include "imgui.h"
 
 #include <SDL3/SDL_events.h>
+#include <SDL3/SDL_keycode.h>
 #include <glm/ext/vector_float2.hpp>
+#include <glm/geometric.hpp>
 #include <glm/vector_relational.hpp>
 #include <limits>
 #include <plog/Log.h>
+
+constexpr float SLIDER_WIDTH = 120.0f;
 
 // ===================================
 // === Event-based Update Handlers ===
@@ -23,8 +27,10 @@ void PerspectiveProjection::Update(Camera &camera, int64_t deltaTime, const SDL_
       // Ctrl + mouse wheel for far clip adjustment
       if (modState & SDL_KMOD_CTRL) {
         m_FarClip += event->wheel.y;
-        if (m_FarClip < m_NearClip + 1.0f)
-          m_FarClip = m_NearClip + 1.0f;
+        if (m_FarClip > m_MaxClip)
+          m_FarClip = m_MaxClip;
+        if (m_FarClip < m_NearClip + m_MinClipDiff)
+          m_FarClip = m_NearClip + m_MinClipDiff;
 
         PLOG_DEBUG << "Adjusted far clip to: " << m_FarClip;
       }
@@ -32,8 +38,10 @@ void PerspectiveProjection::Update(Camera &camera, int64_t deltaTime, const SDL_
       // Alt + mouse wheel for near clip adjustment
       else if (modState & SDL_KMOD_ALT) {
         m_NearClip += event->wheel.y;
-        if (m_NearClip > m_FarClip - 1.0f)
-          m_NearClip = m_FarClip - 1.0f;
+        if (m_NearClip < m_MinClip)
+          m_NearClip = m_MinClip;
+        if (m_NearClip > m_FarClip - m_MinClipDiff)
+          m_NearClip = m_FarClip - m_MinClipDiff;
 
         PLOG_DEBUG << "Adjusted near clip to: " << m_NearClip;
       }
@@ -41,10 +49,10 @@ void PerspectiveProjection::Update(Camera &camera, int64_t deltaTime, const SDL_
       // Shift + mouse wheel for FOV (zoom in/out)
       else if (modState & SDL_KMOD_SHIFT) {
         m_VFOV -= event->wheel.y;
-        if (m_VFOV < 1.0f)
-          m_VFOV = 1.0f;
-        if (m_VFOV > 120.0f)
-          m_VFOV = 120.0f;
+        if (m_VFOV < m_MinVFOV)
+          m_VFOV = m_MinVFOV;
+        if (m_VFOV > m_MaxVFOV)
+          m_VFOV = m_MaxVFOV;
 
         PLOG_DEBUG << "Adjusted vertical field of view (vfov) to: " << m_VFOV;
       }
@@ -57,6 +65,29 @@ void PerspectiveProjection::Update(Camera &camera, int64_t deltaTime, const SDL_
   }
 }
 
+void PerspectiveProjection::GetGuiElements() {
+  ImGui::SeparatorText("Perspective Projection");
+  ImGui::PushItemWidth(SLIDER_WIDTH);
+  {
+    ImGui::DragFloat("Vertical FoV (Shift + Scroll)", &m_VFOV, 0.1f, m_MinVFOV, m_MaxVFOV);
+
+    ImGui::DragFloat("Far Clip (Ctrl + Scroll)", &m_FarClip, m_MinClipDiff, m_MinClip, m_MaxClip);
+    if (m_FarClip > m_MaxClip)
+      m_FarClip = m_MaxClip;
+    if (m_FarClip < m_NearClip + m_MinClipDiff)
+      m_FarClip = m_NearClip + m_MinClipDiff;
+
+    ImGui::DragFloat("Near Clip (Alt + Scroll)", &m_NearClip, m_MinClipDiff, m_MinClip, m_MaxClip);
+    if (m_NearClip < m_MinClip)
+      m_NearClip = m_MinClip;
+    if (m_NearClip > m_FarClip - m_MinClipDiff)
+      m_NearClip = m_FarClip - m_MinClipDiff;
+
+    // TODO?
+  }
+  ImGui::PopItemWidth();
+}
+
 void OrthographicProjection::Update(Camera &camera, int64_t deltaTime, const SDL_Event *event) {
   if (event) {
     switch (event->type) {
@@ -66,8 +97,10 @@ void OrthographicProjection::Update(Camera &camera, int64_t deltaTime, const SDL
       // Ctrl + mouse wheel for far clip adjustment
       if (modState & SDL_KMOD_CTRL) {
         m_FarClip += event->wheel.y;
-        if (m_FarClip < m_NearClip + 1.0f)
-          m_FarClip = m_NearClip + 1.0f;
+        if (m_FarClip > m_MaxClip)
+          m_FarClip = m_MaxClip;
+        if (m_FarClip < m_NearClip + m_MinClipDiff)
+          m_FarClip = m_NearClip + m_MinClipDiff;
 
         PLOG_DEBUG << "Adjusted far clip to: " << m_FarClip;
       }
@@ -75,8 +108,10 @@ void OrthographicProjection::Update(Camera &camera, int64_t deltaTime, const SDL
       // Alt + mouse wheel for near clip adjustment
       else if (modState & SDL_KMOD_ALT) {
         m_NearClip += event->wheel.y;
-        if (m_NearClip > m_FarClip - 1.0f)
-          m_NearClip = m_FarClip - 1.0f;
+        if (m_NearClip < m_MinClip)
+          m_NearClip = m_MinClip;
+        if (m_NearClip > m_FarClip - m_MinClipDiff)
+          m_NearClip = m_FarClip - m_MinClipDiff;
 
         PLOG_DEBUG << "Adjusted near clip to: " << m_NearClip;
       }
@@ -84,8 +119,10 @@ void OrthographicProjection::Update(Camera &camera, int64_t deltaTime, const SDL
       // Shift + mouse wheel for orthographic extent
       else if (modState & SDL_KMOD_SHIFT) {
         m_VerticalExtent -= event->wheel.y;
-        if (m_VerticalExtent < 1.0f)
-          m_VerticalExtent = 1.0f;
+        if (m_VerticalExtent < m_VerticalExtentMin)
+          m_VerticalExtent = m_VerticalExtentMin;
+        if (m_VerticalExtent > m_VerticalExtentMax)
+          m_VerticalExtent = m_VerticalExtentMax;
 
         PLOG_DEBUG << "Adjusted orthographic vertical extent to: " << m_VerticalExtent;
       }
@@ -96,6 +133,30 @@ void OrthographicProjection::Update(Camera &camera, int64_t deltaTime, const SDL
       break;
     }
   }
+}
+
+void OrthographicProjection::GetGuiElements() {
+  ImGui::SeparatorText("Orthographic Projection");
+  ImGui::PushItemWidth(SLIDER_WIDTH);
+  {
+    ImGui::DragFloat("Vertical Extent (Shift + Scroll)", &m_VerticalExtent, m_VerticalExtentMin,
+                     m_VerticalExtentMin, m_VerticalExtentMax);
+
+    ImGui::DragFloat("Far Clip (Ctrl + Scroll)", &m_FarClip, m_MinClipDiff, m_MinClip, m_MaxClip);
+    if (m_FarClip > m_MaxClip)
+      m_FarClip = m_MaxClip;
+    if (m_FarClip < m_NearClip + m_MinClipDiff)
+      m_FarClip = m_NearClip + m_MinClipDiff;
+
+    ImGui::DragFloat("Near Clip (Alt + Scroll)", &m_NearClip, m_MinClipDiff, m_MinClip, m_MaxClip);
+    if (m_NearClip < m_MinClip)
+      m_NearClip = m_MinClip;
+    if (m_NearClip > m_FarClip - m_MinClipDiff)
+      m_NearClip = m_FarClip - m_MinClipDiff;
+
+    // TODO?
+  }
+  ImGui::PopItemWidth();
 }
 
 //
@@ -181,6 +242,10 @@ void FreeFlyController::Update(Camera &camera, int64_t deltaTime, const SDL_Even
     m_Position += delta;
     UpdateLookAt();
   }
+}
+
+void FreeFlyController::GetGuiElements() {
+  // TODO
 }
 
 void OrbitController::Update(Camera &camera, int64_t deltaTime, const SDL_Event *event) {
@@ -279,6 +344,10 @@ void OrbitController::Update(Camera &camera, int64_t deltaTime, const SDL_Event 
   }
 }
 
+void OrbitController::GetGuiElements() {
+  // TODO
+}
+
 void TrackBallController::Update(Camera &camera, int64_t deltaTime, const SDL_Event *event) {
   if (event) {
     const SDL_Keymod modState = SDL_GetModState();
@@ -290,14 +359,15 @@ void TrackBallController::Update(Camera &camera, int64_t deltaTime, const SDL_Ev
       float dy = static_cast<float>(event->motion.yrel);
 
       glm::vec3 toCamera = m_Position - m_LookAt;
-      glm::vec3 right = glm::normalize(glm::cross(toCamera, m_Up));
-      glm::vec3 up = glm::normalize(glm::cross(right, toCamera));
+      m_ToCameraNormalized = glm::normalize(toCamera);
+      glm::vec3 right = glm::cross(m_ToCameraNormalized, m_Up);
+      glm::vec3 up = glm::cross(right, m_ToCameraNormalized);
 
       // Pan with right click and drag or shift + left click and drag
       if ((buttonState & SDL_BUTTON_RMASK) ||
           ((modState & SDL_KMOD_SHIFT) && (buttonState & SDL_BUTTON_LMASK))) {
         const float panScale = 0.005f;
-        float dist = panScale * glm::length(toCamera);
+        float dist = panScale * m_Radius;
         dx *= dist;
         dy *= dist;
 
@@ -332,7 +402,7 @@ void TrackBallController::Update(Camera &camera, int64_t deltaTime, const SDL_Ev
         // relative to the center of the screen
         float dTheta = atan2(y2, x2) - atan2(y1, x1);
 
-        m_Up = m_Up * glm::angleAxis(dTheta, glm::normalize(toCamera));
+        m_Up = m_Up * glm::angleAxis(dTheta, m_ToCameraNormalized);
         break;
       }
 
@@ -346,6 +416,7 @@ void TrackBallController::Update(Camera &camera, int64_t deltaTime, const SDL_Ev
         glm::quat pitch = glm::angleAxis(-dy, right);
 
         glm::vec3 newDir = toCamera * (pitch * yaw);
+        m_ToCameraNormalized = glm::normalize(newDir);
         m_Position = m_LookAt + newDir;
 
         m_Up = glm::normalize(glm::cross(-newDir, right));
@@ -356,26 +427,26 @@ void TrackBallController::Update(Camera &camera, int64_t deltaTime, const SDL_Ev
 
     // Change orbit radius with mouse scroll
     case SDL_EVENT_MOUSE_WHEEL: {
-      if (modState & SDL_KMOD_SHIFT) {
-        // Shift + mouse wheel is reserved for changing fov/orthographic extent
+      Uint16 other_mods = modState & ~(SDL_KMOD_NUM | SDL_KMOD_CAPS);
+      if (other_mods != SDL_KMOD_NONE) {
+        // Scroll + any mod state (except num/caps lock) may be reserved for other controls!
         break;
       }
 
-      const float minRadius = 0.15f;
-      const float radiusScale = 1.1f;
-      const float invRadiusScale = 1.0f / radiusScale;
       float delta = 1.0f;
       if (event->wheel.y > 0) {
-        delta *= invRadiusScale;
+        delta *= m_InvRadiusScale;
       } else {
-        delta *= radiusScale;
+        delta *= m_RadiusScale;
       }
 
       glm::vec3 toCamera = m_Position - m_LookAt;
       float newRadius = glm::length(toCamera) * delta;
+      m_Radius = newRadius > m_MinRadius ? newRadius : m_MinRadius;
+      m_Radius = m_Radius > m_MaxRadius ? m_MaxRadius : m_Radius;
 
-      m_Position =
-          m_LookAt + glm::normalize(toCamera) * (newRadius > minRadius ? newRadius : minRadius);
+      m_ToCameraNormalized = glm::normalize(toCamera);
+      m_Position = m_LookAt + m_ToCameraNormalized * m_Radius;
       break;
     }
 
@@ -383,6 +454,7 @@ void TrackBallController::Update(Camera &camera, int64_t deltaTime, const SDL_Ev
       if ((event->motion.state & SDL_BUTTON_LMASK) && (event->button.clicks == 2)) {
         if (m_DoubleClickCallback) {
           glm::vec3 toCamera = m_Position - m_LookAt;
+          m_ToCameraNormalized = glm::normalize(toCamera);
 
           // Get click position relative to viewport
           ImVec2 mousePosImVec = ImGui::GetMousePos();
@@ -413,6 +485,34 @@ void TrackBallController::Update(Camera &camera, int64_t deltaTime, const SDL_Ev
   }
 }
 
+void TrackBallController::GetGuiElements() {
+  ImGui::SeparatorText("Track Ball Controller");
+  ImGui::PushItemWidth(SLIDER_WIDTH);
+  {
+    float newRadius = m_Radius;
+    ImGui::DragFloat("Radius (Scroll)", &newRadius, 1.0f, m_MinRadius, m_MaxRadius);
+    if (newRadius != m_Radius) {
+      m_Position = m_LookAt + newRadius * m_ToCameraNormalized;
+      m_Radius = newRadius;
+    }
+
+    float center[3] = {m_LookAt.x, m_LookAt.y, m_LookAt.z};
+    ImGui::DragFloat3("Center (Double LMB)", center, 1.0f);
+    glm::vec3 newCenter(center[0], center[1], center[2]);
+    if (m_LookAt != newCenter) {
+      m_LookAt = newCenter;
+      m_Position = m_LookAt + m_Radius * m_ToCameraNormalized;
+    }
+
+    ImGui::Text("Rotate: LMB + Drag");
+    ImGui::Text("Roll: (MMB or Ctrl + LMB) + Drag");
+    ImGui::Text("Pan: (RMB or Shift + LMB) + Drag");
+
+    // TODO?
+  }
+  ImGui::PopItemWidth();
+}
+
 glm::vec3 Camera::GetWorldPosition(glm::vec3 screenCoordsDepth) {
   // Invalid new depth
   if (glm::any(glm::isnan(screenCoordsDepth)) || screenCoordsDepth.z == 1.0f) {
@@ -436,4 +536,11 @@ glm::vec3 Camera::GetWorldPosition(glm::vec3 screenCoordsDepth) {
   }
 
   return glm::vec3(worldSpaceCoord);
+}
+
+void Camera::GetGuiElements() {
+  // Options to set/select controller and projection types
+
+  m_Controller->GetGuiElements();
+  m_Projection->GetGuiElements();
 }

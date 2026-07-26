@@ -3,7 +3,6 @@
 #include <imgui_internal.h>
 #include <implot.h>
 
-
 #include <chrono>
 #include <ctime>
 
@@ -30,17 +29,18 @@ void Layer::CommonDebug(Application *app, std::shared_ptr<Camera> camera) {
   ImGui::Text("Frame Time: %.3f ms/frame (%.1f FPS)", m_FrameTimes.GetLastItem(),
               m_FrameRates.GetLastItem());
 
-  // ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(10, 0));
-  ImPlot::PushStyleColor(ImPlotCol_FrameBg, ImVec4(0, 0, 0, 0));
-  ImPlot::SetNextAxisToFit(ImAxis_X1);
-  ImPlot::SetNextAxisLimits(ImAxis_Y1, 0, 300);
-  if (ImPlot::BeginPlot("##FrameRateGraph", ImVec2(-1, 150))) {
-    // ImPlot::SetupAxes("", "FPS");
-    // ImPlot::SetupAxisTicks(ImAxis_X1, 0, 1000, 11);
-    ImPlot::PlotLine("##FrameRate", m_FrameGraphX.data(), m_FrameRates.GetItems().data(),
-                     m_FrameGraphStorageCount);
-
-    ImPlot::EndPlot();
+  if (m_IncludeFrameRateGraph) {
+    // ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(10, 0));
+    ImPlot::PushStyleColor(ImPlotCol_FrameBg, ImVec4(0, 0, 0, 0));
+    ImPlot::SetNextAxisToFit(ImAxis_X1);
+    ImPlot::SetNextAxisLimits(ImAxis_Y1, 0, 300);
+    if (ImPlot::BeginPlot("##FrameRateGraph", ImVec2(-1, 150))) {
+      // ImPlot::SetupAxes("", "FPS");
+      // ImPlot::SetupAxisTicks(ImAxis_X1, 0, 1000, 11);
+      ImPlot::PlotLine("##FrameRate", m_FrameGraphX.data(), m_FrameRates.GetItems().data(),
+                       m_FrameGraphStorageCount);
+      ImPlot::EndPlot();
+    }
   }
 
   auto viewportSize = camera->GetViewportSize();

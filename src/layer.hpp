@@ -151,6 +151,7 @@ protected:
                            bool isActiveViewport, float edgeThreshold = 12.0f);
 
   // Frame rate/time graph buffers
+  bool m_IncludeFrameRateGraph = false;
   int m_FrameGraphStorageCount = 1001;
   SlidingBuffer<float> m_FrameTimes = SlidingBuffer<float>(m_FrameGraphStorageCount);
   SlidingBuffer<float> m_FrameRates = SlidingBuffer<float>(m_FrameGraphStorageCount);
