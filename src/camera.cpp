@@ -1,7 +1,10 @@
 #include "camera.hpp"
+#include "imgui.h"
 
 #include <SDL3/SDL_events.h>
 #include <glm/ext/vector_float2.hpp>
+#include <glm/vector_relational.hpp>
+#include <limits>
 #include <plog/Log.h>
 
 // ===================================
@@ -249,9 +252,17 @@ void OrbitController::Update(Camera &camera, int64_t deltaTime, const SDL_Event 
     case SDL_EVENT_MOUSE_BUTTON_DOWN: {
       if (event->button.clicks == 2) {
         if (m_DoubleClickCallback) {
-          glm::vec2 clickPosition(event->motion.x, event->motion.y);
-          glm::vec2 viewportClickPosition = clickPosition - camera.GetViewportMin();
-          m_LookAt = camera.GetWorldPosition(m_DoubleClickCallback(viewportClickPosition));
+          // Get click position relative to viewport
+          ImVec2 mousePosImVec = ImGui::GetMousePos();
+          glm::vec2 mousePosAbs = glm::vec2(mousePosImVec.x, mousePosImVec.y);
+          glm::vec2 clickPosition = mousePosAbs - camera.GetViewportMin();
+
+          glm::vec3 candidate = camera.GetWorldPosition(m_DoubleClickCallback(clickPosition));
+          if (glm::any(glm::isnan(candidate))) {
+            PLOG_DEBUG << "No valid depth at click position!";
+            break;
+          }
+          m_LookAt = candidate;
           UpdatePosition();
           PLOG_DEBUG << "New camera center: [" << m_LookAt.x << ", " << m_LookAt.y << ", "
                      << m_LookAt.z << "]";
@@ -372,15 +383,21 @@ void TrackBallController::Update(Camera &camera, int64_t deltaTime, const SDL_Ev
       if (event->button.clicks == 2) {
         if (m_DoubleClickCallback) {
           glm::vec3 toCamera = m_Position - m_LookAt;
-          glm::vec2 clickPosition(event->motion.x, event->motion.y);
-          PLOG_WARNING << "Click Position: " << clickPosition.x << " " << clickPosition.y;
-          PLOG_WARNING << "Viewport Min: " << camera.GetViewportMin().x << " "
-                       << camera.GetViewportMin().y;
-          glm::vec2 viewportClickPosition = clickPosition - camera.GetViewportMin();
-          PLOG_WARNING << "Viewport Click Position: " << viewportClickPosition.x << " "
-                       << viewportClickPosition.y;
-          m_LookAt = camera.GetWorldPosition(m_DoubleClickCallback(clickPosition));
+
+          // Get click position relative to viewport
+          ImVec2 mousePosImVec = ImGui::GetMousePos();
+          glm::vec2 mousePosAbs = glm::vec2(mousePosImVec.x, mousePosImVec.y);
+          glm::vec2 clickPosition = mousePosAbs - camera.GetViewportMin();
+
+          glm::vec3 candidate = camera.GetWorldPosition(m_DoubleClickCallback(clickPosition));
+          if (glm::any(glm::isnan(candidate))) {
+            PLOG_DEBUG << "No valid depth at click position!";
+            break;
+          }
+
+          m_LookAt = candidate;
           m_Position = m_LookAt + toCamera;
+
           PLOG_DEBUG << "New camera center: [" << m_LookAt.x << ", " << m_LookAt.y << ", "
                      << m_LookAt.z << "]";
         } else {
@@ -397,10 +414,16 @@ void TrackBallController::Update(Camera &camera, int64_t deltaTime, const SDL_Ev
 }
 
 glm::vec3 Camera::GetWorldPosition(glm::vec3 screenCoordsDepth) {
+  // Invalid new depth
+  if (glm::any(glm::isnan(screenCoordsDepth)) || screenCoordsDepth.z == 1.0f) {
+    return glm::vec3(std::numeric_limits<float>::quiet_NaN());
+  }
+
   // Convert pixel (x, y) to NDC [-1, 1]
   glm::vec2 viewportSize = GetViewportSize();
   glm::vec2 screenCoords = glm::vec2(screenCoordsDepth);
   glm::vec2 ndc = (screenCoords / viewportSize) * 2.0f - 1.0f;
+  ndc *= glm::vec2(1.0f, -1.0f); // Flip vertically to account for Vulkan convention
   glm::vec4 clipSpaceCoord(ndc, screenCoordsDepth.z, 1.0f);
 
   // Back-project to world space

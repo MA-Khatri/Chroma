@@ -95,7 +95,7 @@ private:
   VkImageView m_PickDepthImageView;
 
   // Depth image for picking readback buffer
-  static constexpr uint32_t m_PickDiameter = 5;
+  static constexpr uint32_t m_PickDiameter = 9;
   static constexpr VkDeviceSize m_ReadbackSize = m_PickDiameter * m_PickDiameter * sizeof(float);
   VkBuffer m_PickDepthReadbackBuffer;
   VkDeviceMemory m_PickDepthReadbackMemory;

@@ -251,7 +251,8 @@ std::tuple<VkRect2D, std::vector<float>> VulkanEngine::GetDepthBuffer(VkRect2D r
                     stagingBuffer, stagingBufferMemory);
 
   // Record and submit the image -> buffer copy
-  VkCommandBuffer commandBuffer = vke::GetTransferCommandBuffer();
+  // VkCommandBuffer commandBuffer = vke::GetTransferCommandBuffer();
+  VkCommandBuffer commandBuffer = vke::GetGraphicsCommandBuffer();
 
   VkBufferImageCopy region{};
   region.bufferOffset = 0;
@@ -267,7 +268,8 @@ std::tuple<VkRect2D, std::vector<float>> VulkanEngine::GetDepthBuffer(VkRect2D r
   vkCmdCopyImageToBuffer(commandBuffer, m_PickDepthImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                          stagingBuffer, 1, &region);
 
-  vke::FlushTransferCommandBuffer(commandBuffer);
+  // vke::FlushTransferCommandBuffer(commandBuffer);
+  vke::FlushGraphicsCommandBuffer(commandBuffer);
 
   // Put the depth image back into a renderable layout for next frame
   vke::TransitionImageLayout(m_PickDepthImage, m_PickDepthImageFormat,
@@ -315,10 +317,13 @@ std::vector<float> VulkanEngine::GetPickDepth(int cx, int cy) {
   const int viewportHeight = static_cast<int>(m_ViewportSize.y);
   const int half = m_PickDiameter / 2;
 
+  // Flip vertically to fit Vulkan convention
+  int cyf = m_ViewportSize.y - cy;
+
   int startX = std::clamp(cx - half, 0, viewportWidth);
-  int startY = std::clamp(cy - half, 0, viewportHeight);
+  int startY = std::clamp(cyf - half, 0, viewportHeight);
   int endX = std::clamp(cx - half + static_cast<int>(m_PickDiameter), 0, viewportWidth);
-  int endY = std::clamp(cy - half + static_cast<int>(m_PickDiameter), 0, viewportHeight);
+  int endY = std::clamp(cyf - half + static_cast<int>(m_PickDiameter), 0, viewportHeight);
 
   const uint32_t extentX = static_cast<uint32_t>(endX - startX);
   const uint32_t extentY = static_cast<uint32_t>(endY - startY);
@@ -346,7 +351,7 @@ std::vector<float> VulkanEngine::GetPickDepth(int cx, int cy) {
                              VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
 
-  VkCommandBuffer commandBuffer = vke::GetTransferCommandBuffer();
+  VkCommandBuffer commandBuffer = vke::GetGraphicsCommandBuffer();
 
   VkBufferImageCopy region{};
   region.bufferOffset = 0;
@@ -365,7 +370,7 @@ std::vector<float> VulkanEngine::GetPickDepth(int cx, int cy) {
   // Waits on a fence internally, so the copy is guaranteed complete before we
   // touch m_PickDepthMappedReadback below. HOST_COHERENT means no explicit
   // invalidate needed.
-  vke::FlushTransferCommandBuffer(commandBuffer);
+  vke::FlushGraphicsCommandBuffer(commandBuffer);
 
   // Put the depth image back into a renderable layout for next frame
   vke::TransitionImageLayout(m_PickDepthImage, m_PickDepthImageFormat,
@@ -383,6 +388,8 @@ glm::vec3 VulkanEngine::GetClosestDepth(glm::vec2 clickPosn) {
   constexpr int halfPick = m_PickDiameter / 2;
 
   std::vector<float> pickDepth = GetPickDepth(clickPosn.x, clickPosn.y);
+  if (pickDepth.size() == 0)
+    return glm::vec3(std::numeric_limits<float>::quiet_NaN());
 
   glm::vec2 closestDepthOffset(0, 0);
   float closestOffsetDist = 10000.0f;

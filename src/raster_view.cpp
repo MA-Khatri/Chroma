@@ -130,7 +130,7 @@ void RasterView::TakeScreenshot() {
 // ===================================
 
 void RasterView::OnResize(ImVec2 newSize) {
-  PLOG_VERBOSE << "Resizing raster viewport to " << newSize.x << " x " << newSize.y;
+  PLOG_DEBUG << "Resizing raster viewport to " << newSize.x << " x " << newSize.y;
 
   m_ViewportSize = newSize;
   m_VulkanEngine->OnResize(m_ViewportSize);
