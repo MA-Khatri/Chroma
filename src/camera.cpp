@@ -7,9 +7,31 @@
 #include <glm/geometric.hpp>
 #include <glm/vector_relational.hpp>
 #include <limits>
-#include <plog/Log.h>
 
 constexpr float SLIDER_WIDTH = 120.0f;
+constexpr float DROPDOWN_WIDTH = 160.0f;
+
+const std::unordered_map<Projection::Type, std::string> Projection::m_EnumToStringMap = {
+    {Projection::Type::Perspective, "Perspective"},
+    {Projection::Type::Orthographic, "Orthographic"},
+    {Projection::Type::Unknown, "Unknown"}};
+
+const std::unordered_map<std::string, Projection::Type> Projection::m_StringToEnumMap = {
+    {"Perspective", Projection::Type::Perspective},
+    {"Orthographic", Projection::Type::Orthographic},
+    {"Unknown", Projection::Type::Unknown}};
+
+const std::unordered_map<CameraController::Type, std::string> CameraController::m_EnumToStringMap =
+    {{CameraController::Type::FreeFly, "Free Fly"},
+     {CameraController::Type::Orbit, "Orbit"},
+     {CameraController::Type::TrackBall, "Track Ball"},
+     {CameraController::Type::Unknown, "Unknown"}};
+
+const std::unordered_map<std::string, CameraController::Type> CameraController::m_StringToEnumMap =
+    {{"Free Fly", CameraController::Type::FreeFly},
+     {"Orbit", CameraController::Type::Orbit},
+     {"Track Ball", CameraController::Type::TrackBall},
+     {"Unknown", CameraController::Type::Unknown}};
 
 // ===================================
 // === Event-based Update Handlers ===
@@ -82,8 +104,6 @@ void PerspectiveProjection::GetGuiElements() {
       m_NearClip = m_MinClip;
     if (m_NearClip > m_FarClip - m_MinClipDiff)
       m_NearClip = m_FarClip - m_MinClipDiff;
-
-    // TODO?
   }
   ImGui::PopItemWidth();
 }
@@ -153,8 +173,6 @@ void OrthographicProjection::GetGuiElements() {
       m_NearClip = m_MinClip;
     if (m_NearClip > m_FarClip - m_MinClipDiff)
       m_NearClip = m_FarClip - m_MinClipDiff;
-
-    // TODO?
   }
   ImGui::PopItemWidth();
 }
@@ -174,10 +192,15 @@ void FreeFlyController::Update(Camera &camera, int64_t deltaTime, const SDL_Even
         m_Pitch -= event->motion.yrel * m_Sensitivity;
 
         // Clamp pitch to avoid gimbal lock
-        if (m_Pitch > 89.0f)
-          m_Pitch = 89.0f;
-        if (m_Pitch < -89.0f)
-          m_Pitch = -89.0f;
+        if (m_Pitch > m_PitchMax)
+          m_Pitch = m_PitchMax;
+        if (m_Pitch < m_PitchMin)
+          m_Pitch = m_PitchMin;
+
+        // Clamp yaw from 0-360 degrees
+        m_Yaw = std::fmod(m_Yaw, m_YawMax);
+        if (m_Yaw < 0.0f)
+          m_Yaw = m_YawMax - m_Yaw;
 
         UpdateLookAt();
       }
@@ -201,11 +224,9 @@ void FreeFlyController::Update(Camera &camera, int64_t deltaTime, const SDL_Even
         m_MoveRight = pressed;
         break;
       case SDLK_Q:
-      case SDLK_SPACE:
         m_MoveUp = pressed;
         break;
       case SDLK_E:
-      case SDLK_LSHIFT:
         m_MoveDown = pressed;
         break;
       default:
@@ -245,7 +266,32 @@ void FreeFlyController::Update(Camera &camera, int64_t deltaTime, const SDL_Even
 }
 
 void FreeFlyController::GetGuiElements() {
-  // TODO
+  ImGui::SeparatorText("Free Fly Controller");
+  ImGui::PushItemWidth(SLIDER_WIDTH);
+  {
+    float position[3] = {m_Position.x, m_Position.y, m_Position.z};
+    ImGui::DragFloat3("Position (WASD & Q/E to go Up/Down)", position, 1.0f);
+    glm::vec3 newPosition(position[0], position[1], position[2]);
+    if (m_Position != newPosition) {
+      m_Position = newPosition;
+      UpdateLookAt();
+    }
+
+    float newPitch = m_Pitch;
+    ImGui::DragFloat("Pitch (LMB + Drag)", &newPitch, 1.0f, m_PitchMin, m_PitchMax);
+    if (newPitch != m_Pitch) {
+      m_Pitch = newPitch;
+      UpdateLookAt();
+    }
+
+    float newYaw = m_Yaw;
+    ImGui::DragFloat("Yaw (LMB + Drag)", &newYaw, 1.0f, 0.0f, m_YawMax);
+    if (newYaw != m_Yaw) {
+      m_Yaw = newYaw;
+      UpdateLookAt();
+    }
+  }
+  ImGui::PopItemWidth();
 }
 
 void OrbitController::Update(Camera &camera, int64_t deltaTime, const SDL_Event *event) {
@@ -345,7 +391,28 @@ void OrbitController::Update(Camera &camera, int64_t deltaTime, const SDL_Event 
 }
 
 void OrbitController::GetGuiElements() {
-  // TODO
+  ImGui::SeparatorText("Orbit Controller");
+  ImGui::PushItemWidth(SLIDER_WIDTH);
+  {
+    float newRadius = m_Radius;
+    ImGui::DragFloat("Radius (Scroll)", &newRadius, 1.0f, m_MinRadius, m_MaxRadius);
+    if (newRadius != m_Radius) {
+      m_Radius = newRadius;
+      UpdatePosition();
+    }
+
+    float center[3] = {m_LookAt.x, m_LookAt.y, m_LookAt.z};
+    ImGui::DragFloat3("Center (Double LMB)", center, 1.0f);
+    glm::vec3 newCenter(center[0], center[1], center[2]);
+    if (m_LookAt != newCenter) {
+      m_LookAt = newCenter;
+      UpdatePosition();
+    }
+
+    ImGui::Text("Rotate: LMB + Drag");
+    ImGui::Text("Pan: (RMB or Shift + LMB) + Drag");
+  }
+  ImGui::PopItemWidth();
 }
 
 void TrackBallController::Update(Camera &camera, int64_t deltaTime, const SDL_Event *event) {
@@ -507,8 +574,6 @@ void TrackBallController::GetGuiElements() {
     ImGui::Text("Rotate: LMB + Drag");
     ImGui::Text("Roll: (MMB or Ctrl + LMB) + Drag");
     ImGui::Text("Pan: (RMB or Shift + LMB) + Drag");
-
-    // TODO?
   }
   ImGui::PopItemWidth();
 }
@@ -539,7 +604,69 @@ glm::vec3 Camera::GetWorldPosition(glm::vec3 screenCoordsDepth) {
 }
 
 void Camera::GetGuiElements() {
-  // Options to set/select controller and projection types
+  ImGui::PushItemWidth(DROPDOWN_WIDTH);
+  {
+    // Options to set/select controller and projection types
+    Projection::Type cProjectionType = m_Projection->GetType();
+    if (ImGui::BeginCombo("Projection Type", m_Projection->GetTypeString().c_str())) {
+      for (int n = 0; n < static_cast<int>(Projection::Type::Unknown); n++) {
+        Projection::Type type = static_cast<Projection::Type>(n);
+        const bool isSelected = (cProjectionType == type);
+        if (ImGui::Selectable(Projection::GetTypeString(type).c_str(), isSelected)) {
+          cProjectionType = type;
+        }
+        if (isSelected) {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+      ImGui::EndCombo();
+    }
+    if (m_Projection->GetType() != cProjectionType) {
+      PLOG_DEBUG << "Switching to projection type: " << Projection::GetTypeString(cProjectionType);
+      if (cProjectionType == Projection::Type::Perspective) {
+        m_Projection = std::make_shared<PerspectiveProjection>();
+      } else if (cProjectionType == Projection::Type::Orthographic) {
+        m_Projection = std::make_shared<OrthographicProjection>();
+      } else {
+        PLOG_ERROR << "Invalid selected projection type: "
+                   << Projection::GetTypeString(cProjectionType);
+      }
+    }
+
+    CameraController::Type cControllerType = m_Controller->GetType();
+    auto callback = m_Controller->GetDoubleClickCallback();
+    if (ImGui::BeginCombo("Controller Type", m_Controller->GetTypeString().c_str())) {
+      for (int n = 0; n < static_cast<int>(CameraController::Type::Unknown); n++) {
+        CameraController::Type type = static_cast<CameraController::Type>(n);
+        const bool isSelected = (cControllerType == type);
+        if (ImGui::Selectable(CameraController::GetTypeString(type).c_str(), isSelected)) {
+          cControllerType = type;
+        }
+        if (isSelected) {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+      ImGui::EndCombo();
+    }
+    if (m_Controller->GetType() != cControllerType) {
+      PLOG_DEBUG << "Switching to camera controller type: "
+                 << CameraController::GetTypeString(cControllerType);
+      if (cControllerType == CameraController::Type::FreeFly) {
+        m_Controller = std::make_shared<FreeFlyController>();
+        m_Controller->RegisterDoubleClickCallback(callback);
+      } else if (cControllerType == CameraController::Type::Orbit) {
+        m_Controller = std::make_shared<OrbitController>();
+        m_Controller->RegisterDoubleClickCallback(callback);
+      } else if (cControllerType == CameraController::Type::TrackBall) {
+        m_Controller = std::make_shared<TrackBallController>();
+        m_Controller->RegisterDoubleClickCallback(callback);
+      } else {
+        PLOG_ERROR << "Invalid selected camera controller type: "
+                   << CameraController::GetTypeString(cControllerType);
+      }
+    }
+  }
+  ImGui::PopItemWidth();
 
   m_Controller->GetGuiElements();
   m_Projection->GetGuiElements();

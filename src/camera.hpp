@@ -5,10 +5,14 @@
 #include <glm/ext/vector_float3.hpp>
 #include <glm/fwd.hpp>
 #include <memory>
+#include <string>
+#include <unordered_map>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+
+#include <plog/Log.h>
 
 #include <SDL3/SDL.h>
 #include <imgui.h>
@@ -22,6 +26,8 @@ class Camera;
 
 class Projection {
 public:
+  enum class Type { Perspective, Orthographic, Unknown };
+
   virtual ~Projection() = default;
   virtual glm::mat4 GetMatrix() const = 0;
 
@@ -43,6 +49,33 @@ public:
   float GetAspectRatio() const { return m_AspectRatio; }
   void SetAspectRatio(float aspectRatio) { m_AspectRatio = aspectRatio; }
 
+  std::string GetTypeString() {
+    auto it = m_EnumToStringMap.find(m_Type);
+    if (it != m_EnumToStringMap.end()) {
+      return it->second;
+    }
+    return "Unknown";
+  }
+
+  static std::string GetTypeString(Type type) {
+    auto it = m_EnumToStringMap.find(type);
+    if (it != m_EnumToStringMap.end()) {
+      return it->second;
+    }
+    return "Unknown";
+  }
+
+  Type GetType() { return m_Type; }
+
+  static Type GetType(std::string str) {
+    auto it = m_StringToEnumMap.find(str);
+    if (it != m_StringToEnumMap.end()) {
+      return it->second;
+    }
+    PLOG_ERROR << "Unknown projection type string: " << str;
+    return Type::Unknown;
+  }
+
 protected:
   float m_NearClip = 0.1f;
   float m_FarClip = 1000.0f;
@@ -51,6 +84,10 @@ protected:
   const float m_MinClip = 0.1f;
   const float m_MaxClip = 1000.0f;
   const float m_MinClipDiff = 0.1f;
+
+  Type m_Type = Type::Unknown;
+  static const std::unordered_map<Type, std::string> m_EnumToStringMap;
+  static const std::unordered_map<std::string, Type> m_StringToEnumMap;
 };
 
 class PerspectiveProjection : public Projection {
@@ -60,7 +97,10 @@ public:
     m_NearClip = nearClip;
     m_FarClip = farClip;
     m_AspectRatio = aspectRatio;
+    m_Type = Type::Perspective;
   }
+
+  PerspectiveProjection() : PerspectiveProjection(45.0f, 0.1f, 1000.0f, 16.0f / 9.0f) {}
 
   glm::mat4 GetMatrix() const override {
     return glm::perspective(glm::radians(m_VFOV), m_AspectRatio, m_NearClip, m_FarClip);
@@ -84,7 +124,9 @@ public:
     m_NearClip = nearClip;
     m_FarClip = farClip;
     m_AspectRatio = aspectRatio;
+    m_Type = Type::Orthographic;
   }
+  OrthographicProjection() : OrthographicProjection(10.0f, 0.1f, 1000.0f, 16.0f / 9.0f) {}
 
   glm::mat4 GetMatrix() const override {
     const float halfVerticalExtent = m_VerticalExtent * 0.5f;
@@ -110,16 +152,9 @@ protected:
 // ===============================================
 
 class CameraController {
-protected:
-  glm::vec3 m_Position = glm::vec3(0.0f, 0.0f, 5.0f);
-  glm::vec3 m_LookAt = glm::vec3(0.0f, 0.0f, 0.0f);
-  glm::vec3 m_Up = glm::vec3(0.0f, 0.0f, 1.0f);
-
-  // Returns closest pixel location within pick search region (x, y) and corresponding depth (z)
-  // Note: Assumes input is viewport-relative already
-  std::function<glm::vec3(glm::vec2)> m_DoubleClickCallback;
-
 public:
+  enum class Type { FreeFly, Orbit, TrackBall, Unknown };
+
   virtual ~CameraController() = default;
 
   virtual void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) = 0;
@@ -135,6 +170,48 @@ public:
   void RegisterDoubleClickCallback(std::function<glm::vec3(glm::vec2)> callback) {
     m_DoubleClickCallback = callback;
   };
+
+  std::function<glm::vec3(glm::vec2)> GetDoubleClickCallback() { return m_DoubleClickCallback; }
+
+  std::string GetTypeString() {
+    auto it = m_EnumToStringMap.find(m_Type);
+    if (it != m_EnumToStringMap.end()) {
+      return it->second;
+    }
+    return "Unknown";
+  }
+
+  static std::string GetTypeString(Type type) {
+    auto it = m_EnumToStringMap.find(type);
+    if (it != m_EnumToStringMap.end()) {
+      return it->second;
+    }
+    return "Unknown";
+  }
+
+  Type GetType() { return m_Type; }
+
+  static Type GetType(std::string str) {
+    auto it = m_StringToEnumMap.find(str);
+    if (it != m_StringToEnumMap.end()) {
+      return it->second;
+    }
+    PLOG_ERROR << "Unknown camera controller type string: " << str;
+    return Type::Unknown;
+  }
+
+protected:
+  glm::vec3 m_Position = glm::vec3(0.0f, 0.0f, 5.0f);
+  glm::vec3 m_LookAt = glm::vec3(0.0f, 0.0f, 0.0f);
+  glm::vec3 m_Up = glm::vec3(0.0f, 0.0f, 1.0f);
+
+  // Returns closest pixel location within pick search region (x, y) and corresponding depth (z)
+  // Note: Assumes input is viewport-relative already
+  std::function<glm::vec3(glm::vec2)> m_DoubleClickCallback;
+
+  Type m_Type = Type::Unknown;
+  static const std::unordered_map<Type, std::string> m_EnumToStringMap;
+  static const std::unordered_map<std::string, Type> m_StringToEnumMap;
 };
 
 class FreeFlyController : public CameraController {
@@ -145,7 +222,10 @@ public:
     m_Pitch = pitch;
     m_Up = glm::vec3(0.0f, 0.0f, 1.0f);
     UpdateLookAt();
+    m_Type = Type::FreeFly;
   }
+
+  FreeFlyController() : FreeFlyController(glm::vec3(-5.0f, 0.0f, 0.0f), 0.0f, 0.0f) {}
 
   void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
 
@@ -174,6 +254,12 @@ private:
   bool m_MoveRight = false;
   bool m_MoveUp = false;
   bool m_MoveDown = false;
+
+  const float m_YawMax = 360.0f;
+  const float m_PitchMin = -89.0f;
+  const float m_PitchMax = 89.0f;
+  const float m_SpeedMin = 1.0f;
+  const float m_SpeedMax = 100.0f;
 };
 
 class OrbitController : public CameraController {
@@ -184,7 +270,10 @@ public:
     m_Azimuth = azimuth;
     m_Elevation = elevation;
     UpdatePosition();
+    m_Type = Type::Orbit;
   }
+
+  OrbitController() : OrbitController(glm::vec3(0.0f), 10.0f, 0.0f, 0.0f) {}
 
   void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
 
@@ -209,6 +298,11 @@ private:
   float m_Radius = 5.0f;    // Distance from the center point
   float m_Azimuth = 0.0f;   // Horizontal angle from +x in degrees
   float m_Elevation = 0.0f; // Vertical angle from xy-plane in degrees
+
+  const float m_MinRadius = 0.15f;
+  const float m_MaxRadius = 1e6f;
+  const float m_RadiusScale = 1.1f;
+  const float m_InvRadiusScale = 1.0f / m_RadiusScale;
 };
 
 class TrackBallController : public CameraController {
@@ -217,7 +311,11 @@ public:
     m_LookAt = center;
     m_Position = position;
     m_Up = glm::normalize(up);
+    m_Type = Type::TrackBall;
   }
+
+  TrackBallController()
+      : TrackBallController(glm::vec3(0.0f), glm::vec3(5.0f), glm::vec3(0.0f, 0.0f, 1.0f)) {}
 
   void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override;
 
@@ -226,13 +324,13 @@ public:
   void GetGuiElements() override;
 
 private:
+  float m_Radius = 10.0f;
+  glm::vec3 m_ToCameraNormalized = glm::vec3(1.0f, 0.0f, 0.0f);
+
   const float m_MinRadius = 0.15f;
   const float m_MaxRadius = 1e6f;
   const float m_RadiusScale = 1.1f;
   const float m_InvRadiusScale = 1.0f / m_RadiusScale;
-
-  float m_Radius = 10.0f;
-  glm::vec3 m_ToCameraNormalized = glm::vec3(1.0f, 0.0f, 0.0f);
 };
 
 // ==================================
