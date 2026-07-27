@@ -50,18 +50,20 @@ std::vector<uint32_t> VulkanEngine::SaveFramebuffer() {
   // Create a temporary (capture) image to store screenshot data
   VkImage cptImage;
   VkDeviceMemory cptImageMemory;
-  vke::CreateImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM,
-                   VK_IMAGE_TILING_LINEAR,
+  VkFormat cptImageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+  vke::CreateImage(width, height, 1, VK_SAMPLE_COUNT_1_BIT, cptImageFormat, VK_IMAGE_TILING_LINEAR,
                    VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                    cptImage, cptImageMemory);
+  vke::TransitionImageLayout(cptImage, cptImageFormat, VK_IMAGE_LAYOUT_UNDEFINED,
+                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
 
   // Get the current viewport image
   VkImage &srcImage = m_ViewportImages[vke::MainWindowData.FrameIndex];
 
   // Transition viewport image to transfer src optimal
   vke::TransitionImageLayout(srcImage, vke::MainWindowData.SurfaceFormat.format,
-                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
 
   // Copy viewport image to cpt image
@@ -70,11 +72,10 @@ std::vector<uint32_t> VulkanEngine::SaveFramebuffer() {
   // Transition viewport image back to color attachment optimal
   vke::TransitionImageLayout(srcImage, vke::MainWindowData.SurfaceFormat.format,
                              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1);
+                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
 
   // Transition cpt image to transfer src optimal
-  vke::TransitionImageLayout(cptImage, VK_FORMAT_R8G8B8A8_UNORM,
-                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+  vke::TransitionImageLayout(cptImage, cptImageFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1);
 
   // Get layout of the image (including row pitch)

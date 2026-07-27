@@ -45,6 +45,9 @@ void Layer::CommonDebug(Application *app, std::shared_ptr<Camera> camera) {
 
   auto viewportSize = camera->GetViewportSize();
   ImGui::Text("Viewport Size :  %.1i x %.1i ", (int)viewportSize.x, (int)viewportSize.y);
+
+  if (ImGui::Button("Take Screenshot"))
+    TakeScreenshot();
 }
 
 void Layer::WrapMouseWithinRect(SDL_Window *window, const ImVec2 &rectMin, const ImVec2 &rectMax,

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <deque>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -114,13 +115,23 @@ void WriteImageToFile(std::string filename, int width, int height, SDL_PixelForm
                             /*pitch=*/width * bytesPerPixel);
 
   if (!surface) {
-
     PLOG_ERROR << "Error! SDL_CreateSurfaceFrom failed: " << SDL_GetError();
     return;
   }
 
+  const std::string outputDir = std::string(ROOT_DIR) + "output/";
+  try {
+    // Creates the directory and any missing parent directories.
+    // It automatically skips creation if the directory already exists.
+    if (std::filesystem::create_directories(outputDir)) {
+      PLOG_INFO << "Created output directory: " << outputDir;
+    }
+  } catch (const std::filesystem::filesystem_error &e) {
+    PLOG_ERROR << "Error creating output directory " << outputDir << ": " << e.what();
+  }
+
   // Save the surface to file as a PNG
-  if (!IMG_SavePNG(surface, filename.c_str())) {
+  if (!IMG_SavePNG(surface, (outputDir + filename).c_str())) {
     PLOG_ERROR << "Error! IMG_SavePNG failed: " << SDL_GetError();
     return;
   }

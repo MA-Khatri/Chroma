@@ -125,6 +125,7 @@ void Application::Init() {
     style.Colors[ImGuiCol_WindowBg].w = 1.0f;
   }
   style.ScaleAllSizes(main_scale);
+  io.FontGlobalScale = main_scale;
 
   // Setup Platform/Renderer backends
   ImGui_ImplSDL3_InitForVulkan(m_WindowHandle);

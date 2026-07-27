@@ -135,8 +135,7 @@ void RasterView::TakeScreenshot() {
   std::vector<uint32_t> out = FlipImageVertically(pixels, width, height);
 
   // Save screenshot image to file
-  WriteImageToFile("output/" + GetDateTimeStr() + "_raster.png", width, height,
-                   SDL_PIXELFORMAT_RGBA32, out);
+  WriteImageToFile(GetDateTimeStr() + "_raster.png", width, height, SDL_PIXELFORMAT_RGBA32, out);
 }
 
 // ===================================
