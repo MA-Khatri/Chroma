@@ -7,21 +7,18 @@ Default.vert
     Default.vert
     DepthOnly.frag
     DepthOnlyPoint.frag
-    Flat.vert
-    Flat.frag
-    FlatWithSpecular.frag
     GroundGrid.vert
     GroundGrid.frag
-    HelloTriangle.vert
-    HelloTriangle.frag
     Point.vert
     PointFlat.frag
     PointNormal.frag
     PointShaded.frag
-    Solid.vert
-    SolidNormal.frag
-    SolidPerVertex.frag
-    SolidTextured.frag
+    Surface.vert
+    SurfaceAlbedoTextureFlat.frag
+    SurfaceAlbedoTextureShaded.frag
+    SurfacePerVertexFlat.frag
+    SurfacePerVertexNormal.frag
+    SurfacePerVertexShaded.frag
 )
 
 # Compile shaders with glslc

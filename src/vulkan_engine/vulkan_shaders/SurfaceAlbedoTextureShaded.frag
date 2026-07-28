@@ -14,8 +14,6 @@ layout(set = 0, binding = 0) uniform SceneUBO {
 scene;
 
 layout(set = 1, binding = 1) uniform sampler2D diffuseSampler;
-layout(set = 1, binding = 2) uniform sampler2D specularSampler;
-layout(set = 1, binding = 3) uniform sampler2D normalSampler;
 
 layout(location = 0) out vec4 outColor;
 
@@ -34,11 +32,7 @@ void main() {
 
   float lc = ambient + diffuse * diffuseContrib + specular * specularContrib;
 
-  // vec3 diffuseColor = v_Color;
   vec3 diffuseColor = texture(diffuseSampler, v_TexCoord).rgb;
 
-  vec3 specularColor = vec3(1.0);
-  // vec3 specularColor = texture(specularSampler, v_TexCoord).rgb;
-
-  outColor = vec4(diffuseColor * specularColor * vec3(lc), 1);
+  outColor = vec4(diffuseColor * vec3(lc), 1);
 }

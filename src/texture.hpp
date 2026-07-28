@@ -8,15 +8,16 @@
 #include <string>
 #include <vector>
 
-enum class TextureType { Albedo, Normal, Metallic, Roughness, Height, AO };
+enum class TextureType {
+  Albedo,
+  // Normal,
+  // Roughness
+};
 
 struct TexturePaths { // TODO: should these be stored as std::filesystem::path?
   std::string albedo;
-  std::string normal;
-  std::string metallic;
-  std::string roughness;
-  std::string height;
-  std::string ao; // ambient occlusion
+  // std::string normal;
+  // std::string roughness;
 };
 
 template <typename T> struct Texture {

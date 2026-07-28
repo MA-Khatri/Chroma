@@ -28,6 +28,7 @@ void main() {
 
   v_Color = a_Color;
   v_Position = (object.model * vec4(a_Position, 1.0)).xyz;
-  v_ClearColor =
-      object.normal[0].xyz; // The clear color is stored in the first column of the normal matrix!
+
+  // The clear color is stored in the first column of the normal matrix!
+  v_ClearColor = object.normal[0].xyz;
 }

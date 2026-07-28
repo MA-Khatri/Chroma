@@ -39,8 +39,8 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
 
   if (material->m_Type < MaterialType::PointFlat) { // Surfaces
     topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    shaders.push_back({VK_SHADER_STAGE_VERTEX_BIT, "vulkan_shaders/Solid.vert.spv"});
-    pickShaders.push_back({VK_SHADER_STAGE_VERTEX_BIT, "vulkan_shaders/Solid.vert.spv"});
+    shaders.push_back({VK_SHADER_STAGE_VERTEX_BIT, "vulkan_shaders/Surface.vert.spv"});
+    pickShaders.push_back({VK_SHADER_STAGE_VERTEX_BIT, "vulkan_shaders/Surface.vert.spv"});
     pickShaders.push_back({VK_SHADER_STAGE_FRAGMENT_BIT, "vulkan_shaders/DepthOnly.frag.spv"});
   } else if (material->m_Type < MaterialType::Lines) { // Points
     topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
@@ -54,20 +54,31 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
   bool hasTextures = material->HasTextures();
 
   switch (material->m_Type) {
-  case MaterialType::Lambertian:
-  case MaterialType::Conductor:
-  case MaterialType::Dielectric:
-  case MaterialType::Principled:
-  case MaterialType::Emissive:
-    if (hasTextures) {
-      // We'll have upto 3 samplers for diffuse, specular, and normal textures
-      layoutBindings.push_back(CreateDSLFragmentBinding(1));
-      layoutBindings.push_back(CreateDSLFragmentBinding(2));
-      layoutBindings.push_back(CreateDSLFragmentBinding(3));
-      shaders.push_back({VK_SHADER_STAGE_FRAGMENT_BIT, "vulkan_shaders/SolidTextured.frag.spv"});
-    } else {
-      shaders.push_back({VK_SHADER_STAGE_FRAGMENT_BIT, "vulkan_shaders/SolidPerVertex.frag.spv"});
-    }
+  case MaterialType::SurfacePerVertexFlat:
+    shaders.push_back(
+        {VK_SHADER_STAGE_FRAGMENT_BIT, "vulkan_shaders/SurfacePerVertexFlat.frag.spv"});
+    break;
+
+  case MaterialType::SurfacePerVertexShaded:
+    shaders.push_back(
+        {VK_SHADER_STAGE_FRAGMENT_BIT, "vulkan_shaders/SurfacePerVertexShaded.frag.spv"});
+    break;
+
+  case MaterialType::SurfacePerVertexNormal:
+    shaders.push_back(
+        {VK_SHADER_STAGE_FRAGMENT_BIT, "vulkan_shaders/SurfacePerVertexNormal.frag.spv"});
+    break;
+
+  case MaterialType::SurfaceAlbedoTextureFlat:
+    shaders.push_back(
+        {VK_SHADER_STAGE_FRAGMENT_BIT, "vulkan_shaders/SurfaceAlbedoTextureFlat.frag.spv"});
+    layoutBindings.push_back(CreateDSLFragmentBinding(1));
+    break;
+
+  case MaterialType::SurfaceAlbedoTextureShaded:
+    shaders.push_back(
+        {VK_SHADER_STAGE_FRAGMENT_BIT, "vulkan_shaders/SurfaceAlbedoTextureShaded.frag.spv"});
+    layoutBindings.push_back(CreateDSLFragmentBinding(1));
     break;
 
   case MaterialType::PointFlat:
@@ -129,15 +140,15 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
   if (hasTextures) {
     if (!material->m_AlbedoTexture.empty()) {
       VkDescriptorImageInfo &diffImageInfo = m_DescriptorImageInfos[m_DescriptorImageInfoCount++];
-      vke::CreateTextureImage(material->m_AlbedoTexture, m_DiffuseMipLevels, m_DiffuseTextureImage,
-                              m_DiffuseTextureImageMemory);
-      vke::CreateTextureImageView(m_DiffuseMipLevels, m_DiffuseTextureImage,
-                                  m_DiffuseTextureImageView);
-      vke::CreateTextureSampler(m_DiffuseMipLevels, m_DiffuseTextureSampler);
+      vke::CreateTextureImage(material->m_AlbedoTexture, m_AlbedoMipLevels, m_AlbedoTextureImage,
+                              m_AlbedoTextureImageMemory);
+      vke::CreateTextureImageView(m_AlbedoMipLevels, m_AlbedoTextureImage,
+                                  m_AlbedoTextureImageView);
+      vke::CreateTextureSampler(m_AlbedoMipLevels, m_AlbedoTextureSampler);
 
       diffImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-      diffImageInfo.imageView = m_DiffuseTextureImageView;
-      diffImageInfo.sampler = m_DiffuseTextureSampler;
+      diffImageInfo.imageView = m_AlbedoTextureImageView;
+      diffImageInfo.sampler = m_AlbedoTextureSampler;
 
       VkWriteDescriptorSet samplerWrite{};
       samplerWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -150,70 +161,70 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
       m_DescriptorWrites.push_back(samplerWrite);
     }
 
-    if (!material->m_RoughnessTexture.empty()) {
-      VkDescriptorImageInfo &specImageInfo = m_DescriptorImageInfos[m_DescriptorImageInfoCount++];
-      vke::CreateTextureImage(material->m_RoughnessTexture, m_SpecularMipLevels,
-                              m_SpecularTextureImage, m_SpecularTextureImageMemory);
-      vke::CreateTextureImageView(m_SpecularMipLevels, m_SpecularTextureImage,
-                                  m_SpecularTextureImageView);
-      vke::CreateTextureSampler(m_SpecularMipLevels, m_SpecularTextureSampler);
+    // if (!material->m_RoughnessTexture.empty()) {
+    //   VkDescriptorImageInfo &specImageInfo =
+    //   m_DescriptorImageInfos[m_DescriptorImageInfoCount++];
+    //   vke::CreateTextureImage(material->m_RoughnessTexture, m_SpecularMipLevels,
+    //                           m_SpecularTextureImage, m_SpecularTextureImageMemory);
+    //   vke::CreateTextureImageView(m_SpecularMipLevels, m_SpecularTextureImage,
+    //                               m_SpecularTextureImageView);
+    //   vke::CreateTextureSampler(m_SpecularMipLevels, m_SpecularTextureSampler);
 
-      specImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-      specImageInfo.imageView = m_SpecularTextureImageView;
-      specImageInfo.sampler = m_SpecularTextureSampler;
+    //   specImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    //   specImageInfo.imageView = m_SpecularTextureImageView;
+    //   specImageInfo.sampler = m_SpecularTextureSampler;
 
-      VkWriteDescriptorSet samplerWrite{};
-      samplerWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-      samplerWrite.dstSet = VK_NULL_HANDLE;
-      samplerWrite.dstBinding = 2;
-      samplerWrite.dstArrayElement = 0;
-      samplerWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      samplerWrite.descriptorCount = 1;
-      samplerWrite.pImageInfo = &specImageInfo;
-      m_DescriptorWrites.push_back(samplerWrite);
-    }
+    //   VkWriteDescriptorSet samplerWrite{};
+    //   samplerWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    //   samplerWrite.dstSet = VK_NULL_HANDLE;
+    //   samplerWrite.dstBinding = 2;
+    //   samplerWrite.dstArrayElement = 0;
+    //   samplerWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    //   samplerWrite.descriptorCount = 1;
+    //   samplerWrite.pImageInfo = &specImageInfo;
+    //   m_DescriptorWrites.push_back(samplerWrite);
+    // }
 
-    if (!material->m_NormalTexture.empty()) {
-      VkDescriptorImageInfo &normImageInfo = m_DescriptorImageInfos[m_DescriptorImageInfoCount++];
-      vke::CreateTextureImage(material->m_NormalTexture, m_NormalMipLevels, m_NormalTextureImage,
-                              m_NormalTextureImageMemory);
-      vke::CreateTextureImageView(m_NormalMipLevels, m_NormalTextureImage,
-                                  m_NormalTextureImageView);
-      vke::CreateTextureSampler(m_NormalMipLevels, m_NormalTextureSampler);
+    // if (!material->m_NormalTexture.empty()) {
+    //   VkDescriptorImageInfo &normImageInfo =
+    //   m_DescriptorImageInfos[m_DescriptorImageInfoCount++];
+    //   vke::CreateTextureImage(material->m_NormalTexture, m_NormalMipLevels, m_NormalTextureImage,
+    //                           m_NormalTextureImageMemory);
+    //   vke::CreateTextureImageView(m_NormalMipLevels, m_NormalTextureImage,
+    //                               m_NormalTextureImageView);
+    //   vke::CreateTextureSampler(m_NormalMipLevels, m_NormalTextureSampler);
 
-      normImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-      normImageInfo.imageView = m_NormalTextureImageView;
-      normImageInfo.sampler = m_NormalTextureSampler;
+    //   normImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    //   normImageInfo.imageView = m_NormalTextureImageView;
+    //   normImageInfo.sampler = m_NormalTextureSampler;
 
-      VkWriteDescriptorSet samplerWrite{};
-      samplerWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-      samplerWrite.dstSet = VK_NULL_HANDLE;
-      samplerWrite.dstBinding = 3;
-      samplerWrite.dstArrayElement = 0;
-      samplerWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      samplerWrite.descriptorCount = 1;
-      samplerWrite.pImageInfo = &normImageInfo;
-      m_DescriptorWrites.push_back(samplerWrite);
-    }
-
-    // TODO: add other textures as needed
+    //   VkWriteDescriptorSet samplerWrite{};
+    //   samplerWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    //   samplerWrite.dstSet = VK_NULL_HANDLE;
+    //   samplerWrite.dstBinding = 3;
+    //   samplerWrite.dstArrayElement = 0;
+    //   samplerWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    //   samplerWrite.descriptorCount = 1;
+    //   samplerWrite.pImageInfo = &normImageInfo;
+    //   m_DescriptorWrites.push_back(samplerWrite);
+    // }
   }
 }
 
 VkMaterial::~VkMaterial() {
   // Cleanup textures
-  vkDestroyImageView(vke::Device, m_DiffuseTextureImageView, nullptr);
-  vkDestroyImage(vke::Device, m_DiffuseTextureImage, nullptr);
-  vkFreeMemory(vke::Device, m_DiffuseTextureImageMemory, nullptr);
-  vkDestroySampler(vke::Device, m_DiffuseTextureSampler, nullptr);
+  vkDestroyImageView(vke::Device, m_AlbedoTextureImageView, nullptr);
+  vkDestroyImage(vke::Device, m_AlbedoTextureImage, nullptr);
+  vkFreeMemory(vke::Device, m_AlbedoTextureImageMemory, nullptr);
+  vkDestroySampler(vke::Device, m_AlbedoTextureSampler, nullptr);
 
-  vkDestroyImageView(vke::Device, m_SpecularTextureImageView, nullptr);
-  vkDestroyImage(vke::Device, m_SpecularTextureImage, nullptr);
-  vkFreeMemory(vke::Device, m_SpecularTextureImageMemory, nullptr);
-  vkDestroySampler(vke::Device, m_SpecularTextureSampler, nullptr);
+  // vkDestroyImageView(vke::Device, m_RoughnessTextureImageView, nullptr);
+  // vkDestroyImage(vke::Device, m_RoughnessTextureImage, nullptr);
+  // vkFreeMemory(vke::Device, m_RoughnessTextureImageMemory, nullptr);
+  // vkDestroySampler(vke::Device, m_RoughnessTextureSampler, nullptr);
 
-  vkDestroyImageView(vke::Device, m_NormalTextureImageView, nullptr);
-  vkDestroyImage(vke::Device, m_NormalTextureImage, nullptr);
-  vkFreeMemory(vke::Device, m_NormalTextureImageMemory, nullptr);
-  vkDestroySampler(vke::Device, m_NormalTextureSampler, nullptr);
+  // vkDestroyImageView(vke::Device, m_NormalTextureImageView, nullptr);
+  // vkDestroyImage(vke::Device, m_NormalTextureImage, nullptr);
+  // vkFreeMemory(vke::Device, m_NormalTextureImageMemory, nullptr);
+  // vkDestroySampler(vke::Device, m_NormalTextureSampler, nullptr);
 }

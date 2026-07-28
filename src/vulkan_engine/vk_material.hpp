@@ -33,21 +33,21 @@ private:
   uint32_t m_DescriptorImageInfoCount = 0;
 
   // Textures
-  VkImage m_DiffuseTextureImage = VK_NULL_HANDLE;
-  VkDeviceMemory m_DiffuseTextureImageMemory = VK_NULL_HANDLE;
-  VkImageView m_DiffuseTextureImageView = VK_NULL_HANDLE;
-  VkSampler m_DiffuseTextureSampler = VK_NULL_HANDLE;
-  uint32_t m_DiffuseMipLevels = 0;
+  VkImage m_AlbedoTextureImage = VK_NULL_HANDLE;
+  VkDeviceMemory m_AlbedoTextureImageMemory = VK_NULL_HANDLE;
+  VkImageView m_AlbedoTextureImageView = VK_NULL_HANDLE;
+  VkSampler m_AlbedoTextureSampler = VK_NULL_HANDLE;
+  uint32_t m_AlbedoMipLevels = 0;
 
-  VkImage m_SpecularTextureImage = VK_NULL_HANDLE;
-  VkDeviceMemory m_SpecularTextureImageMemory = VK_NULL_HANDLE;
-  VkImageView m_SpecularTextureImageView = VK_NULL_HANDLE;
-  VkSampler m_SpecularTextureSampler = VK_NULL_HANDLE;
-  uint32_t m_SpecularMipLevels = 0;
+  // VkImage m_RoughnessTextureImage = VK_NULL_HANDLE;
+  // VkDeviceMemory m_RoughnessTextureImageMemory = VK_NULL_HANDLE;
+  // VkImageView m_RoughnessTextureImageView = VK_NULL_HANDLE;
+  // VkSampler m_RoughnessTextureSampler = VK_NULL_HANDLE;
+  // uint32_t m_RoughnessMipLevels = 0;
 
-  VkImage m_NormalTextureImage = VK_NULL_HANDLE;
-  VkDeviceMemory m_NormalTextureImageMemory = VK_NULL_HANDLE;
-  VkImageView m_NormalTextureImageView = VK_NULL_HANDLE;
-  VkSampler m_NormalTextureSampler = VK_NULL_HANDLE;
-  uint32_t m_NormalMipLevels = 0;
+  // VkImage m_NormalTextureImage = VK_NULL_HANDLE;
+  // VkDeviceMemory m_NormalTextureImageMemory = VK_NULL_HANDLE;
+  // VkImageView m_NormalTextureImageView = VK_NULL_HANDLE;
+  // VkSampler m_NormalTextureSampler = VK_NULL_HANDLE;
+  // uint32_t m_NormalMipLevels = 0;
 };
