@@ -8,7 +8,8 @@ layout(set = 0, binding = 0) uniform SceneUBO {
   mat4 view;
   mat4 proj;
   mat4 viewProj;
-  vec4 cameraPositionAndViewportHeight;
+  vec3 cameraPosition;
+  vec2 viewportSize;
 }
 scene;
 
@@ -17,9 +18,7 @@ layout(location = 0) out vec4 outColor;
 void main() {
   float dist = distance(gl_PointCoord, vec2(0.5, 0.5));
   if (dist < 0.5) {
-    vec3 cameraPosn = scene.cameraPositionAndViewportHeight.xyz;
-    vec3 cameraDir = normalize(cameraPosn - v_Position);
-
+    vec3 cameraDir = normalize(scene.cameraPosition - v_Position);
     float t = mix(0.5, 1.0, dot(v_Normal, cameraDir));
     outColor = vec4(v_Color * t, 1);
   } else {

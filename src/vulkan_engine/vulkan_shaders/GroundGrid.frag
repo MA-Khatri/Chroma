@@ -8,7 +8,8 @@ layout(set = 0, binding = 0) uniform SceneUBO {
   mat4 view;
   mat4 proj;
   mat4 viewProj;
-  vec4 cameraPositionAndViewportHeight;
+  vec3 cameraPosition;
+  vec2 viewportSize;
 }
 scene;
 
@@ -21,8 +22,7 @@ void main() {
   // Where does color falloff start?
   float start = 10.0;
 
-  vec3 cameraPosn = scene.cameraPositionAndViewportHeight.xyz;
-  float dist = length(v_Position - cameraPosn);
+  float dist = length(v_Position - scene.cameraPosition);
   float scale = 1.0 - exp(-coeff * (dist - start));
 
   if (dist < start)

@@ -9,7 +9,8 @@ layout(set = 0, binding = 0) uniform SceneUBO {
   mat4 view;
   mat4 proj;
   mat4 viewProj;
-  vec4 cameraPositionAndViewportHeight;
+  vec3 cameraPosition;
+  vec2 viewportSize;
 }
 scene;
 
@@ -23,8 +24,7 @@ void main() {
   float specular = 0.1;
   float exponent = 16;
 
-  vec3 cameraPosn = scene.cameraPositionAndViewportHeight.xyz;
-  vec3 lightDir = normalize(cameraPosn - v_Position);
+  vec3 lightDir = normalize(scene.cameraPosition - v_Position);
   vec3 reflectDir = reflect(-lightDir, v_Normal);
 
   float diffuseContrib = clamp(dot(lightDir, v_Normal), 0, 1);

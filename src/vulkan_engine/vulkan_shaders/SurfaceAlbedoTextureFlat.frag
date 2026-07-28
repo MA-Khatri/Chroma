@@ -9,7 +9,8 @@ layout(set = 0, binding = 0) uniform SceneUBO {
   mat4 view;
   mat4 proj;
   mat4 viewProj;
-  vec4 cameraPositionAndViewportHeight;
+  vec3 cameraPosition;
+  vec2 viewportSize;
 }
 scene;
 

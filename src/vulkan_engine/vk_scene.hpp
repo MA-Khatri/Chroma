@@ -19,7 +19,8 @@ public:
     glm::mat4 viewMatrix;
     glm::mat4 projectionMatrix;
     glm::mat4 viewProjectionMatrix;
-    glm::vec4 cameraPositionAndViewportHeight; // [pos.x, pos.y, pos.z, viewportHeight]
+    alignas(16) glm::vec3 cameraPosition;
+    alignas(16) glm::vec2 viewportSize;
   };
 
   void Draw(VkCommandBuffer commandBuffer, ImVec2 viewportSize);

@@ -14,7 +14,8 @@ layout(set = 0, binding = 0) uniform SceneUBO {
   mat4 view;
   mat4 proj;
   mat4 viewProj;
-  vec4 cameraPositionAndViewportHeight;
+  vec3 cameraPosition;
+  vec2 viewportSize;
 }
 scene;
 
@@ -35,8 +36,7 @@ void main() {
   const float targetPercent = 0.05; // percent of viewport height
 
   // Scale up by the projection scale and viewport height, and down by the view-space depth
-  float viewportHeight = scene.cameraPositionAndViewportHeight.w;
-  gl_PointSize = (targetPercent * viewportHeight * fovScalingFactor) / abs(viewPos.z);
+  gl_PointSize = (targetPercent * scene.viewportSize.y * fovScalingFactor) / abs(viewPos.z);
 
   // Assign outputs
   v_Position = worldPos.xyz;

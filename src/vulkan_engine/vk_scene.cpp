@@ -39,9 +39,9 @@ VkScene::VkScene(std::shared_ptr<Scene> scene, VkSampleCountFlagBits msaaCount,
   for (const auto &object : m_Scene->GetObjects()) {
     int matID = object->m_Material->m_MaterialID;
     if (m_Materials.find(matID) == m_Materials.end()) {
-      m_Materials.insert({matID, std::make_shared<VkMaterial>(
-                                     object->m_Material, m_DescriptorPool, m_DescriptorSetLayout,
-                                     msaaCount, renderPass, pickRenderPass)});
+      m_Materials.insert({matID, std::make_shared<VkMaterial>(object->m_Material, m_DescriptorPool,
+                                                              m_DescriptorSetLayout, msaaCount,
+                                                              renderPass, pickRenderPass)});
     }
   }
 
@@ -108,7 +108,8 @@ void VkScene::VkUploadUniformBuffer(ImVec2 viewportSize) {
     ubo.viewMatrix = camera->GetViewMatrix();
     ubo.projectionMatrix = camera->GetProjectionMatrix();
     ubo.viewProjectionMatrix = camera->GetViewProjectionMatrix();
-    ubo.cameraPositionAndViewportHeight = glm::vec4(camera->GetPosition(), viewportSize.y);
+    ubo.cameraPosition = camera->GetPosition();
+    ubo.viewportSize = glm::vec2(viewportSize.x, viewportSize.y);
 
     memcpy(m_UniformBufferMapped, &ubo, sizeof(ubo));
   } else {
