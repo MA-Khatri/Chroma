@@ -58,16 +58,17 @@ void main() {
   vec2 insetNDC = insetPixels / halfViewport;
   vec2 gizmoCenterNDC = vec2(1.0 - insetNDC.x, 1.0 - insetNDC.y);
 
-  vec2 ndcPosition = gizmoCenterNDC + vec2(ndcOffset.x, -ndcOffset.y);
+  vec2 ndcPosition = gizmoCenterNDC + ndcOffset;
 
   // 6. Depth: Vulkan's default NDC depth range is [0, 1], not [-1, 1].
   //    rotated.z is roughly in [-1, 1] (unit-scale gizmo geometry), so
   //    bias/scale it into a tiny band centered at a fixed depth rather
   //    than letting negative z go below 0 and get near-plane clipped.
-  //    0.5 is an arbitrary "always draw on top of nothing in particular"
-  //    depth — adjust if you're depth-testing the gizmo against itself.
-  const float kDepthBase = 0.5;
-  const float kDepthScale = 0.0001;
+  //    We set the base near 0 to make it unlikely that scene objects will
+  //    be drawn over the gizmo (since the gizmo shares a depth buffer
+  //    with the rest of the scene).
+  const float kDepthBase = 0.01;
+  const float kDepthScale = 0.009;
   float pseudoDepth = kDepthBase + rotated.z * kDepthScale;
 
   gl_Position = vec4(ndcPosition, pseudoDepth, 1.0);
