@@ -17,8 +17,6 @@ set(SOURCES
     object.hpp
     raster_view.cpp
     raster_view.hpp
-    raytrace_view.cpp
-    raytrace_view.hpp
     scene.cpp
     scene.hpp
     texture.hpp
@@ -31,7 +29,7 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Add subdirectories
 add_subdirectory(vulkan_engine)
-# add_subdirectory(optix_engine)
+add_subdirectory(sharing)
 
 # Link dependencies from the top level
 target_link_libraries(${PROJECT_NAME}
@@ -45,10 +43,7 @@ PRIVATE
     tinyply
     imgui::imgui
     implot::implot
-)
-
-# Include external headers
-target_include_directories(${PROJECT_NAME}
-PRIVATE
-    ${CMAKE_SOURCE_DIR}/external/optix_utils
+    nlohmann_json::nlohmann_json
+    cppzmq
+    cppzmq-static
 )

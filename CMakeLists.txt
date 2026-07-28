@@ -18,6 +18,8 @@ find_package(imgui CONFIG REQUIRED)
 find_package(implot CONFIG REQUIRED)
 find_package(tinyobjloader CONFIG REQUIRED)
 find_package(tinyply CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(cppzmq CONFIG REQUIRED)
 
 if(NOT Vulkan_GLSLC_EXECUTABLE)
     message(FATAL_ERROR "glslc not found. Make sure the Vulkan SDK is properly installed and sourced.")

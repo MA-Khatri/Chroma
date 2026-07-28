@@ -25,6 +25,8 @@
         },
         "implot",
         "tinyobjloader",
-        "tinyply"
+        "tinyply",
+        "nlohmann-json",
+        "cppzmq"
     ]
 }
