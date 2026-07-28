@@ -2,6 +2,7 @@
 #include "vk_material.hpp"
 #include <array>
 #include <memory>
+#include <vulkan/vulkan_core.h>
 
 VkObject::VkObject(std::shared_ptr<Object> object, std::shared_ptr<VkMaterial> vkMaterial,
                    VkDescriptorSet sceneDescriptorSet)
@@ -33,7 +34,7 @@ VkObject::~VkObject() {
   vkFreeMemory(vke::Device, m_VertexBufferMemory, nullptr);
 }
 
-void VkObject::Draw(VkCommandBuffer commandBuffer) {
+void VkObject::Draw(VkCommandBuffer commandBuffer, ImVec2 viewportSize) {
   // VkUploadUniformBuffer();
 
   std::array<VkDescriptorSet, 2> descriptorSets = {m_SceneDescriptorSet, m_DescriptorSet};
@@ -50,7 +51,7 @@ void VkObject::Draw(VkCommandBuffer commandBuffer) {
   vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
   vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdSetLineWidth(commandBuffer, m_Object->m_Material->m_LineWidth);
+  vkCmdSetLineWidth(commandBuffer, m_Object->m_Material->m_LineWidth * viewportSize.y);
 
   // Draw indexed
   vkCmdDrawIndexed(commandBuffer,
@@ -61,7 +62,9 @@ void VkObject::Draw(VkCommandBuffer commandBuffer) {
                    0);                                                      // firstInstance
 }
 
-void VkObject::DrawPick(VkCommandBuffer commandBuffer) {
+void VkObject::DrawPick(VkCommandBuffer commandBuffer, ImVec2 viewportSize) {
+  if (m_VkMaterial->m_PipelineInfo.pickPipeline == VK_NULL_HANDLE)
+    return;
 
   std::array<VkDescriptorSet, 2> descriptorSets = {m_SceneDescriptorSet, m_DescriptorSet};
   vkCmdBindDescriptorSets(
@@ -77,7 +80,7 @@ void VkObject::DrawPick(VkCommandBuffer commandBuffer) {
   vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
   vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-  vkCmdSetLineWidth(commandBuffer, m_Object->m_Material->m_LineWidth);
+  vkCmdSetLineWidth(commandBuffer, m_Object->m_Material->m_LineWidth * viewportSize.y);
 
   // Draw indexed
   vkCmdDrawIndexed(commandBuffer,

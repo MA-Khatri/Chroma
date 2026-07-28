@@ -1,5 +1,6 @@
 #include "scene.hpp"
 #include "camera.hpp"
+#include "mesh.hpp"
 #include "texture.hpp"
 #include <memory>
 
@@ -14,12 +15,19 @@ Scene CreateTestScene() {
 
   // Scene objects
   auto pointsMesh = std::make_shared<Mesh>(LoadMeshFromFile("multimaterial.ply"));
-  auto pointsMaterial = std::make_shared<Material>(MaterialType::PointShaded);
+  auto pointsMaterial = std::make_shared<Material>(MaterialType::PointNormal);
   auto pointsTransform = std::make_shared<Transform>();
   pointsTransform->SetRotation(glm::vec3(180.0f, 0.0f, 0.0f));
   pointsTransform->SetPosition(glm::vec3(0.0f, 0.0f, 100.0f));
   auto pointsObject = std::make_shared<Object>(pointsMesh, pointsMaterial, pointsTransform);
   scene.AddObject(pointsObject);
+
+  auto orientationGizmoMesh = std::make_shared<Mesh>(CreateOrientationGizmo());
+  auto orientationGizmoMaterial = std::make_shared<Material>(MaterialType::OrientationGizmo);
+  orientationGizmoMaterial->m_LineWidth = 0.005f;
+  auto orientationGizmoObject =
+      std::make_shared<Object>(orientationGizmoMesh, orientationGizmoMaterial);
+  scene.AddObject(orientationGizmoObject);
 
   // Default camera
   auto perspectiveProjection =

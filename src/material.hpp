@@ -19,7 +19,10 @@ enum class MaterialType {
 
   // Lines
   Lines,
-  GroundGrid, // Special material with custom shaders for the ground grid
+
+  // Special Materials with custom shaders
+  GroundGrid,
+  OrientationGizmo,
 };
 
 // Single global counter for assigning unique material IDs
@@ -46,6 +49,5 @@ public:
   // Texture<uint8_t> m_SpecularTexture;
 
   // Special non-surface material properties
-  float m_PointSize = 1.0f; // For point materials
-  float m_LineWidth = 1.0f; // For line materials
+  float m_LineWidth = 0.005f; // Percent relative to screen height
 };

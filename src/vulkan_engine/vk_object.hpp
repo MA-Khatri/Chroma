@@ -17,9 +17,9 @@ public:
     glm::mat4 normalMatrix;
   };
 
-  void Draw(VkCommandBuffer commandBuffer);
+  void Draw(VkCommandBuffer commandBuffer, ImVec2 viewportSize);
 
-  void DrawPick(VkCommandBuffer commandBuffer);
+  void DrawPick(VkCommandBuffer commandBuffer, ImVec2 viewportSize);
 
 private:
   void VkUpdateUniformBuffer(); // Updates descriptor set to take in this object's uniform buffer

@@ -52,6 +52,7 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
   }
 
   bool hasTextures = material->HasTextures();
+  bool hasPick = true;
 
   switch (material->m_Type) {
   case MaterialType::SurfacePerVertexFlat:
@@ -103,8 +104,13 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
   case MaterialType::GroundGrid:
     shaders.push_back({VK_SHADER_STAGE_VERTEX_BIT, "vulkan_shaders/GroundGrid.vert.spv"});
     shaders.push_back({VK_SHADER_STAGE_FRAGMENT_BIT, "vulkan_shaders/GroundGrid.frag.spv"});
-    pickShaders.push_back({VK_SHADER_STAGE_VERTEX_BIT, "vulkan_shaders/GroundGrid.vert.spv"});
-    pickShaders.push_back({VK_SHADER_STAGE_FRAGMENT_BIT, "vulkan_shaders/DepthOnly.frag.spv"});
+    hasPick = false;
+    break;
+
+  case MaterialType::OrientationGizmo:
+    shaders.push_back({VK_SHADER_STAGE_VERTEX_BIT, "vulkan_shaders/OrientationGizmo.vert.spv"});
+    shaders.push_back({VK_SHADER_STAGE_FRAGMENT_BIT, "vulkan_shaders/Default.frag.spv"});
+    hasPick = false;
     break;
 
   default:
@@ -129,9 +135,12 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
   };
   m_PipelineInfo.pipeline = vke::CreateGraphicsPipeline(shaders, msaaCount, topology, renderPass,
                                                         DSLs, m_PipelineInfo.pipelineLayout);
-  m_PipelineInfo.pickPipeline =
-      vke::CreateGraphicsPipeline(pickShaders, VK_SAMPLE_COUNT_1_BIT, topology, pickRenderPass,
-                                  DSLs, m_PipelineInfo.pipelineLayout);
+
+  if (pickRenderPass != VK_NULL_HANDLE && hasPick) {
+    m_PipelineInfo.pickPipeline =
+        vke::CreateGraphicsPipeline(pickShaders, VK_SAMPLE_COUNT_1_BIT, topology, pickRenderPass,
+                                    DSLs, m_PipelineInfo.pipelineLayout);
+  }
 
   // Store texture writes for later binding on the per-object descriptor set.
   m_PipelineInfo.descriptorPool = descriptorPool;

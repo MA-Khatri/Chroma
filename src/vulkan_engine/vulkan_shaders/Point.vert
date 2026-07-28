@@ -33,7 +33,7 @@ void main() {
   // proj[1][1] is the standard vertical focal length factor (1.0 / tan(fov_y / 2))
   float fovScalingFactor = scene.proj[1][1];
 
-  const float targetPercent = 0.05; // percent of viewport height
+  const float targetPercent = 0.05; // percent of viewport height for point diameter
 
   // Scale up by the projection scale and viewport height, and down by the view-space depth
   gl_PointSize = (targetPercent * scene.viewportSize.y * fovScalingFactor) / abs(viewPos.z);

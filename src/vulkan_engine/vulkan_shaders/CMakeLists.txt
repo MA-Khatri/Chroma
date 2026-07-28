@@ -7,8 +7,9 @@ Default.vert
     Default.vert
     DepthOnly.frag
     DepthOnlyPoint.frag
-    GroundGrid.vert
     GroundGrid.frag
+    GroundGrid.vert
+    OrientationGizmo.vert
     Point.vert
     PointFlat.frag
     PointNormal.frag

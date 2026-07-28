@@ -69,7 +69,7 @@ void VkScene::Draw(VkCommandBuffer commandBuffer, ImVec2 viewportSize) {
   VkUploadUniformBuffer(viewportSize);
 
   for (const auto &vkObject : m_VkObjects) {
-    vkObject->Draw(commandBuffer);
+    vkObject->Draw(commandBuffer, viewportSize);
   }
 }
 
@@ -78,7 +78,7 @@ void VkScene::DrawPick(VkCommandBuffer commandBuffer, ImVec2 viewportSize) {
   VkUploadUniformBuffer(viewportSize);
 
   for (const auto &vkObject : m_VkObjects) {
-    vkObject->DrawPick(commandBuffer);
+    vkObject->DrawPick(commandBuffer, viewportSize);
   }
 }
 

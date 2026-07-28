@@ -1,5 +1,6 @@
 #include "mesh.hpp"
 
+#include <cstdint>
 #include <fstream>
 #include <plog/Log.h>
 #include <tiny_obj_loader.h>
@@ -182,7 +183,7 @@ Mesh CreateGroundGridMesh() {
     index++;
 
     vertices[index] = {
-        {i * xGap, groundGridYMax, 0.0f}, {0.0f, 0.0f, 1.0f}, xGridColor, {1.0f, 1.0f}};
+        {i * xGap, groundGridYMax, 0.0f}, {0.0f, 0.0f, 1.0f}, xGridColor, {0.0f, 0.0f}};
     indices[index] = index;
     index++;
   }
@@ -198,7 +199,7 @@ Mesh CreateGroundGridMesh() {
     index++;
 
     vertices[index] = {
-        {groundGridXMax, i * yGap, 0.0f}, {0.0f, 0.0f, 1.0f}, yGridColor, {1.0f, 1.0f}};
+        {groundGridXMax, i * yGap, 0.0f}, {0.0f, 0.0f, 1.0f}, yGridColor, {0.0f, 0.0f}};
     indices[index] = index;
     index++;
   }
@@ -213,13 +214,52 @@ Mesh CreateXYAxesMesh() {
   std::vector<Vertex> vertices = {
       // X axis
       {{-groundGridXMax, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, xAxisColor, {0.0f, 0.0f}},
-      {{groundGridXMax, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, xAxisColor, {1.0f, 1.0f}},
+      {{groundGridXMax, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, xAxisColor, {0.0f, 0.0f}},
       // Y axis
       {{0.0f, -groundGridYMax, 0.0f}, {0.0f, 0.0f, 1.0f}, yAxisColor, {0.0f, 0.0f}},
-      {{0.0f, groundGridYMax, 0.0f}, {0.0f, 0.0f, 1.0f}, yAxisColor, {1.0f, 1.0f}},
+      {{0.0f, groundGridYMax, 0.0f}, {0.0f, 0.0f, 1.0f}, yAxisColor, {0.0f, 0.0f}},
   };
 
   std::vector<uint32_t> indices = {0, 1, 2, 3};
+
+  return Mesh(vertices, indices, DrawMode::Lines);
+}
+
+Mesh CreateOrientationGizmo() {
+  glm::vec3 red = glm::vec3(1.0f, 0.0f, 0.0f);
+  glm::vec3 green = glm::vec3(0.0f, 1.0f, 0.0f);
+  glm::vec3 blue = glm::vec3(0.0f, 0.0f, 1.0f);
+
+  const float base = 0.7f;
+  const float offb = 0.5f;
+  glm::vec3 offRed = glm::vec3(base, offb, offb);
+  glm::vec3 offGreen = glm::vec3(offb, base, offb);
+  glm::vec3 offBlue = glm::vec3(offb, offb, base);
+
+  std::vector<Vertex> vertices = {
+      // -x to 0
+      {{-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, offRed, {0.0f, 0.0f}},
+      {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, offRed, {0.0f, 0.0f}},
+      // 0 to +x
+      {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, red, {0.0f, 0.0f}},
+      {{1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, red, {0.0f, 0.0f}},
+
+      // -y to 0
+      {{0.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, offGreen, {0.0f, 0.0f}},
+      {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, offGreen, {0.0f, 0.0f}},
+      // 0 to +y
+      {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, green, {0.0f, 0.0f}},
+      {{0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, green, {0.0f, 0.0f}},
+
+      // -z to 0
+      {{0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, offBlue, {0.0f, 0.0f}},
+      {{0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, offBlue, {0.0f, 0.0f}},
+      // 0 to +z
+      {{0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, blue, {0.0f, 0.0f}},
+      {{0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, blue, {0.0f, 0.0f}},
+  };
+
+  std::vector<uint32_t> indices = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 
   return Mesh(vertices, indices, DrawMode::Lines);
 }
