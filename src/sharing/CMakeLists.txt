@@ -6,6 +6,7 @@ set(SHARING_SRC
     network.hpp
     shared_memory_live_view_layout.hpp
     shared_memory_model_layout.hpp
+    wait_until.hpp
 )
 
 # Add files to the global SOURCES variable

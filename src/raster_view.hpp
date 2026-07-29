@@ -9,7 +9,7 @@
 
 class RasterView : public Layer {
 public:
-  RasterView();
+  RasterView(std::string name);
   ~RasterView();
 
   // Standard layer methods
@@ -32,6 +32,9 @@ private:
   Application *m_AppHandle;
   SDL_Window *m_WindowHandle;
   VulkanEngine *m_VulkanEngine;
+
+  std::string m_ViewportName;
+  ImGuiID m_WindowID = 0;
 
   std::shared_ptr<Scene> m_CurrentScene;
 

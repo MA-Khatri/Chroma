@@ -1,6 +1,8 @@
 #include "application.hpp"
 #include "raster_view.hpp"
+#include "scene.hpp"
 
+#include <memory>
 #include <plog/Appenders/ColorConsoleAppender.h>
 #include <plog/Appenders/RollingFileAppender.h>
 #include <plog/Formatters/TxtFormatter.h>
@@ -21,7 +23,8 @@ int main() {
 
   // Create Scenes
   PLOG_DEBUG << "Creating scenes...";
-  app->PushScene(std::make_shared<Scene>(CreateTestScene()));
+  app->PushScene(std::make_shared<Scene>(CreateScanningScene()));
+  // app->PushScene(std::make_shared<Scene>(CreateTestScene()));
   PLOG_DEBUG << "Done creating scenes.";
 
   auto &scenes = app->GetAllScenes();
@@ -35,8 +38,8 @@ int main() {
 
   // Create Layers
   PLOG_DEBUG << "Creating layers...";
-  app->PushLayer(std::make_shared<RasterView>());
-  // app->PushLayer(std::make_shared<RayTraceView>());
+  app->PushLayer(std::make_shared<RasterView>("Scanning"));
+  app->PushLayer(std::make_shared<RasterView>("Model"));
   PLOG_DEBUG << "Done creating layers.";
 
   app->Run();

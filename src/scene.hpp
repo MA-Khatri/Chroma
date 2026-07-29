@@ -36,3 +36,5 @@ private:
 };
 
 Scene CreateTestScene();
+
+Scene CreateScanningScene();

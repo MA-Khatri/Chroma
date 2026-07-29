@@ -46,8 +46,7 @@ public:
 
   int64_t GetTimestepNS() const { return m_TimeStepNS; }
 
-  enum { RasterizedViewport, RayTracedViewport };
-  int m_FocusedWindow = RasterizedViewport;
+  ImGuiID m_FocusedWindow = 0;
 
 private:
   static Application *s_Instance;

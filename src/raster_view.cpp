@@ -6,9 +6,11 @@
 #include "vulkan_engine/vulkan_utils.hpp"
 
 #include <SDL3/SDL_pixels.h>
+#include <imgui.h>
+#include <imgui_internal.h>
 #include <plog/Log.h>
 
-RasterView::RasterView() {
+RasterView::RasterView(std::string name) : m_ViewportName(name) {
   // TODO?
 }
 
@@ -65,15 +67,17 @@ void RasterView::OnUIRender() {
   // No padding on viewports
   ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
   {
-    ImGui::Begin("Rasterized Viewport");
+    ImGui::Begin(m_ViewportName.c_str());
     {
+      m_WindowID = ImGui::GetID(m_ViewportName.c_str());
       m_ViewportFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
       if (m_ViewportFocused) {
-        m_AppHandle->m_FocusedWindow = Application::RasterizedViewport;
+        m_AppHandle->m_FocusedWindow = m_WindowID;
       }
+      m_ViewportHovered = false;
 
       ImGui::BeginChild("Rasterized");
-      {
+      if (m_ViewportFocused || m_AppHandle->m_FocusedWindow == m_WindowID) {
         m_ViewportHovered = ImGui::IsWindowHovered();
 
         ImVec2 childMin = ImGui::GetCursorScreenPos();
@@ -119,9 +123,8 @@ void RasterView::OnUIRender() {
   ImGui::PopStyleVar();
 
   ImGui::Begin("Debug Panel");
-  {
+  if (m_ViewportFocused || m_AppHandle->m_FocusedWindow == m_WindowID) {
     Layer::CommonDebug(m_AppHandle, m_CurrentScene->GetCamera());
-
     m_CurrentScene->GetCamera()->GetGuiElements();
   }
   ImGui::End();

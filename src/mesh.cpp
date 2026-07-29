@@ -1,12 +1,17 @@
 #include "mesh.hpp"
 
+#include "sharing/shared_memory_model_layout.hpp"
+#include "sharing/wait_until.hpp"
+
 #include <cstdint>
 #include <fstream>
+#include <glm/gtc/type_ptr.hpp>
+#include <memory>
 #include <plog/Log.h>
 #include <tiny_obj_loader.h>
 #include <tinyply.h>
 
-Mesh CreateHelloTriangleMesh() {
+std::shared_ptr<Mesh> CreateHelloTriangleMesh() {
   std::vector<Vertex> vertices = {
       {{0.0f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.5f, 1.0f}},
       {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
@@ -15,10 +20,11 @@ Mesh CreateHelloTriangleMesh() {
 
   std::vector<uint32_t> indices = {0, 1, 2};
 
-  return Mesh(vertices, indices, DrawMode::Triangles);
+  return std::make_shared<Mesh>(vertices, indices, DrawMode::Triangles);
 }
 
-Mesh CreatePlaneMesh(float width, float depth, int widthSegments, int depthSegments) {
+std::shared_ptr<Mesh> CreatePlaneMesh(float width, float depth, int widthSegments,
+                                      int depthSegments) {
   std::vector<Vertex> vertices;
   std::vector<uint32_t> indices;
 
@@ -50,10 +56,10 @@ Mesh CreatePlaneMesh(float width, float depth, int widthSegments, int depthSegme
     }
   }
 
-  return Mesh(vertices, indices, DrawMode::Triangles);
+  return std::make_shared<Mesh>(vertices, indices, DrawMode::Triangles);
 }
 
-Mesh CreateCubeMesh() {
+std::shared_ptr<Mesh> CreateCubeMesh() {
   // Cube centered at origin with side length = 1 (extents [-0.5, 0.5] on x,y,z).
   // clang-format off
   std::vector<Vertex> vertices = {
@@ -102,10 +108,10 @@ Mesh CreateCubeMesh() {
     indices.push_back(base + 0);
   }
 
-  return Mesh(vertices, indices, DrawMode::Triangles);
+  return std::make_shared<Mesh>(vertices, indices, DrawMode::Triangles);
 }
 
-Mesh CreateSphereMesh(int latitudeSegments, int longitudeSegments) {
+std::shared_ptr<Mesh> CreateSphereMesh(int latitudeSegments, int longitudeSegments) {
   std::vector<Vertex> vertices;
   std::vector<uint32_t> indices;
 
@@ -143,20 +149,20 @@ Mesh CreateSphereMesh(int latitudeSegments, int longitudeSegments) {
     }
   }
 
-  return Mesh(vertices, indices, DrawMode::Triangles);
+  return std::make_shared<Mesh>(vertices, indices, DrawMode::Triangles);
 }
 
-Mesh CreateIcosphere(int subdivisions) {
+std::shared_ptr<Mesh> CreateIcosphere(int subdivisions) {
   // TODO: Create an icosahedron and then subdivide it to create an icosphere
   // This is a placeholder implementation; a full implementation would require more code
-  // For now, we can return a simple sphere mesh as a placeholder
+  // For now, we can return a simple sphere sphere as a placeholder
   return CreateSphereMesh(10, 10);
 }
 
 static const float groundGridXMax = 500.0f;
 static const float groundGridYMax = 500.0f;
 
-Mesh CreateGroundGridMesh() {
+std::shared_ptr<Mesh> CreateGroundGridMesh() {
   const glm::vec3 xGridColor = glm::vec3(78.0f / 255.0f, 78.0f / 255.0f, 78.0f / 255.0f);
   const glm::vec3 yGridColor = glm::vec3(78.0f / 255.0f, 78.0f / 255.0f, 78.0f / 255.0f);
 
@@ -204,10 +210,10 @@ Mesh CreateGroundGridMesh() {
     index++;
   }
 
-  return Mesh(vertices, indices, DrawMode::Lines);
+  return std::make_shared<Mesh>(vertices, indices, DrawMode::Lines);
 }
 
-Mesh CreateXYAxesMesh() {
+std::shared_ptr<Mesh> CreateXYAxesMesh() {
   const glm::vec3 xAxisColor = glm::vec3(98.0f / 255.0f, 135.0f / 255.0f, 41.0f / 255.0f);
   const glm::vec3 yAxisColor = glm::vec3(154.0f / 255.0f, 60.0f / 255.0f, 74.0f / 255.0f);
 
@@ -222,10 +228,10 @@ Mesh CreateXYAxesMesh() {
 
   std::vector<uint32_t> indices = {0, 1, 2, 3};
 
-  return Mesh(vertices, indices, DrawMode::Lines);
+  return std::make_shared<Mesh>(vertices, indices, DrawMode::Lines);
 }
 
-Mesh CreateOrientationGizmo() {
+std::shared_ptr<Mesh> CreateOrientationGizmo() {
   glm::vec3 red = glm::vec3(1.0f, 0.0f, 0.0f);
   glm::vec3 green = glm::vec3(0.0f, 1.0f, 0.0f);
   glm::vec3 blue = glm::vec3(0.0f, 0.0f, 1.0f);
@@ -261,10 +267,10 @@ Mesh CreateOrientationGizmo() {
 
   std::vector<uint32_t> indices = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 
-  return Mesh(vertices, indices, DrawMode::Lines);
+  return std::make_shared<Mesh>(vertices, indices, DrawMode::Lines);
 }
 
-Mesh LoadMeshFromFile(const std::string &filepath) {
+std::shared_ptr<Mesh> LoadMeshFromFile(const std::string &filepath) {
   // Check the file extension to determine the loader to use
   std::string extension = filepath.substr(filepath.find_last_of(".") + 1);
 
@@ -275,15 +281,15 @@ Mesh LoadMeshFromFile(const std::string &filepath) {
       return LoadMeshFromPLY(filepath);
     } else {
       PLOG_ERROR << "Unsupported mesh file format: " << extension;
-      return Mesh();
+      return nullptr;
     }
   } catch (const std::exception &e) {
     PLOG_ERROR << "Failed loading file " << filepath << ": " << e.what();
-    return Mesh();
+    return nullptr;
   }
 }
 
-Mesh LoadMeshFromOBJ(const std::string &filepath) {
+std::shared_ptr<Mesh> LoadMeshFromOBJ(const std::string &filepath) {
   tinyobj::attrib_t attrib;
   std::vector<tinyobj::shape_t> shapes;
   std::vector<tinyobj::material_t> materials;
@@ -305,7 +311,7 @@ Mesh LoadMeshFromOBJ(const std::string &filepath) {
 
     if (!ok) {
       PLOG_ERROR << "Failed to load OBJ file: " << filepath << " (" << err << ")";
-      return Mesh();
+      return nullptr;
     }
   }
 
@@ -355,7 +361,7 @@ Mesh LoadMeshFromOBJ(const std::string &filepath) {
     }
 
     PLOG_INFO << "Detected point cloud OBJ (" << vertexCount << " points): " << filepath;
-    return Mesh(vertices, indices, DrawMode::Points);
+    return std::make_shared<Mesh>(vertices, indices, DrawMode::Points);
   }
 
   // Regular triangle mesh path — dedupe vertices by full attribute set.
@@ -405,10 +411,10 @@ Mesh LoadMeshFromOBJ(const std::string &filepath) {
     }
   }
 
-  return Mesh(vertices, indices, DrawMode::Triangles);
+  return std::make_shared<Mesh>(vertices, indices, DrawMode::Triangles);
 }
 
-Mesh LoadMeshFromPLY(const std::string &filepath) {
+std::shared_ptr<Mesh> LoadMeshFromPLY(const std::string &filepath) {
   using namespace tinyply;
 
   std::string search_dir = RES_DIR;
@@ -421,7 +427,7 @@ Mesh LoadMeshFromPLY(const std::string &filepath) {
     fileStream.open(filepath, std::ios::binary);
     if (!fileStream || fileStream.fail()) {
       PLOG_ERROR << "Failed to open PLY file: " << fullpath;
-      return Mesh();
+      return nullptr;
     }
   }
 
@@ -443,7 +449,7 @@ Mesh LoadMeshFromPLY(const std::string &filepath) {
     plyPositions = file.request_properties_from_element("vertex", {"x", "y", "z"});
   } catch (const std::exception &e) {
     PLOG_ERROR << "PLY file missing vertex positions: " << e.what();
-    return Mesh();
+    return nullptr;
   }
 
   try {
@@ -548,7 +554,7 @@ Mesh LoadMeshFromPLY(const std::string &filepath) {
       indices[i] = static_cast<uint32_t>(i);
 
     PLOG_INFO << "Detected point cloud PLY (" << vertexCount << " points): " << filepath;
-    return Mesh(vertices, indices, DrawMode::Points);
+    return std::make_shared<Mesh>(vertices, indices, DrawMode::Points);
   }
 
   std::vector<uint32_t> indices;
@@ -577,8 +583,118 @@ Mesh LoadMeshFromPLY(const std::string &filepath) {
   }
   default:
     PLOG_ERROR << "Unsupported PLY face index type: " << filepath;
-    return Mesh();
+    return nullptr;
   }
 
-  return Mesh(vertices, indices, DrawMode::Triangles);
+  return std::make_shared<Mesh>(vertices, indices, DrawMode::Triangles);
+}
+
+constexpr uint16_t MODEL_STATE_LOCKED = static_cast<uint16_t>(1 << 5);
+std::shared_ptr<Mesh> LoadPointCloudFromSharedMemory(uint8_t *shm, uint32_t &revisionNumber,
+                                                     uint32_t &tracking, glm::mat4 &pose) {
+  uint32_t oldRevisionNumber = revisionNumber;
+
+  SharedMemoryModelLayout layout(0, 0, shm);
+
+  std::atomic<uint32_t> *busyAtomic(
+      (std::atomic<uint32_t> *)((uint32_t *)layout.writing_flag_ptr()));
+
+  bool flagAcquired = wait_until([&]() {
+    uint32_t flag0 = 0U;
+    uint32_t flag1 = 1U;
+    return busyAtomic->compare_exchange_strong(flag0, flag1);
+  });
+
+  if (!flagAcquired) {
+    uint32_t flag = ((uint32_t *)layout.writing_flag_ptr())[0];
+    PLOG_WARNING << "Writing flag is " << flag
+                 << ", indicating that model SHM is being written to. Returning nullptr.";
+    return nullptr;
+  }
+
+  // Get revision number and check if shm has updated
+  revisionNumber = ((uint32_t *)layout.revision_ptr())[0];
+  if (oldRevisionNumber == revisionNumber) {
+    PLOG_VERBOSE << "Revision number is the same as before: " << revisionNumber
+                 << ". No update to the point cloud in model SHM. Returning empty nullptr.";
+
+    uint32_t flag0 = 0U;
+    memcpy(layout.writing_flag_ptr(), &flag0, sizeof(flag0));
+    return nullptr;
+  }
+
+  PLOG_VERBOSE << "Acquired new model revision number: " << revisionNumber;
+
+  tracking = ((uint32_t *)layout.tracking_ptr())[0];
+  PLOG_VERBOSE << "Tracking: " << tracking;
+
+  // Get model size
+  uint32_t totalPoints = ((uint32_t *)layout.n_points_ptr())[0];
+  uint32_t nModels = ((uint32_t *)layout.n_models_ptr())[0];
+  layout.UpdateSize(totalPoints, nModels);
+
+  PLOG_VERBOSE << "Total points: " << totalPoints;
+
+  // Get pose matrix
+  float p[16];
+  memcpy(&p, layout.pose_ptr(), 16 * sizeof(float));
+  pose = glm::make_mat4(p);
+
+  std::vector<uint32_t> modelSizes(nModels);
+  memcpy(modelSizes.data(), layout.model_sizes_ptr(), nModels * sizeof(uint32_t));
+
+  // Memcpy point cloud data
+  std::vector<glm::vec3> positions(totalPoints);
+  std::vector<glm::vec3> normals(totalPoints);
+  std::vector<glm::vec3> colors(totalPoints);
+  std::vector<uint16_t> states(totalPoints);
+
+  memcpy(positions.data(), layout.positions_ptr(), totalPoints * layout.single_position_size);
+  memcpy(normals.data(), layout.normals_ptr(), totalPoints * layout.single_normal_size);
+  memcpy(colors.data(), layout.colors_ptr(), totalPoints * layout.single_color_size);
+  memcpy(states.data(), layout.states_ptr(), totalPoints * layout.single_state_size);
+
+  PLOG_VERBOSE << "Completed memcpy of data";
+
+  // Double check model size to see if the data has been updated
+  if (totalPoints != ((uint32_t *)layout.n_points_ptr())[0]) {
+    PLOG_ERROR << "Model size mismatch: expected " << totalPoints << ", got "
+               << ((uint32_t *)layout.n_points_ptr())[0];
+
+    return nullptr;
+  }
+
+  uint32_t flag0 = 0U;
+  memcpy(layout.writing_flag_ptr(), &flag0, sizeof(flag0));
+
+  std::vector<Vertex> vertices;
+  std::vector<uint32_t> indices;
+
+  unsigned int filteredCount = 0;
+  for (int i = 0; i < totalPoints; i++) {
+    auto &p = positions[i];
+    auto &n = normals[i];
+    auto c = colors[i] / 255.0f;
+    auto s = states[i];
+
+    // Skip invalid points
+    if (glm::any(glm::isnan(p)) || glm::any(glm::isnan(n)))
+      continue;
+
+    bool firstIsland = i < modelSizes[0];
+    if (!firstIsland)
+      c *= 0.5f;
+
+    Vertex vertex;
+    vertex.position = p;
+    vertex.normal = n;
+    vertex.color = (s & MODEL_STATE_LOCKED) ? glm::vec3(0, 1, 0) : c;
+
+    vertex.texCoords = glm::vec2(0, 0);
+
+    vertices.push_back(vertex);
+    indices.push_back(filteredCount++);
+  }
+
+  return std::make_shared<Mesh>(vertices, indices, DrawMode::Points);
 }

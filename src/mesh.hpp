@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #define GLM_ENABLE_EXPERIMENTAL
 
 #include <glm/glm.hpp>
@@ -43,25 +44,29 @@ struct Mesh {
   Mesh() = default; // Default mesh is a zero area triangle
 };
 
-Mesh CreateHelloTriangleMesh();
+std::shared_ptr<Mesh> CreateHelloTriangleMesh();
 
-Mesh CreatePlaneMesh(float width = 1, float depth = 1, int widthSegments = 1,
-                     int depthSegments = 1);
+std::shared_ptr<Mesh> CreatePlaneMesh(float width = 1, float depth = 1, int widthSegments = 1,
+                                      int depthSegments = 1);
 
-Mesh CreateCubeMesh();
+std::shared_ptr<Mesh> CreateCubeMesh();
 
-Mesh CreateSphereMesh(int latitudeSegments, int longitudeSegments);
+std::shared_ptr<Mesh> CreateSphereMesh(int latitudeSegments, int longitudeSegments);
 
-Mesh CreateIcosphere(int subdivisions);
+std::shared_ptr<Mesh> CreateIcosphere(int subdivisions);
 
-Mesh CreateGroundGridMesh();
+std::shared_ptr<Mesh> CreateGroundGridMesh();
 
 // Create XY axes separate from ground grid since we render them with a thicker line width
-Mesh CreateXYAxesMesh();
+std::shared_ptr<Mesh> CreateXYAxesMesh();
 
-Mesh CreateOrientationGizmo();
+// RGB axes gizmo displayed in the top-left corner
+std::shared_ptr<Mesh> CreateOrientationGizmo();
 
 // Load a mesh from a file. The file format is determined by the file extension.
-Mesh LoadMeshFromFile(const std::string &filepath);
-Mesh LoadMeshFromOBJ(const std::string &filepath);
-Mesh LoadMeshFromPLY(const std::string &filepath);
+std::shared_ptr<Mesh> LoadMeshFromFile(const std::string &filepath);
+std::shared_ptr<Mesh> LoadMeshFromOBJ(const std::string &filepath);
+std::shared_ptr<Mesh> LoadMeshFromPLY(const std::string &filepath);
+
+std::shared_ptr<Mesh> LoadPointCloudFromSharedMemory(uint8_t *shm, uint32_t &revisionNumber,
+                                                     uint32_t &tracking, glm::mat4 &pose);
