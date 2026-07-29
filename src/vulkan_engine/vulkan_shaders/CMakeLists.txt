@@ -14,6 +14,7 @@ Default.vert
     PointFlat.frag
     PointNormal.frag
     PointShaded.frag
+    Reticle.vert
     Surface.vert
     SurfaceAlbedoTextureFlat.frag
     SurfaceAlbedoTextureShaded.frag

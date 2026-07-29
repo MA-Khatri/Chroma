@@ -17,6 +17,8 @@ set(SOURCES
     object.hpp
     raster_view.cpp
     raster_view.hpp
+    scanning_view.cpp
+    scanning_view.hpp
     scene.cpp
     scene.hpp
     texture.hpp

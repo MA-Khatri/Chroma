@@ -155,13 +155,19 @@ class CameraController {
 public:
   enum class Type { FreeFly, Orbit, TrackBall, Unknown };
 
+  CameraController() {};
+
   virtual ~CameraController() = default;
 
-  virtual void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) = 0;
+  virtual void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) {};
 
-  virtual glm::mat4 GetMatrix() const = 0;
+  virtual glm::mat4 GetMatrix() const { return m_Matrix; };
 
-  virtual void GetGuiElements() = 0;
+  // WARNING! Only valid for base CameraController class -- inherited classes' GetMatrix methods
+  // will not return the matrix set here!
+  void SetMatrix(glm::mat4 matrix) { m_Matrix = matrix; }
+
+  virtual void GetGuiElements() {};
 
   glm::vec3 GetPosition() const { return m_Position; }
   glm::vec3 GetLookAt() const { return m_LookAt; }
@@ -204,6 +210,9 @@ protected:
   glm::vec3 m_Position = glm::vec3(0.0f, 0.0f, 5.0f);
   glm::vec3 m_LookAt = glm::vec3(0.0f, 0.0f, 0.0f);
   glm::vec3 m_Up = glm::vec3(0.0f, 0.0f, 1.0f);
+
+  // Only used for base CameraController class!
+  glm::mat4 m_Matrix = glm::mat4(1.0f);
 
   // Returns closest pixel location within pick search region (x, y) and corresponding depth (z)
   // Note: Assumes input is viewport-relative already
@@ -368,7 +377,12 @@ public:
       return glm::vec3(0.0f);
   }
 
+  void SetCameraController(std::shared_ptr<CameraController> controller) {
+    m_Controller = controller;
+  }
   std::shared_ptr<CameraController> GetCameraController() { return m_Controller; }
+
+  void SetProjection(std::shared_ptr<Projection> projection) { m_Projection = projection; }
   std::shared_ptr<Projection> GetProjection() { return m_Projection; }
 
   void SetViewportBounds(glm::vec2 min, glm::vec2 max) {

@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <memory>
 
-static int SceneCounter = 0;
+inline int SceneCounter = 0;
 
 class Scene {
 public:
@@ -36,5 +36,3 @@ private:
 };
 
 Scene CreateTestScene();
-
-Scene CreateScanningScene();

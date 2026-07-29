@@ -1,5 +1,6 @@
 #include "application.hpp"
 #include "raster_view.hpp"
+#include "scanning_view.hpp"
 #include "scene.hpp"
 
 #include <memory>
@@ -21,24 +22,9 @@ int main() {
   // Initialize singleton app instance
   Application *app = Application::GetInstance();
 
-  // Create Scenes
-  PLOG_DEBUG << "Creating scenes...";
-  app->PushScene(std::make_shared<Scene>(CreateScanningScene()));
-  // app->PushScene(std::make_shared<Scene>(CreateTestScene()));
-  PLOG_DEBUG << "Done creating scenes.";
-
-  auto &scenes = app->GetAllScenes();
-  if (scenes.size() > 0) {
-    PLOG_DEBUG << "Setting active scene to \"" << scenes[0]->GetSceneName()
-               << "\" (Scene ID: " << scenes[0]->m_SceneID << ")";
-    app->SetActiveScene(scenes[0]->m_SceneID);
-  } else {
-    PLOG_ERROR << "No scenes available to set as active!";
-  }
-
   // Create Layers
   PLOG_DEBUG << "Creating layers...";
-  app->PushLayer(std::make_shared<RasterView>("Scanning"));
+  app->PushLayer(std::make_shared<ScanningView>("Scanning"));
   app->PushLayer(std::make_shared<RasterView>("Model"));
   PLOG_DEBUG << "Done creating layers.";
 

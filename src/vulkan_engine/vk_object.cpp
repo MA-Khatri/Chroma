@@ -35,6 +35,9 @@ VkObject::~VkObject() {
 }
 
 void VkObject::Draw(VkCommandBuffer commandBuffer, ImVec2 viewportSize) {
+  if (!m_Object->m_Active)
+    return;
+
   // VkUploadUniformBuffer();
 
   std::array<VkDescriptorSet, 2> descriptorSets = {m_SceneDescriptorSet, m_DescriptorSet};
@@ -63,7 +66,7 @@ void VkObject::Draw(VkCommandBuffer commandBuffer, ImVec2 viewportSize) {
 }
 
 void VkObject::DrawPick(VkCommandBuffer commandBuffer, ImVec2 viewportSize) {
-  if (m_VkMaterial->m_PipelineInfo.pickPipeline == VK_NULL_HANDLE)
+  if (!m_Object->m_Active || m_VkMaterial->m_PipelineInfo.pickPipeline == VK_NULL_HANDLE)
     return;
 
   std::array<VkDescriptorSet, 2> descriptorSets = {m_SceneDescriptorSet, m_DescriptorSet};

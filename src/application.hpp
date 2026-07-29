@@ -34,11 +34,6 @@ public:
   void Run();
 
   void PushLayer(const std::shared_ptr<Layer> &layer);
-  void PushScene(const std::shared_ptr<Scene> &scene);
-  void SetActiveScene(int sceneIndex);
-
-  std::shared_ptr<Scene> GetActiveScene() const { return m_Scenes[m_ActiveSceneIndex]; }
-  const std::vector<std::shared_ptr<Scene>> &GetAllScenes() const { return m_Scenes; }
 
   SDL_Window *GetWindowHandle() const { return m_WindowHandle; }
 
@@ -64,8 +59,6 @@ private:
   SDL_Window *m_WindowHandle;
   Controller *m_Controller;
   std::vector<std::shared_ptr<Layer>> m_Layers;
-  std::vector<std::shared_ptr<Scene>> m_Scenes;
-  int m_ActiveSceneIndex = 0;
 
   bool m_Running;
 

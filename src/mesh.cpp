@@ -270,6 +270,20 @@ std::shared_ptr<Mesh> CreateOrientationGizmo() {
   return std::make_shared<Mesh>(vertices, indices, DrawMode::Lines);
 }
 
+std::shared_ptr<Mesh> CreateReticle(glm::vec3 color) {
+  std::vector<Vertex> vertices = {
+      {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, color, {0.0f, 0.0f}},
+      {{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, color, {0.0f, 0.0f}},
+      {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, color, {0.0f, 0.0f}},
+      {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, color, {0.0f, 0.0f}},
+  };
+
+  std::vector<uint32_t> indices = {0, 1, 1, 2, 2, 3, 3, 0};
+
+  // TODO: Convert this to line loop
+  return std::make_shared<Mesh>(vertices, indices, DrawMode::Lines);
+}
+
 std::shared_ptr<Mesh> LoadMeshFromFile(const std::string &filepath) {
   // Check the file extension to determine the loader to use
   std::string extension = filepath.substr(filepath.find_last_of(".") + 1);

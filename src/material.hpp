@@ -23,6 +23,7 @@ enum class MaterialType {
   // Special Materials with custom shaders
   GroundGrid,
   OrientationGizmo,
+  Reticle,
 };
 
 // Single global counter for assigning unique material IDs

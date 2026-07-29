@@ -63,6 +63,8 @@ std::shared_ptr<Mesh> CreateXYAxesMesh();
 // RGB axes gizmo displayed in the top-left corner
 std::shared_ptr<Mesh> CreateOrientationGizmo();
 
+std::shared_ptr<Mesh> CreateReticle(glm::vec3 color);
+
 // Load a mesh from a file. The file format is determined by the file extension.
 std::shared_ptr<Mesh> LoadMeshFromFile(const std::string &filepath);
 std::shared_ptr<Mesh> LoadMeshFromOBJ(const std::string &filepath);

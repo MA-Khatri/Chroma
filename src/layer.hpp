@@ -14,6 +14,7 @@
 #include <plog/Log.h>
 
 #include "application.hpp"
+#include "scene.hpp"
 
 // Forward Declaration
 class Application;
@@ -167,6 +168,18 @@ protected:
   SlidingBuffer<float> m_FrameTimes = SlidingBuffer<float>(m_FrameGraphStorageCount);
   SlidingBuffer<float> m_FrameRates = SlidingBuffer<float>(m_FrameGraphStorageCount);
   std::vector<float> m_FrameGraphX = arange<float>(0, (float)m_FrameGraphStorageCount, 1);
+
+  bool m_ViewportFocused = false;
+  bool m_ViewportHovered = false;
+  ImVec2 m_ViewportSize = ImVec2(400.0f, 400.0f);
+
+  Application *m_AppHandle;
+  SDL_Window *m_WindowHandle;
+
+  std::string m_ViewportName;
+  ImGuiID m_WindowID = 0;
+
+  std::shared_ptr<Scene> m_CurrentScene;
 
 private:
   bool m_MouseWrapEnabled = true;

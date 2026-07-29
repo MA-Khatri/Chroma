@@ -113,6 +113,12 @@ VkMaterial::VkMaterial(std::shared_ptr<Material> material, VkDescriptorPool desc
     hasPick = false;
     break;
 
+  case MaterialType::Reticle:
+    shaders.push_back({VK_SHADER_STAGE_VERTEX_BIT, "vulkan_shaders/Reticle.vert.spv"});
+    shaders.push_back({VK_SHADER_STAGE_FRAGMENT_BIT, "vulkan_shaders/Default.frag.spv"});
+    hasPick = false;
+    break;
+
   default:
     topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 

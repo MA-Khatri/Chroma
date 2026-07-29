@@ -10,7 +10,8 @@
 #include <imgui_internal.h>
 #include <plog/Log.h>
 
-RasterView::RasterView(std::string name) : m_ViewportName(name) {
+RasterView::RasterView(std::string name) {
+  m_ViewportName = name;
   // TODO?
 }
 
@@ -22,37 +23,16 @@ RasterView::~RasterView() {
 // === Standard layer methods ===
 // ==============================
 void RasterView::OnAttach(Application *app) {
-  PLOG_DEBUG << "Attaching RasterView layer";
   m_AppHandle = app;
   m_WindowHandle = app->GetWindowHandle();
   m_VulkanEngine = new VulkanEngine();
+
+  OnAttachExtra();
 }
 
 void RasterView::OnDetach() { delete m_VulkanEngine; }
 
 void RasterView::OnUpdate() {
-  // Check if scene has changed
-  auto scene = m_AppHandle->GetActiveScene();
-  if (scene &&
-      (!m_CurrentScene || (m_CurrentScene && scene->m_SceneID != m_CurrentScene->m_SceneID))) {
-    PLOG_DEBUG << "Active scene changed in RasterView to \"" << scene->GetSceneName()
-               << "\" (Scene ID: " << scene->m_SceneID << ")";
-    m_CurrentScene = scene;
-
-    // Update VulkanEngine with new scene
-    m_VulkanEngine->SetScene(scene);
-
-    // TODO: We need to reset the active camera and callback if camera changes
-    // Update controller with new scene's camera
-    Controller::GetInstance()->SetActiveCamera(scene->GetCamera());
-
-    // Register double click callback
-    scene->GetCamera()->GetCameraController()->RegisterDoubleClickCallback(
-        [this](glm::vec2 clickPos) -> glm::vec3 {
-          return m_VulkanEngine->GetClosestDepth(clickPos);
-        });
-  }
-
   // Update frame rate/time
   ImGuiIO io = ImGui::GetIO();
 
@@ -61,6 +41,8 @@ void RasterView::OnUpdate() {
 
   m_FrameTimes.Add(frame_time);
   m_FrameRates.Add(frame_rate);
+
+  OnUpdateExtra();
 }
 
 void RasterView::OnUIRender() {
@@ -152,4 +134,13 @@ void RasterView::OnResize(ImVec2 newSize) {
   m_VulkanEngine->OnResize(m_ViewportSize);
 
   // Note: Camera resizing is done in OnUIRender
+}
+
+void RasterView::OnAttachExtra() {
+  m_CurrentScene = std::make_shared<Scene>(CreateTestScene());
+  m_VulkanEngine->SetScene(m_CurrentScene);
+}
+
+void RasterView::OnUpdateExtra() {
+  // TODO?
 }

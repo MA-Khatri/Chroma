@@ -47,8 +47,12 @@ VkScene::VkScene(std::shared_ptr<Scene> scene, VkSampleCountFlagBits msaaCount,
 
   // For pipeline layout, we can just use the layout from any material
   // -- this will only be used to set the push constants
-  auto mat = m_Materials.at(0);
-  m_PipelineLayout = mat->m_PipelineInfo.pipelineLayout;
+  if (m_Materials.size() > 0) {
+    auto mat = m_Materials.begin()->second;
+    m_PipelineLayout = mat->m_PipelineInfo.pipelineLayout;
+  } else {
+    PLOG_WARNING << "Missing materials for VkScene!";
+  }
 
   // Create VkObject for each Object in the Scene
   for (const auto &object : m_Scene->GetObjects()) {
@@ -103,6 +107,10 @@ void VkScene::VkUpdateUniformBuffer() {
 void VkScene::VkUploadUniformBuffer(ImVec2 viewportSize) {
   if (m_UniformBufferMapped) {
     auto camera = m_Scene->GetCamera();
+    if (!camera) {
+      PLOG_WARNING << "Scene does not have a camera to upload!";
+      return;
+    }
 
     SceneUBO ubo{};
     ubo.viewMatrix = camera->GetViewMatrix();

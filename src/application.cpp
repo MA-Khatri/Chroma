@@ -30,16 +30,6 @@ void Application::PushLayer(const std::shared_ptr<Layer> &layer) {
   layer->OnAttach(this);
 }
 
-void Application::PushScene(const std::shared_ptr<Scene> &scene) { m_Scenes.emplace_back(scene); }
-
-void Application::SetActiveScene(int sceneIndex) {
-  if (sceneIndex >= 0 && sceneIndex < static_cast<int>(m_Scenes.size())) {
-    m_ActiveSceneIndex = sceneIndex;
-  } else {
-    PLOG_ERROR << "Invalid scene index: " << sceneIndex;
-  }
-}
-
 int64_t Application::GetTimeNS() {
   SDL_Time ns;
   if (SDL_GetCurrentTime(&ns))

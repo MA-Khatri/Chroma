@@ -18,4 +18,6 @@ public:
   std::shared_ptr<Mesh> m_Mesh;
   std::shared_ptr<Material> m_Material;
   std::shared_ptr<Transform> m_Transform;
+
+  bool m_Active = true;
 };
