@@ -3,8 +3,10 @@
 #include "../scene.hpp"
 #include "imgui.h"
 #include "vk_object.hpp"
+#include "vulkan_utils.hpp"
 
 #include <map>
+#include <memory>
 #include <vulkan/vulkan_core.h>
 
 class VulkanEngine; // Forward declaration
@@ -28,6 +30,41 @@ public:
   void DrawPick(VkCommandBuffer commandBuffer, ImVec2 viewportSize);
 
   std::shared_ptr<Scene> GetBaseScene() const { return m_Scene; }
+
+  void ReplaceObject(int idx, std::shared_ptr<Object> object) {
+    if (idx < 0 || idx >= m_VkObjects.size()) {
+      PLOG_ERROR << "Invalid object index to replace!";
+      return;
+    }
+
+    if (m_DescriptorSet == VK_NULL_HANDLE) {
+      PLOG_ERROR << "Invalid descriptor set";
+      return;
+    }
+
+    PLOG_INFO << "0";
+
+    auto it = m_Materials.find(object->m_Material->m_MaterialID);
+    if (it == m_Materials.end()) {
+      PLOG_ERROR << "No material found for ID " << object->m_Material->m_MaterialID;
+      return;
+    }
+    auto material = it->second;
+
+    if (material == VK_NULL_HANDLE) {
+      PLOG_ERROR << "Material is null!";
+    }
+
+    PLOG_INFO << "1";
+
+    auto newVkObject = std::make_shared<VkObject>(object, material, m_DescriptorSet);
+
+    PLOG_INFO << "2";
+
+    m_VkObjects[idx] = newVkObject;
+
+    PLOG_INFO << "3";
+  }
 
 private:
   // Updates descriptor set to take in this scene's uniform buffer

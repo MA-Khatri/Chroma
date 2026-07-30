@@ -28,6 +28,12 @@ void RasterView::OnAttach(Application *app) {
   m_VulkanEngine = new VulkanEngine();
 
   OnAttachExtra();
+
+  // Register double click callback
+  m_CurrentScene->GetCamera()->GetCameraController()->RegisterDoubleClickCallback(
+      [this](glm::vec2 clickPos) -> glm::vec3 {
+        return m_VulkanEngine->GetClosestDepth(clickPos);
+      });
 }
 
 void RasterView::OnDetach() { delete m_VulkanEngine; }
@@ -41,6 +47,10 @@ void RasterView::OnUpdate() {
 
   m_FrameTimes.Add(frame_time);
   m_FrameRates.Add(frame_rate);
+
+  if (m_ViewportFocused) {
+    Controller::GetInstance()->SetActiveCamera(m_CurrentScene->GetCamera());
+  }
 
   OnUpdateExtra();
 }
@@ -105,7 +115,7 @@ void RasterView::OnUIRender() {
   ImGui::PopStyleVar();
 
   ImGui::Begin("Debug Panel");
-  if (m_ViewportFocused || m_AppHandle->m_FocusedWindow == m_WindowID) {
+  if (m_AppHandle->m_FocusedWindow == m_WindowID) {
     Layer::CommonDebug(m_AppHandle, m_CurrentScene->GetCamera());
     m_CurrentScene->GetCamera()->GetGuiElements();
   }

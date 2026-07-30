@@ -24,6 +24,8 @@ public:
 
   void SetScene(std::shared_ptr<Scene> scene);
 
+  std::shared_ptr<VkScene> GetVkScene() { return m_VkScene; }
+
   // Draw call for main viewport render
   void DrawFrame();
 

@@ -621,7 +621,7 @@ std::shared_ptr<Mesh> LoadPointCloudFromSharedMemory(uint8_t *shm, uint32_t &rev
 
   if (!flagAcquired) {
     uint32_t flag = ((uint32_t *)layout.writing_flag_ptr())[0];
-    PLOG_WARNING << "Writing flag is " << flag
+    PLOG_VERBOSE << "Writing flag is " << flag
                  << ", indicating that model SHM is being written to. Returning nullptr.";
     return nullptr;
   }

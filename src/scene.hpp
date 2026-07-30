@@ -22,6 +22,14 @@ public:
   void AddObject(std::shared_ptr<Object> object) { m_Objects.push_back(object); }
   const std::vector<std::shared_ptr<Object>> &GetObjects() const { return m_Objects; }
 
+  void ReplaceObject(int idx, std::shared_ptr<Object> object) {
+    if (idx < 0 || idx >= m_Objects.size()) {
+      PLOG_ERROR << "Invalid object index to replace!";
+      return;
+    }
+    m_Objects[idx] = object;
+  }
+
   void SetClearColor(const glm::vec3 &color) { m_ClearColor = color; }
   const glm::vec3 &GetClearColor() const { return m_ClearColor; }
 

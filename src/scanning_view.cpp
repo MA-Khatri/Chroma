@@ -42,7 +42,6 @@ void ScanningView::CreateScanningScene() {
   m_MatNormal = std::make_shared<Material>(MaterialType::PointNormal);
   auto placeHolderMesh = std::make_shared<Mesh>();
   auto pointCloudPlaceHolder = std::make_shared<Object>(placeHolderMesh, m_MatShaded);
-  pointCloudPlaceHolder->m_Active = false;
   scene.AddObject(pointCloudPlaceHolder);
   m_PointCloudIdx = cObjectIdx++;
 
@@ -67,10 +66,14 @@ void ScanningView::OnAttachExtra() {
 }
 
 void ScanningView::OnUpdateExtra() {
-  auto pointCloud = m_CurrentScene->GetObjects()[m_PointCloudIdx];
   if (m_SHMModel.IsOpen()) {
-    pointCloud->m_Mesh =
+    auto newPCMesh =
         LoadPointCloudFromSharedMemory(m_SHMModel.Data(), m_RevisionNumber, m_Tracking, m_Pose);
+    auto newPCObject = std::make_shared<Object>(newPCMesh, m_MatShaded);
+    m_CurrentScene->ReplaceObject(m_PointCloudIdx, newPCObject);
+    m_VulkanEngine->GetVkScene()->ReplaceObject(m_PointCloudIdx, newPCObject);
+  } else {
+    m_SHMModel.Open("/model", 113246624);
   }
 
   if (m_IsScanning && !ImGui::IsAnyMouseDown()) {
