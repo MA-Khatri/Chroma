@@ -13,6 +13,7 @@
 #include <imgui_impl_vulkan.h>
 
 #include "controller.hpp"
+#include "imgui_log_appender.hpp"
 #include "layer.hpp"
 #include "scene.hpp"
 
@@ -41,6 +42,8 @@ public:
 
   int64_t GetTimestepNS() const { return m_TimeStepNS; }
 
+  void RegisterLogger(ImGuiLogAppender *logger) { m_Logger = logger; }
+
   ImGuiID m_FocusedWindow = 0;
 
 private:
@@ -59,6 +62,8 @@ private:
   SDL_Window *m_WindowHandle;
   Controller *m_Controller;
   std::vector<std::shared_ptr<Layer>> m_Layers;
+
+  ImGuiLogAppender *m_Logger;
 
   bool m_Running;
 

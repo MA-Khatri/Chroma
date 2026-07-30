@@ -10,17 +10,23 @@
 #include <plog/Initializers/RollingFileInitializer.h>
 #include <plog/Log.h>
 
+#include "imgui_log_appender.hpp"
+
 int main() {
   // Initialize logger with up to 3, 10 MB files (stored in build dir)
   static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
   static plog::RollingFileAppender<plog::TxtFormatter> fileAppender("chroma_log.txt",
                                                                     10 * 1024 * 1024, 3);
-  plog::init(plog::debug, &fileAppender).addAppender(&consoleAppender);
+  static ImGuiLogAppender imguiLogAppender;
+  plog::init(plog::debug, &fileAppender)
+      .addAppender(&consoleAppender)
+      .addAppender(&imguiLogAppender);
 
   PLOG_INFO << "========== Starting Chroma ==========";
 
   // Initialize singleton app instance
   Application *app = Application::GetInstance();
+  app->RegisterLogger(&imguiLogAppender);
 
   // Create Layers
   PLOG_DEBUG << "Creating layers...";

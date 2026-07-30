@@ -250,6 +250,9 @@ void Application::NextFrame() {
       layer->OnUIRender();
     }
 
+    // Draw log
+    m_Logger->draw("Application Log");
+
     ImGui::End();
   }
 

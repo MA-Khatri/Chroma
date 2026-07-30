@@ -6,6 +6,7 @@ set(SOURCES
     camera.hpp
     controller.cpp
     controller.hpp
+    imgui_log_appender.hpp
     layer.cpp
     layer.hpp
     main.cpp
