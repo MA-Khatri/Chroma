@@ -31,6 +31,7 @@ public:
 
   std::shared_ptr<Scene> GetBaseScene() const { return m_Scene; }
 
+  // Note: This also replaces the object in the base scene!
   void ReplaceObject(int idx, std::shared_ptr<Object> object);
 
 private:

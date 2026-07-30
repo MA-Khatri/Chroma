@@ -24,6 +24,7 @@ protected:
   // (Optional) Child-class hooks
   virtual void OnAttachExtra();
   virtual void OnUpdateExtra();
+  virtual void ControlPanelExtra();
 
   VulkanEngine *m_VulkanEngine;
 

@@ -114,10 +114,12 @@ void RasterView::OnUIRender() {
   // Add back in padding for non-viewport ImGui
   ImGui::PopStyleVar();
 
-  ImGui::Begin("Debug Panel");
+  ImGui::Begin("Control Panel");
   if (m_AppHandle->m_FocusedWindow == m_WindowID) {
-    Layer::CommonDebug(m_AppHandle, m_CurrentScene->GetCamera());
+    Layer::CommonControlPanel(m_AppHandle, m_CurrentScene->GetCamera());
     m_CurrentScene->GetCamera()->GetGuiElements();
+
+    ControlPanelExtra();
   }
   ImGui::End();
 }
@@ -152,5 +154,9 @@ void RasterView::OnAttachExtra() {
 }
 
 void RasterView::OnUpdateExtra() {
+  // TODO?
+}
+
+void RasterView::ControlPanelExtra() {
   // TODO?
 }

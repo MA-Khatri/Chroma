@@ -97,6 +97,13 @@ void VkObject::DrawPick(VkCommandBuffer commandBuffer, ImVec2 viewportSize) {
 void VkObject::ReplaceObject(std::shared_ptr<Object> object) {
   m_Object = object;
 
+  if (m_Object->m_Mesh->vertices.size() == 0) {
+    PLOG_VERBOSE << "Trying to replace with an empty mesh! Instead, setting object as inactive.";
+    m_Object->m_Active = false;
+    return;
+  }
+  m_Object->m_Active = true;
+
   // Recreate and re-upload the new mesh indices and vertices
   vke::CreateVertexBuffer(m_Object->m_Mesh->vertices, m_VertexBuffer, m_VertexBufferMemory);
   vke::CreateIndexBuffer(m_Object->m_Mesh->indices, m_IndexBuffer, m_IndexBufferMemory);

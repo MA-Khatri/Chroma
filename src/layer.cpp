@@ -25,7 +25,7 @@ std::string GetDateTimeStr() {
   return std::string(buffer);
 }
 
-void Layer::CommonDebug(Application *app, std::shared_ptr<Camera> camera) {
+void Layer::CommonControlPanel(Application *app, std::shared_ptr<Camera> camera) {
   ImGui::Text("Frame Time: %.3f ms/frame (%.1f FPS)", m_FrameTimes.GetLastItem(),
               m_FrameRates.GetLastItem());
 

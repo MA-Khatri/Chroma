@@ -157,7 +157,7 @@ public:
   bool IsMouseWrapEnabled() const { return m_MouseWrapEnabled; }
 
 protected:
-  void CommonDebug(Application *app, std::shared_ptr<Camera> camera);
+  void CommonControlPanel(Application *app, std::shared_ptr<Camera> camera);
 
   void WrapMouseWithinRect(SDL_Window *window, const ImVec2 &rectMin, const ImVec2 &rectMax,
                            bool isActiveViewport, float edgeThreshold = 12.0f);

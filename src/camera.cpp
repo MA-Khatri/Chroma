@@ -25,12 +25,14 @@ const std::unordered_map<CameraController::Type, std::string> CameraController::
     {{CameraController::Type::FreeFly, "Free Fly"},
      {CameraController::Type::Orbit, "Orbit"},
      {CameraController::Type::TrackBall, "Track Ball"},
+     {CameraController::Type::Scanner, "Scanner"},
      {CameraController::Type::Unknown, "Unknown"}};
 
 const std::unordered_map<std::string, CameraController::Type> CameraController::m_StringToEnumMap =
     {{"Free Fly", CameraController::Type::FreeFly},
      {"Orbit", CameraController::Type::Orbit},
      {"Track Ball", CameraController::Type::TrackBall},
+     {"Scanner", CameraController::Type::Scanner},
      {"Unknown", CameraController::Type::Unknown}};
 
 // ===================================
@@ -54,7 +56,7 @@ void PerspectiveProjection::Update(Camera &camera, int64_t deltaTime, const SDL_
         if (m_FarClip < m_NearClip + m_MinClipDiff)
           m_FarClip = m_NearClip + m_MinClipDiff;
 
-        PLOG_DEBUG << "Adjusted far clip to: " << m_FarClip;
+        PLOG_VERBOSE << "Adjusted far clip to: " << m_FarClip;
       }
 
       // Alt + mouse wheel for near clip adjustment
@@ -65,7 +67,7 @@ void PerspectiveProjection::Update(Camera &camera, int64_t deltaTime, const SDL_
         if (m_NearClip > m_FarClip - m_MinClipDiff)
           m_NearClip = m_FarClip - m_MinClipDiff;
 
-        PLOG_DEBUG << "Adjusted near clip to: " << m_NearClip;
+        PLOG_VERBOSE << "Adjusted near clip to: " << m_NearClip;
       }
 
       // Shift + mouse wheel for FOV (zoom in/out)
@@ -76,7 +78,7 @@ void PerspectiveProjection::Update(Camera &camera, int64_t deltaTime, const SDL_
         if (m_VFOV > m_MaxVFOV)
           m_VFOV = m_MaxVFOV;
 
-        PLOG_DEBUG << "Adjusted vertical field of view (vfov) to: " << m_VFOV;
+        PLOG_VERBOSE << "Adjusted vertical field of view (vfov) to: " << m_VFOV;
       }
       break;
     }
@@ -122,7 +124,7 @@ void OrthographicProjection::Update(Camera &camera, int64_t deltaTime, const SDL
         if (m_FarClip < m_NearClip + m_MinClipDiff)
           m_FarClip = m_NearClip + m_MinClipDiff;
 
-        PLOG_DEBUG << "Adjusted far clip to: " << m_FarClip;
+        PLOG_VERBOSE << "Adjusted far clip to: " << m_FarClip;
       }
 
       // Alt + mouse wheel for near clip adjustment
@@ -133,7 +135,7 @@ void OrthographicProjection::Update(Camera &camera, int64_t deltaTime, const SDL
         if (m_NearClip > m_FarClip - m_MinClipDiff)
           m_NearClip = m_FarClip - m_MinClipDiff;
 
-        PLOG_DEBUG << "Adjusted near clip to: " << m_NearClip;
+        PLOG_VERBOSE << "Adjusted near clip to: " << m_NearClip;
       }
 
       // Shift + mouse wheel for orthographic extent
@@ -144,7 +146,7 @@ void OrthographicProjection::Update(Camera &camera, int64_t deltaTime, const SDL
         if (m_VerticalExtent > m_VerticalExtentMax)
           m_VerticalExtent = m_VerticalExtentMax;
 
-        PLOG_DEBUG << "Adjusted orthographic vertical extent to: " << m_VerticalExtent;
+        PLOG_VERBOSE << "Adjusted orthographic vertical extent to: " << m_VerticalExtent;
       }
       break;
     }
@@ -638,6 +640,10 @@ void Camera::GetGuiElements() {
     if (ImGui::BeginCombo("Controller Type", m_Controller->GetTypeString().c_str())) {
       for (int n = 0; n < static_cast<int>(CameraController::Type::Unknown); n++) {
         CameraController::Type type = static_cast<CameraController::Type>(n);
+        if (type == CameraController::Type::Scanner) {
+          // Cannot choose scanner controller type!
+          continue;
+        }
         const bool isSelected = (cControllerType == type);
         if (ImGui::Selectable(CameraController::GetTypeString(type).c_str(), isSelected)) {
           cControllerType = type;

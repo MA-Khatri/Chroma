@@ -21,6 +21,7 @@ public:
 
   void DrawPick(VkCommandBuffer commandBuffer, ImVec2 viewportSize);
 
+  // Note: only re-uploads the mesh and uniform buffers -- it does NOT update the material!
   void ReplaceObject(std::shared_ptr<Object> object);
 
 private:

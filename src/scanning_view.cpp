@@ -1,7 +1,10 @@
 #include "scanning_view.hpp"
+
 #include "camera.hpp"
 #include "mesh.hpp"
 #include "scene.hpp"
+
+#include <glm/gtc/matrix_inverse.hpp>
 #include <imgui.h>
 #include <memory>
 
@@ -50,7 +53,7 @@ void ScanningView::CreateScanningScene() {
       std::make_shared<PerspectiveProjection>(45.0f, 0.1f, 1000.0f, 16.0f / 9.0f);
   m_InspectionController = std::make_shared<TrackBallController>(
       glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-  m_ScanningController = std::make_shared<CameraController>();
+  m_ScanningController = std::make_shared<ScannerController>();
   auto camera = std::make_shared<Camera>(perspectiveProjection, m_InspectionController);
   scene.SetCamera(camera);
 
@@ -67,20 +70,37 @@ void ScanningView::OnAttachExtra() {
 
 void ScanningView::OnUpdateExtra() {
   if (m_SHMModel.IsOpen()) {
-    auto newPCMesh =
-        LoadPointCloudFromSharedMemory(m_SHMModel.Data(), m_RevisionNumber, m_Tracking, m_Pose);
+    auto newPCMesh = LoadPointCloudFromSharedMemory(m_SHMModel.Data(), m_RevisionNumber, m_Tracking,
+                                                    m_ScannerPose);
     if (newPCMesh) {
       auto newPCObject = std::make_shared<Object>(newPCMesh, m_MatShaded);
-      m_CurrentScene->ReplaceObject(m_PointCloudIdx, newPCObject);
       m_VulkanEngine->GetVkScene()->ReplaceObject(m_PointCloudIdx, newPCObject);
+
+      // Apply transformation to make teeth appear upright while scanning and transpose x, y, to
+      // account for the transpose we do before sending data to the digitizer
+      constexpr glm::mat4 t1 = glm::mat4(0.0f, -1.0f, 0.0f, 0.0f, // c1
+                                         -1.0f, 0.0f, 0.0f, 0.0f, // c2
+                                         0.0f, 0.0f, -1.0f, 0.0f, // c3
+                                         0.0f, 0.0f, 0.0f, 1.0f); // c4
+
+      // TODO: Pass these into reticle vertex shader
+      constexpr float reticleVFoV = 9.5f;
+      constexpr float reticleAspect = 0.75f;
+
+      // Adjust view frustum to center reticle over scan region
+      constexpr glm::mat4 t2 =
+          glm::translate(glm::mat4(1.0f), glm::vec3(-reticleVFoV / 2.0f - 1.0f, 0.5f, 0.0f));
+
+      m_ScannerView = t2 * t1 * glm::inverseTranspose(m_ScannerPose);
     }
   } else {
     m_SHMModel.Open("/model", 113246624);
   }
 
-  if (m_IsScanning && !ImGui::IsAnyMouseDown()) {
+  if (m_UseScannerPose &&
+      !(ImGui::IsAnyMouseDown() && m_AppHandle->m_FocusedWindow == m_WindowID)) {
+    m_ScanningController->SetMatrix(m_ScannerView);
     m_CurrentScene->GetCamera()->SetCameraController(m_ScanningController);
-    m_ScanningController->SetMatrix(m_Pose);
     if (m_Tracking) {
       m_CurrentScene->GetObjects()[m_GreenReticleIdx]->m_Active = true;
       m_CurrentScene->GetObjects()[m_RedReticleIdx]->m_Active = false;
@@ -89,6 +109,19 @@ void ScanningView::OnUpdateExtra() {
       m_CurrentScene->GetObjects()[m_RedReticleIdx]->m_Active = true;
     }
   } else {
+    m_CurrentScene->GetObjects()[m_GreenReticleIdx]->m_Active = false;
+    m_CurrentScene->GetObjects()[m_RedReticleIdx]->m_Active = false;
     m_CurrentScene->GetCamera()->SetCameraController(m_InspectionController);
   }
+}
+
+void ScanningView::ControlPanelExtra() {
+  ImGui::SeparatorText("Scanning");
+
+  ImGui::Checkbox("Use Scanner Pose", &m_UseScannerPose);
+
+  int vertexCount = m_CurrentScene->GetObjects()[m_PointCloudIdx]->m_Mesh->vertices.size();
+  ImGui::Text("Vertex Count: %i", vertexCount);
+
+  // TODO
 }

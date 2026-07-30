@@ -11,12 +11,13 @@ public:
 
   void OnAttachExtra() override;
   void OnUpdateExtra() override;
+  void ControlPanelExtra() override;
 
 private:
   void CreateScanningScene();
 
-  std::shared_ptr<CameraController> m_InspectionController;
-  std::shared_ptr<CameraController> m_ScanningController;
+  std::shared_ptr<TrackBallController> m_InspectionController;
+  std::shared_ptr<ScannerController> m_ScanningController;
 
   int m_GizmosIdx = -1;
   int m_RedReticleIdx = -1;
@@ -32,7 +33,9 @@ private:
 
   uint32_t m_RevisionNumber;
   uint32_t m_Tracking;
-  glm::mat4 m_Pose;
 
-  bool m_IsScanning = false;
+  glm::mat4 m_ScannerPose;
+  glm::mat4 m_ScannerView;
+
+  bool m_UseScannerPose = false;
 };

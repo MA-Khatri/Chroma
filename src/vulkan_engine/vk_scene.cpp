@@ -99,6 +99,7 @@ void VkScene::ReplaceObject(int idx, std::shared_ptr<Object> object) {
     return;
   }
 
+  m_Scene->ReplaceObject(idx, object);
   m_VkObjects[idx]->ReplaceObject(object);
 }
 

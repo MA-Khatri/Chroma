@@ -153,7 +153,7 @@ protected:
 
 class CameraController {
 public:
-  enum class Type { FreeFly, Orbit, TrackBall, Unknown };
+  enum class Type { FreeFly, Orbit, TrackBall, Scanner, Unknown };
 
   CameraController() {};
 
@@ -162,10 +162,6 @@ public:
   virtual void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) {};
 
   virtual glm::mat4 GetMatrix() const { return m_Matrix; };
-
-  // WARNING! Only valid for base CameraController class -- inherited classes' GetMatrix methods
-  // will not return the matrix set here!
-  void SetMatrix(glm::mat4 matrix) { m_Matrix = matrix; }
 
   virtual void GetGuiElements() {};
 
@@ -340,6 +336,25 @@ private:
   const float m_MaxRadius = 1e6f;
   const float m_RadiusScale = 1.1f;
   const float m_InvRadiusScale = 1.0f / m_RadiusScale;
+};
+
+class ScannerController : public CameraController {
+public:
+  ScannerController() { m_Type = Type::Scanner; }
+
+  // TODO?
+  void Update(Camera &camera, int64_t deltaTime, const SDL_Event *event = nullptr) override {};
+
+  glm::mat4 GetMatrix() const override { return m_Matrix; }
+
+  // TODO?
+  void GetGuiElements() override {};
+
+  void SetMatrix(glm::mat4 matrix) {
+    m_Matrix = matrix;
+    m_Position = glm::vec3(matrix[3][0], matrix[3][1], matrix[3][2]) / matrix[3][3];
+    // TODO: update m_LookAt and m_Up based on input matrix?
+  }
 };
 
 // ==================================

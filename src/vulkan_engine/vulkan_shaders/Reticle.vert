@@ -22,59 +22,26 @@ layout(set = 1, binding = 0) uniform ObjectUBO {
 }
 object;
 
-//
-// TODO: Switch to actual reticle!
-//
-
-// --- Gizmo appearance controls ---
-// Size of the gizmo, as a fraction of viewport HEIGHT (0..1), measured as
-// the distance from its center to the tip of an axis.
-const float kGizmoSizePercent = 0.08;
-// Padding between the gizmo and the top/right edges of the viewport, also
-// as a fraction of viewport HEIGHT (0..1).
-const float kGizmoPaddingPercent = 0.03;
+const float kReticleAspect = 0.75;
+const float kReticleVFoV = 9.5; // vertical FOV in degrees
 
 void main() {
-  // 1. Strip translation from the view matrix so we only keep the camera's
-  //    orientation. The gizmo's axes rotate with the camera but never move.
-  mat3 viewRotation = mat3(scene.view);
-  vec3 rotated = viewRotation * a_Position;
+  // Recover tan(cameraVFov/2) from the projection matrix.
+  // For a standard perspective matrix, proj[1][1] == 1 / tan(vFov/2).
+  // abs() guards against the Vulkan Y-flip convention (proj[1][1] negated).
+  float projYScale = abs(scene.proj[1][1]);
 
-  // 2. Convert screen-percent controls into pixels, relative to viewport
-  //    HEIGHT so the gizmo's size tracks vertical resolution only.
-  float gizmoSizePixels = kGizmoSizePercent * scene.viewportSize.y;
-  float gizmoPaddingPixels = kGizmoPaddingPercent * scene.viewportSize.y;
+  // NDC half-height that corresponds to an angular size of kReticleVFoV degrees
+  // within the camera's current vertical FOV.
+  float ndcHalfHeight = tan(radians(kReticleVFoV) * 0.5) * projYScale;
 
-  // 3. Isotropic pixel offset (keeps the gizmo circular before aspect
-  //    correction).
-  vec2 pixelOffset = rotated.xy * gizmoSizePixels;
+  // Correct the width so the reticle keeps kReticleAspect (width/height) in
+  // screen space, independent of the viewport's own aspect ratio.
+  float screenAspect = scene.viewportSize.x / scene.viewportSize.y;
+  float ndcHalfWidth = ndcHalfHeight * kReticleAspect / screenAspect;
 
-  // 4. Convert to NDC space per-axis to correct for aspect ratio.
-  vec2 halfViewport = scene.viewportSize * 0.5;
-  vec2 ndcOffset = pixelOffset / halfViewport;
+  vec2 ndcOffset = vec2(a_Position.x * ndcHalfWidth, a_Position.y * ndcHalfHeight);
 
-  // 5. NDC-space center, inset from the top-right corner.
-  //    Vulkan NDC is normally y-down (+1 = bottom), so top-right is
-  //    (+1, -1). Since the pipeline flips the viewport downstream, we
-  //    negate y here so the final on-screen result still lands top-right
-  //    after that later flip is applied.
-  vec2 insetPixels = vec2(gizmoSizePixels + gizmoPaddingPixels);
-  vec2 insetNDC = insetPixels / halfViewport;
-  vec2 gizmoCenterNDC = vec2(1.0 - insetNDC.x, 1.0 - insetNDC.y);
-
-  vec2 ndcPosition = gizmoCenterNDC + ndcOffset;
-
-  // 6. Depth: Vulkan's default NDC depth range is [0, 1], not [-1, 1].
-  //    rotated.z is roughly in [-1, 1] (unit-scale gizmo geometry), so
-  //    bias/scale it into a tiny band centered at a fixed depth rather
-  //    than letting negative z go below 0 and get near-plane clipped.
-  //    We set the base near 0 to make it unlikely that scene objects will
-  //    be drawn over the gizmo (since the gizmo shares a depth buffer
-  //    with the rest of the scene).
-  const float kDepthBase = 0.01;
-  const float kDepthScale = 0.009;
-  float pseudoDepth = kDepthBase + rotated.z * kDepthScale;
-
-  gl_Position = vec4(ndcPosition, pseudoDepth, 1.0);
+  gl_Position = vec4(ndcOffset, 0.0, 1.0);
   fragColor = a_Color;
 }
