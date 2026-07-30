@@ -1,5 +1,7 @@
 #include "vk_scene.hpp"
+#include "vk_material.hpp"
 #include "vulkan_utils.hpp"
+#include <exception>
 #include <map>
 #include <set>
 #include <vulkan/vulkan_core.h>
@@ -14,7 +16,8 @@ VkScene::VkScene(std::shared_ptr<Scene> scene, VkSampleCountFlagBits msaaCount,
   for (const auto &object : m_Scene->GetObjects()) {
     materialIDs.insert(object->m_Material->m_MaterialID);
   }
-  vke::CreateDescriptorPool(materialIDs.size(), m_Scene->GetObjects().size(), m_DescriptorPool);
+  vke::CreateDescriptorPool(materialIDs.size(), m_Scene->GetObjects().size() + 100000,
+                            m_DescriptorPool);
 
   // Create scene uniform buffer and its associated descriptor set
   vke::CreateUniformBuffer(sizeof(SceneUBO), m_UniformBuffer, m_UniformBufferMemory,
@@ -84,6 +87,38 @@ void VkScene::DrawPick(VkCommandBuffer commandBuffer, ImVec2 viewportSize) {
   for (const auto &vkObject : m_VkObjects) {
     vkObject->DrawPick(commandBuffer, viewportSize);
   }
+}
+
+void VkScene::ReplaceObject(int idx, std::shared_ptr<Object> object) {
+  if (idx < 0 || idx >= m_VkObjects.size()) {
+    PLOG_ERROR << "Invalid object index to replace!";
+    return;
+  }
+
+  if (m_DescriptorSet == VK_NULL_HANDLE) {
+    PLOG_ERROR << "Invalid descriptor set";
+    return;
+  }
+
+  if (!object->m_Mesh) {
+    PLOG_ERROR << "Object mesh is nullptr!";
+    return;
+  }
+
+  int materialID = object->m_Material->m_MaterialID;
+  auto it = m_Materials.find(materialID);
+  if (it == m_Materials.end()) {
+    PLOG_ERROR << "No material found for ID " << materialID;
+    return;
+  }
+  std::shared_ptr<VkMaterial> material = it->second;
+
+  if (material == nullptr) {
+    PLOG_ERROR << "Material is null!";
+    return;
+  }
+
+  m_VkObjects[idx] = std::make_shared<VkObject>(object, material, m_DescriptorSet);
 }
 
 void VkScene::VkUpdateUniformBuffer() {

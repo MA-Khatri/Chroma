@@ -69,9 +69,11 @@ void ScanningView::OnUpdateExtra() {
   if (m_SHMModel.IsOpen()) {
     auto newPCMesh =
         LoadPointCloudFromSharedMemory(m_SHMModel.Data(), m_RevisionNumber, m_Tracking, m_Pose);
-    auto newPCObject = std::make_shared<Object>(newPCMesh, m_MatShaded);
-    m_CurrentScene->ReplaceObject(m_PointCloudIdx, newPCObject);
-    m_VulkanEngine->GetVkScene()->ReplaceObject(m_PointCloudIdx, newPCObject);
+    if (newPCMesh) {
+      auto newPCObject = std::make_shared<Object>(newPCMesh, m_MatShaded);
+      m_CurrentScene->ReplaceObject(m_PointCloudIdx, newPCObject);
+      m_VulkanEngine->GetVkScene()->ReplaceObject(m_PointCloudIdx, newPCObject);
+    }
   } else {
     m_SHMModel.Open("/model", 113246624);
   }

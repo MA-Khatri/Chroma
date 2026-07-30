@@ -71,7 +71,7 @@ bool CrossPlatformSharedMemory::Open(std::string name, int size) {
   );
 
   if (!_handle || (_inject_error == -3)) {
-    PLOG_ERROR << "Open shm failed: name=" << _shm_name;
+    PLOG_VERBOSE << "Open shm failed: name=" << _shm_name;
     return false;
   }
 
