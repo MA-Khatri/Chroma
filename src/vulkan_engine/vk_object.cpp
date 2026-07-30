@@ -94,6 +94,19 @@ void VkObject::DrawPick(VkCommandBuffer commandBuffer, ImVec2 viewportSize) {
                    0);                                                      // firstInstance
 }
 
+void VkObject::ReplaceObject(std::shared_ptr<Object> object) {
+  m_Object = object;
+
+  // Recreate and re-upload the new mesh indices and vertices
+  vke::CreateVertexBuffer(m_Object->m_Mesh->vertices, m_VertexBuffer, m_VertexBufferMemory);
+  vke::CreateIndexBuffer(m_Object->m_Mesh->indices, m_IndexBuffer, m_IndexBufferMemory);
+
+  // Note: we use the same uniform buffer and descriptor set!
+
+  VkUploadUniformBuffer();
+  VkUpdateUniformBuffer();
+}
+
 void VkObject::VkUpdateUniformBuffer() {
   std::vector<VkWriteDescriptorSet> descriptorWrites;
   descriptorWrites.reserve(m_VkMaterial->m_DescriptorWrites.size() + 1);

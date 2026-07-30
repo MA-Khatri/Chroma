@@ -1,6 +1,7 @@
 #include "vulkan_utils.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <fstream>
 #include <plog/Log.h>
@@ -1239,6 +1240,10 @@ void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyF
 
 void CreateVertexBuffer(const std::vector<Vertex> vertices, VkBuffer &vertexBuffer,
                         VkDeviceMemory &vertexBufferMemory) {
+  // Free previous buffer if it exists
+  vkDestroyBuffer(Device, vertexBuffer, nullptr);
+  vkFreeMemory(Device, vertexBufferMemory, nullptr);
+
   VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
   // Create a staging buffer
@@ -1266,6 +1271,10 @@ void CreateVertexBuffer(const std::vector<Vertex> vertices, VkBuffer &vertexBuff
 
 void CreateIndexBuffer(const std::vector<uint32_t> indices, VkBuffer &indexBuffer,
                        VkDeviceMemory &indexBufferMemory) {
+  // Free previous buffer if it exists
+  vkDestroyBuffer(Device, indexBuffer, nullptr);
+  vkFreeMemory(Device, indexBufferMemory, nullptr);
+
   VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
   // Create a staging buffer

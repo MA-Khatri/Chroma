@@ -21,6 +21,8 @@ public:
 
   void DrawPick(VkCommandBuffer commandBuffer, ImVec2 viewportSize);
 
+  void ReplaceObject(std::shared_ptr<Object> object);
+
 private:
   void VkUpdateUniformBuffer(); // Updates descriptor set to take in this object's uniform buffer
   void VkUploadUniformBuffer(); // Uploads the uniform buffer data to the GPU
