@@ -69,7 +69,7 @@ void RasterView::OnUIRender() {
       m_ViewportHovered = false;
 
       ImGui::BeginChild("Rasterized");
-      if (m_ViewportFocused || m_AppHandle->m_FocusedWindow == m_WindowID) {
+      if (!ImGui::IsWindowCollapsed()) {
         m_ViewportHovered = ImGui::IsWindowHovered();
 
         ImVec2 childMin = ImGui::GetCursorScreenPos();

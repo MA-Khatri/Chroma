@@ -566,7 +566,7 @@ void TrackBallController::GetGuiElements() {
     }
 
     float center[3] = {m_LookAt.x, m_LookAt.y, m_LookAt.z};
-    ImGui::DragFloat3("Center (Double LMB)", center, 1.0f);
+    ImGui::DragFloat3("Center (Double LMB)", center, 1.0f, 0.0f, 0.0f, "%.1f");
     glm::vec3 newCenter(center[0], center[1], center[2]);
     if (m_LookAt != newCenter) {
       m_LookAt = newCenter;
