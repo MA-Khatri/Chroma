@@ -154,15 +154,6 @@ void Application::NextFrame() {
   PLOG_VERBOSE << "=== Starting new frame...";
   ImGui_ImplVulkanH_Window *wd = &vke::MainWindowData;
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-  ImGuiIO &io = ImGui::GetIO();
-
-  // Poll and handle SDL events (inputs, window resize, etc.)
-  m_Controller->ProcessEvents();
-
-  // Call the update functions for each layer
-  for (auto &layer : m_Layers) {
-    layer->OnUpdate();
-  }
 
   // Resize swapchain if window(s) resized
   if (vke::SwapChainRebuild) {
@@ -188,6 +179,7 @@ void Application::NextFrame() {
   ImGui_ImplVulkan_NewFrame();
   ImGui_ImplSDL3_NewFrame();
   ImGui::NewFrame();
+  ImGuiIO &io = ImGui::GetIO();
 
   // Window contents
   {
@@ -243,6 +235,19 @@ void Application::NextFrame() {
         menubar_callback();
         ImGui::EndMenuBar();
       }
+    }
+
+    // Poll and handle SDL events (inputs, window resize, etc.)
+    m_Controller->ProcessEvents();
+
+    // Call the update functions for each layer
+    for (auto &layer : m_Layers) {
+      layer->OnUpdate();
+    }
+
+    // Call the render functions for each layer
+    for (auto &layer : m_Layers) {
+      layer->OnRender();
     }
 
     // Call OnUIRender for each layer

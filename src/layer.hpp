@@ -149,6 +149,7 @@ public:
   virtual void OnDetach() {}
 
   virtual void OnUpdate() {}
+  virtual void OnRender() {}
   virtual void OnUIRender() {}
 
   virtual void TakeScreenshot() {}
@@ -160,10 +161,10 @@ protected:
   void CommonControlPanel(Application *app, std::shared_ptr<Camera> camera);
 
   void WrapMouseWithinRect(SDL_Window *window, const ImVec2 &rectMin, const ImVec2 &rectMax,
-                           bool isActiveViewport, float edgeThreshold = 12.0f);
+                           bool isActiveViewport, float edgeThreshold = -1.0f);
 
   // Frame rate/time graph buffers
-  bool m_IncludeFrameRateGraph = false;
+  bool m_IncludeFrameRateGraph = true;
   int m_FrameGraphStorageCount = 1001;
   SlidingBuffer<float> m_FrameTimes = SlidingBuffer<float>(m_FrameGraphStorageCount);
   SlidingBuffer<float> m_FrameRates = SlidingBuffer<float>(m_FrameGraphStorageCount);
@@ -180,6 +181,8 @@ protected:
   ImGuiID m_WindowID = 0;
 
   std::shared_ptr<Scene> m_CurrentScene;
+
+  static const std::string m_ControlPanelName;
 
 private:
   bool m_MouseWrapEnabled = true;

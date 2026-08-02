@@ -15,6 +15,8 @@ VulkanEngine::VulkanEngine() { InitVulkan(); }
 VulkanEngine::~VulkanEngine() { CleanupVulkan(); }
 
 void VulkanEngine::OnResize(ImVec2 newSize) {
+  PLOG_VERBOSE << "Resizing vulkan engine viewport to (" << newSize.x << ", " << newSize.y << ")";
+
   m_ViewportSize = newSize;
 
   // Before re-creating images, we MUST wait for device to be done using them

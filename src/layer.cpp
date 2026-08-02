@@ -25,6 +25,7 @@ std::string GetDateTimeStr() {
   return std::string(buffer);
 }
 
+const std::string Layer::m_ControlPanelName = "Control Panel";
 void Layer::CommonControlPanel(Application *app, std::shared_ptr<Camera> camera) {
   ImGui::Text("Frame Time: %.3f ms/frame (%.1f FPS)", m_FrameTimes.GetLastItem(),
               m_FrameRates.GetLastItem());
@@ -76,16 +77,16 @@ void Layer::WrapMouseWithinRect(SDL_Window *window, const ImVec2 &rectMin, const
 
   const ImVec2 mousePos = ImGui::GetMousePos();
   if (mousePos.x <= rectMin.x + edgeThreshold) {
-    SDL_WarpMouseInWindow(window, static_cast<int>(rectMax.x - edgeThreshold - windowX),
+    SDL_WarpMouseInWindow(window, static_cast<int>(rectMax.x - windowX),
                           static_cast<int>(mousePos.y - windowY));
   } else if (mousePos.x >= rectMax.x - edgeThreshold) {
-    SDL_WarpMouseInWindow(window, static_cast<int>(rectMin.x + edgeThreshold - windowX),
+    SDL_WarpMouseInWindow(window, static_cast<int>(rectMin.x - windowX),
                           static_cast<int>(mousePos.y - windowY));
   } else if (mousePos.y <= rectMin.y + edgeThreshold) {
     SDL_WarpMouseInWindow(window, static_cast<int>(mousePos.x - windowX),
-                          static_cast<int>(rectMax.y - edgeThreshold - windowY));
+                          static_cast<int>(rectMax.y - windowY));
   } else if (mousePos.y >= rectMax.y - edgeThreshold) {
     SDL_WarpMouseInWindow(window, static_cast<int>(mousePos.x - windowX),
-                          static_cast<int>(rectMin.y + edgeThreshold - windowY));
+                          static_cast<int>(rectMin.y - windowY));
   }
 }

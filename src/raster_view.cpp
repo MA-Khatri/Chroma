@@ -27,7 +27,7 @@ void RasterView::OnAttach(Application *app) {
   m_WindowHandle = app->GetWindowHandle();
   m_VulkanEngine = new VulkanEngine();
 
-  OnAttachExtra();
+  OnAttachHook();
 
   // Register double click callback
   m_CurrentScene->GetCamera()->GetCameraController()->RegisterDoubleClickCallback(
@@ -48,78 +48,69 @@ void RasterView::OnUpdate() {
   m_FrameTimes.Add(frame_time);
   m_FrameRates.Add(frame_rate);
 
-  if (m_ViewportFocused) {
-    Controller::GetInstance()->SetActiveCamera(m_CurrentScene->GetCamera());
-  }
+  // No padding on viewports
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+  // Update Viewport info
+  ImGui::Begin(m_ViewportName.c_str());
+  {
+    m_WindowID = ImGui::GetID(m_ViewportName.c_str());
+    m_ViewportFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
+    if (m_ViewportFocused) {
+      m_AppHandle->m_FocusedWindow = m_WindowID;
+      Controller::GetInstance()->SetActiveCamera(m_CurrentScene->GetCamera());
+    }
+    m_ViewportHovered = false;
 
-  OnUpdateExtra();
+    if (!ImGui::IsWindowCollapsed()) {
+      m_ViewportHovered = ImGui::IsWindowHovered();
+
+      ImVec2 childMin = ImGui::GetCursorScreenPos();
+      ImVec2 childSize = ImGui::GetContentRegionAvail();
+      ImVec2 childMax = ImVec2(childMin.x + childSize.x, childMin.y + childSize.y);
+
+      ImVec2 mp = ImGui::GetMousePos();
+      const float buffer = 12.0f;
+      if (mp.x > childMin.x + buffer && mp.x < childMax.x - buffer && mp.y > childMin.y + buffer &&
+          mp.y < childMax.y - buffer) {
+        m_CurrentScene->GetCamera()->SetControllerActive(true);
+      } else {
+        m_CurrentScene->GetCamera()->SetControllerActive(false);
+      }
+
+      ImVec2 newSize = childSize;
+      if (m_ViewportSize.x != newSize.x || m_ViewportSize.y != newSize.y) {
+        OnResize(childMin, childMax);
+      }
+
+      WrapMouseWithinRect(m_WindowHandle, childMin, childMax, m_ViewportFocused);
+    }
+  }
+  ImGui::End();
+  ImGui::PopStyleVar();
+
+  OnUpdateHook();
+}
+
+void RasterView::OnRender() {
+  m_VulkanEngine->DrawFrame();
+  vkDeviceWaitIdle(vke::Device);
 }
 
 void RasterView::OnUIRender() {
-  // No padding on viewports
-  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-  {
-    ImGui::Begin(m_ViewportName.c_str());
-    {
-      m_WindowID = ImGui::GetID(m_ViewportName.c_str());
-      m_ViewportFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
-      if (m_ViewportFocused) {
-        m_AppHandle->m_FocusedWindow = m_WindowID;
-      }
-      m_ViewportHovered = false;
-
-      ImGui::BeginChild("Rasterized");
-      if (!ImGui::IsWindowCollapsed()) {
-        m_ViewportHovered = ImGui::IsWindowHovered();
-
-        ImVec2 childMin = ImGui::GetCursorScreenPos();
-        ImVec2 childSize = ImGui::GetContentRegionAvail();
-        ImVec2 childMax = ImVec2(childMin.x + childSize.x, childMin.y + childSize.y);
-
-        ImVec2 mp = ImGui::GetMousePos();
-        const float buffer = 12.0f;
-        if (mp.x > childMin.x + buffer && mp.x < childMax.x - buffer &&
-            mp.y > childMin.y + buffer && mp.y < childMax.y - buffer) {
-          m_CurrentScene->GetCamera()->SetControllerActive(true);
-        } else {
-          m_CurrentScene->GetCamera()->SetControllerActive(false);
-        }
-
-        WrapMouseWithinRect(m_WindowHandle, childMin, childMax, m_ViewportFocused);
-
-        ImVec2 newSize = childSize;
-        if (m_ViewportSize.x != newSize.x || m_ViewportSize.y != newSize.y) {
-          m_CurrentScene->GetCamera()->SetViewportBounds(glm::vec2(childMin.x, childMin.y),
-                                                         glm::vec2(childMax.x, childMax.y));
-          OnResize(newSize);
-        }
-
-        m_VulkanEngine->DrawFrame();
-
-        // Wait until the descriptor set for the viewport image is created
-        // This could be a source of latency later on -- might be better to
-        // add multiple images here as well to allow simultaneous
-        // rendering/displaying
-        vkDeviceWaitIdle(vke::Device);
-
-        // Note: we flip the image vertically to match Vulkan convention!
-        ImGui::Image(
-            (ImTextureID)m_VulkanEngine->GetImageDescriptorSets()[vke::MainWindowData.FrameIndex],
-            m_ViewportSize, ImVec2(0, 1), ImVec2(1, 0));
-      }
-      ImGui::EndChild();
-    }
-    ImGui::End();
+  ImGui::Begin(m_ViewportName.c_str());
+  if (!ImGui::IsWindowCollapsed()) {
+    // Note: we flip the image vertically to match Vulkan convention!
+    ImGui::Image(
+        (ImTextureID)m_VulkanEngine->GetImageDescriptorSets()[vke::MainWindowData.FrameIndex],
+        m_ViewportSize, ImVec2(0, 1), ImVec2(1, 0));
   }
-  // Add back in padding for non-viewport ImGui
-  ImGui::PopStyleVar();
+  ImGui::End();
 
-  ImGui::Begin("Control Panel");
+  ImGui::Begin(m_ControlPanelName.c_str());
   if (m_AppHandle->m_FocusedWindow == m_WindowID) {
     Layer::CommonControlPanel(m_AppHandle, m_CurrentScene->GetCamera());
     m_CurrentScene->GetCamera()->GetGuiElements();
-
-    ControlPanelExtra();
+    ControlPanelHook();
   }
   ImGui::End();
 }
@@ -139,24 +130,23 @@ void RasterView::TakeScreenshot() {
 // === RasterView specific methods ===
 // ===================================
 
-void RasterView::OnResize(ImVec2 newSize) {
-  PLOG_VERBOSE << "Resizing raster viewport to " << newSize.x << " x " << newSize.y;
+void RasterView::OnResize(ImVec2 min, ImVec2 max) {
+  m_CurrentScene->GetCamera()->SetViewportBounds(glm::vec2(min.x, min.y), glm::vec2(max.x, max.y));
 
+  ImVec2 newSize = ImVec2(max.x - min.x, max.y - min.y);
   m_ViewportSize = newSize;
   m_VulkanEngine->OnResize(m_ViewportSize);
-
-  // Note: Camera resizing is done in OnUIRender
 }
 
-void RasterView::OnAttachExtra() {
+void RasterView::OnAttachHook() {
   m_CurrentScene = std::make_shared<Scene>(CreateTestScene());
   m_VulkanEngine->SetScene(m_CurrentScene);
 }
 
-void RasterView::OnUpdateExtra() {
+void RasterView::OnUpdateHook() {
   // TODO?
 }
 
-void RasterView::ControlPanelExtra() {
+void RasterView::ControlPanelHook() {
   // TODO?
 }

@@ -9,9 +9,9 @@ public:
   ScanningView(std::string name) : RasterView(name) {};
   ~ScanningView() {};
 
-  void OnAttachExtra() override;
-  void OnUpdateExtra() override;
-  void ControlPanelExtra() override;
+  void OnAttachHook() override;
+  void OnUpdateHook() override;
+  void ControlPanelHook() override;
 
 private:
   void CreateScanningScene();

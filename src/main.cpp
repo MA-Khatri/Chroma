@@ -30,7 +30,7 @@ int main() {
 
   // Create Layers
   PLOG_DEBUG << "Creating layers...";
-  app->PushLayer(std::make_shared<ScanningView>("Scanning"));
+  // app->PushLayer(std::make_shared<ScanningView>("Scanning"));
   app->PushLayer(std::make_shared<RasterView>("Model"));
   PLOG_DEBUG << "Done creating layers.";
 

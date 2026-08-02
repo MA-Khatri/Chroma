@@ -62,13 +62,13 @@ void ScanningView::CreateScanningScene() {
   PLOG_DEBUG << "Scanning scene creation complete";
 }
 
-void ScanningView::OnAttachExtra() {
+void ScanningView::OnAttachHook() {
   m_SHMModel.Open("/model", 113246624);
   CreateScanningScene();
   m_VulkanEngine->SetScene(m_CurrentScene);
 }
 
-void ScanningView::OnUpdateExtra() {
+void ScanningView::OnUpdateHook() {
   if (m_SHMModel.IsOpen()) {
     auto newPCMesh = LoadPointCloudFromSharedMemory(m_SHMModel.Data(), m_RevisionNumber, m_Tracking,
                                                     m_ScannerPose);
@@ -115,7 +115,7 @@ void ScanningView::OnUpdateExtra() {
   }
 }
 
-void ScanningView::ControlPanelExtra() {
+void ScanningView::ControlPanelHook() {
   ImGui::SeparatorText("Scanning");
 
   ImGui::Checkbox("Use Scanner Pose", &m_UseScannerPose);
