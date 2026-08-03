@@ -11,6 +11,11 @@ VkScene::VkScene(std::shared_ptr<Scene> scene, VkSampleCountFlagBits msaaCount,
     : m_Scene(scene) {
   PLOG_DEBUG << "Creating VkScene for Scene ID: " << m_Scene->m_SceneID;
 
+  if (m_Scene->GetObjects().size() == 0) {
+    PLOG_WARNING << "No objects in scene to render!";
+    return;
+  }
+
   // Create descriptor pool
   std::set<int> materialIDs;
   for (const auto &object : m_Scene->GetObjects()) {
@@ -71,6 +76,9 @@ VkScene::~VkScene() {
 }
 
 void VkScene::Draw(VkCommandBuffer commandBuffer, ImVec2 viewportSize) {
+  if (m_Scene->GetObjects().size() == 0)
+    return;
+
   // Upload scene UBO
   VkUploadUniformBuffer(viewportSize);
 
@@ -80,6 +88,9 @@ void VkScene::Draw(VkCommandBuffer commandBuffer, ImVec2 viewportSize) {
 }
 
 void VkScene::DrawPick(VkCommandBuffer commandBuffer, ImVec2 viewportSize) {
+  if (m_Scene->GetObjects().size() == 0)
+    return;
+
   // Upload scene UBO
   VkUploadUniformBuffer(viewportSize);
 

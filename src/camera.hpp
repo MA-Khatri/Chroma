@@ -126,6 +126,7 @@ public:
     m_AspectRatio = aspectRatio;
     m_Type = Type::Orthographic;
   }
+
   OrthographicProjection() : OrthographicProjection(10.0f, 0.1f, 1000.0f, 16.0f / 9.0f) {}
 
   glm::mat4 GetMatrix() const override {
@@ -154,8 +155,6 @@ protected:
 class CameraController {
 public:
   enum class Type { FreeFly, Orbit, TrackBall, Scanner, Unknown };
-
-  CameraController() {};
 
   virtual ~CameraController() = default;
 
@@ -363,8 +362,14 @@ public:
 
 class Camera {
 public:
+  Camera() {
+    // Default camera
+    m_Projection = std::make_shared<PerspectiveProjection>();
+    m_Controller = std::make_shared<OrbitController>();
+  }
+
   Camera(std::shared_ptr<Projection> projection, std::shared_ptr<CameraController> controller)
-      : m_Projection(std::move(projection)), m_Controller(std::move(controller)) {}
+      : m_Projection(projection), m_Controller(controller) {}
 
   void Update(int64_t deltaTime, const SDL_Event *event = nullptr) {
     if (m_Projection) {

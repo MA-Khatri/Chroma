@@ -16,29 +16,30 @@ layout(set = 0, binding = 0) uniform SceneUBO {
   mat4 viewProj;
   vec3 cameraPosition;
   vec2 viewportSize;
-}
-scene;
+} scene;
 
 layout(set = 1, binding = 0) uniform ObjectUBO {
   mat4 model;
   mat4 normal;
-}
-object;
+} object;
 
 void main() {
   vec4 worldPos = object.model * vec4(a_Position, 1.0);
   vec4 viewPos = scene.view * worldPos;
   gl_Position = scene.proj * viewPos;
 
-  // proj[1][1] is the standard vertical focal length factor (1.0 / tan(fov_y / 2))
-  float fovScalingFactor = scene.proj[1][1];
-
   const float targetPercent = 0.05; // percent of viewport height for point diameter
 
-  // Scale up by the projection scale and viewport height, and down by the view-space depth
-  gl_PointSize = (targetPercent * scene.viewportSize.y * fovScalingFactor) / abs(viewPos.z);
+  bool isOrthographic = (scene.proj[3][3] > 0.5);
 
-  // Assign outputs
+  if(isOrthographic) {
+    // proj[1][1] = 2 / (top - bottom) — constant screen-space scale, no depth term
+    gl_PointSize = targetPercent * scene.viewportSize.y * scene.proj[1][1];
+  } else {
+    float fovScalingFactor = scene.proj[1][1];
+    gl_PointSize = (targetPercent * scene.viewportSize.y * fovScalingFactor) / abs(viewPos.z);
+  }
+
   v_Position = worldPos.xyz;
   v_Normal = (object.normal * vec4(a_Normal, 0.0)).xyz;
   v_Color = a_Color;

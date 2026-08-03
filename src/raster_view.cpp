@@ -139,7 +139,7 @@ void RasterView::OnResize(ImVec2 min, ImVec2 max) {
 }
 
 void RasterView::OnAttachHook() {
-  m_CurrentScene = std::make_shared<Scene>(CreateTestScene());
+  m_CurrentScene = std::make_shared<Scene>();
   m_VulkanEngine->SetScene(m_CurrentScene);
 }
 

@@ -37,7 +37,7 @@ public:
 
 private:
   std::string m_SceneName = "Untitled Scene";
-  std::shared_ptr<Camera> m_Camera;
+  std::shared_ptr<Camera> m_Camera = std::make_shared<Camera>();
   std::vector<std::shared_ptr<Object>> m_Objects;
   glm::vec3 m_ClearColor = glm::vec3(0.901f, 0.913f, 0.960f); // off-white
   // glm::vec3 m_ClearColor = glm::vec3(0.2470588f, 0.2470588f, 0.2470588f);
