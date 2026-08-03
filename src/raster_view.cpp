@@ -29,11 +29,17 @@ void RasterView::OnAttach(Application *app) {
 
   OnAttachHook();
 
-  // Register double click callback
-  m_CurrentScene->GetCamera()->GetCameraController()->RegisterDoubleClickCallback(
-      [this](glm::vec2 clickPos) -> glm::vec3 {
-        return m_VulkanEngine->GetClosestDepth(clickPos);
-      });
+  if (m_CurrentScene) {
+    m_VulkanEngine->SetScene(m_CurrentScene);
+
+    // Register double click callback
+    m_CurrentScene->GetCamera()->GetCameraController()->RegisterDoubleClickCallback(
+        [this](glm::vec2 clickPos) -> glm::vec3 {
+          return m_VulkanEngine->GetClosestDepth(clickPos);
+        });
+  } else {
+    PLOG_WARNING << "No scene to attach to view!";
+  }
 }
 
 void RasterView::OnDetach() { delete m_VulkanEngine; }
@@ -138,10 +144,7 @@ void RasterView::OnResize(ImVec2 min, ImVec2 max) {
   m_VulkanEngine->OnResize(m_ViewportSize);
 }
 
-void RasterView::OnAttachHook() {
-  m_CurrentScene = std::make_shared<Scene>();
-  m_VulkanEngine->SetScene(m_CurrentScene);
-}
+void RasterView::OnAttachHook() { m_CurrentScene = std::make_shared<Scene>(); }
 
 void RasterView::OnUpdateHook() {
   // TODO?

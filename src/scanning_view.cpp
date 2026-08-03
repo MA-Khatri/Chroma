@@ -45,6 +45,7 @@ void ScanningView::CreateScanningScene() {
   m_MatNormal = std::make_shared<Material>(MaterialType::PointNormal);
   auto placeHolderMesh = std::make_shared<Mesh>();
   auto pointCloudPlaceHolder = std::make_shared<Object>(placeHolderMesh, m_MatShaded);
+  pointCloudPlaceHolder->m_Active = false;
   scene.AddObject(pointCloudPlaceHolder);
   m_PointCloudIdx = cObjectIdx++;
 
@@ -65,7 +66,6 @@ void ScanningView::CreateScanningScene() {
 void ScanningView::OnAttachHook() {
   m_SHMModel.Open("/model", 113246624);
   CreateScanningScene();
-  m_VulkanEngine->SetScene(m_CurrentScene);
 }
 
 void ScanningView::OnUpdateHook() {
@@ -120,8 +120,11 @@ void ScanningView::ControlPanelHook() {
 
   ImGui::Checkbox("Use Scanner Pose", &m_UseScannerPose);
 
-  int vertexCount = m_CurrentScene->GetObjects()[m_PointCloudIdx]->m_Mesh->vertices.size();
-  ImGui::Text("Vertex Count: %i", vertexCount);
+  auto pc = m_CurrentScene->GetObjects()[m_PointCloudIdx];
+  if (pc->m_Active) {
+    int vertexCount = pc->m_Mesh->vertices.size();
+    ImGui::Text("Vertex Count: %i", vertexCount);
+  }
 
   // TODO
 }

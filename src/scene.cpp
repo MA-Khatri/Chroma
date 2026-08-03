@@ -15,6 +15,14 @@ Scene CreateTestScene() {
   Scene scene;
   scene.SetSceneName("Test Scene");
 
+  // Non-scene objects
+  auto orientationGizmoMesh = CreateOrientationGizmo();
+  auto orientationGizmoMaterial = std::make_shared<Material>(MaterialType::OrientationGizmo);
+  orientationGizmoMaterial->m_LineWidth = 0.005f;
+  auto orientationGizmoObject =
+      std::make_shared<Object>(orientationGizmoMesh, orientationGizmoMaterial);
+  scene.AddObject(orientationGizmoObject);
+
   // Scene objects
   auto pointsMesh = LoadMeshFromFile("multimaterial.ply");
   auto pointsMaterial = std::make_shared<Material>(MaterialType::PointNormal);
@@ -23,14 +31,6 @@ Scene CreateTestScene() {
   pointsTransform->SetPosition(glm::vec3(0.0f, 0.0f, 100.0f));
   auto pointsObject = std::make_shared<Object>(pointsMesh, pointsMaterial, pointsTransform);
   scene.AddObject(pointsObject);
-
-  // Non-scene objects
-  auto orientationGizmoMesh = CreateOrientationGizmo();
-  auto orientationGizmoMaterial = std::make_shared<Material>(MaterialType::OrientationGizmo);
-  orientationGizmoMaterial->m_LineWidth = 0.005f;
-  auto orientationGizmoObject =
-      std::make_shared<Object>(orientationGizmoMesh, orientationGizmoMaterial);
-  scene.AddObject(orientationGizmoObject);
 
   // Default camera
   auto perspectiveProjection =

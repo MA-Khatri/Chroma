@@ -14,6 +14,8 @@ set(SOURCES
     material.hpp
     mesh.cpp
     mesh.hpp
+    model_view.cpp
+    model_view.hpp
     object.cpp
     object.hpp
     raster_view.cpp

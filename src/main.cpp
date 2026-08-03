@@ -1,4 +1,5 @@
 #include "application.hpp"
+#include "model_view.hpp"
 #include "raster_view.hpp"
 #include "scanning_view.hpp"
 #include "scene.hpp"
@@ -30,8 +31,8 @@ int main() {
 
   // Create Layers
   PLOG_DEBUG << "Creating layers...";
-  // app->PushLayer(std::make_shared<ScanningView>("Scanning"));
-  app->PushLayer(std::make_shared<RasterView>("Model"));
+  app->PushLayer(std::make_shared<ScanningView>("Scanning"));
+  app->PushLayer(std::make_shared<ModelView>("Model"));
   PLOG_DEBUG << "Done creating layers.";
 
   app->Run();
