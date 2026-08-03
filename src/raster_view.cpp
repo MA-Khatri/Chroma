@@ -69,7 +69,7 @@ void RasterView::OnUpdate() {
       ImVec2 childMax = ImVec2(childMin.x + childSize.x, childMin.y + childSize.y);
 
       ImVec2 mp = ImGui::GetMousePos();
-      const float buffer = 12.0f;
+      const float buffer = 4.0f;
       if (mp.x > childMin.x + buffer && mp.x < childMax.x - buffer && mp.y > childMin.y + buffer &&
           mp.y < childMax.y - buffer) {
         m_CurrentScene->GetCamera()->SetControllerActive(true);

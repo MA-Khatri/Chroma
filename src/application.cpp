@@ -138,7 +138,7 @@ void Application::Init() {
 
   // Change default font (imgui fonts folder is copied to build dir)
   std::string font_path = "fonts/Roboto-Medium.ttf";
-  float font_size = 16;
+  float font_size = 14;
   ImFontConfig fontConfig;
   fontConfig.FontDataOwnedByAtlas = false;
   ImFont *default_font = io.Fonts->AddFontFromFileTTF(font_path.c_str(), font_size, &fontConfig);
